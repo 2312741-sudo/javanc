@@ -180,4 +180,14 @@ class DHOPMEngineTest {
         assertThrows(IllegalArgumentException.class, () -> engine.phase2_reconstruct(0.0, 1));
         assertThrows(IllegalArgumentException.class, () -> engine.phase2_reconstruct(1.1, 1));
     }
+
+    @Test
+    @DisplayName("DUBO tra ve 0 khi danh sach entry rong va tu choi tham so khong hop le")
+    void testDUBO_EmptyEntriesAndInvalidFactor() {
+        assertEquals(0.0, vn.edu.dlu.dhopm.core.DUBOCalculator.calculate(Collections.emptyList(), 0.9, 8), 0.0001);
+        assertThrows(IllegalArgumentException.class,
+                () -> vn.edu.dlu.dhopm.core.DUBOCalculator.calculate(Collections.emptyList(), 0.0, 8));
+        assertThrows(IllegalArgumentException.class,
+                () -> vn.edu.dlu.dhopm.core.DUBOCalculator.calculate(Collections.emptyList(), 1.1, 8));
+    }
 }

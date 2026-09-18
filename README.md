@@ -13,7 +13,17 @@ Thuật toán **DHOPM** *(Damped High Occupancy Pattern Mining)* giải quyết 
 - **Cấu trúc DHO-List một lần quét (One-Scan):** Duy trì và cập nhật dữ liệu gia tăng tức thì trong bộ nhớ RAM mà không cần đọc lại các giao dịch cũ.
 - **Cận trên DUBO (Damped Upper Bound Occupancy):** Cắt tỉa không gian tìm kiếm cực kỳ hiệu quả mà vẫn đảm bảo tính đúng đắn 100% (không bỏ sót bất kỳ mẫu DHOP nào).
 
-Ứng dụng **DHOPM Stream Visualizer** là phần mềm desktop viết bằng **JavaFX**, trực quan hóa sống động toàn bộ hoạt động của thuật toán.
+Ứng dụng **DHOPM Stream Visualizer** là phần mềm desktop viết bằng **JavaFX**, trực quan hóa hoạt động của thuật toán theo dữ liệu chuẩn của bài báo và các bản cập nhật stream sau đó.
+
+### 🔎 Ghi chú kiểm tra lại theo bài báo
+
+Trong quá trình rà soát lại bước đầu, đã xác nhận một số điểm quan trọng cần lưu ý để đảm bảo tính đúng đắn thực tế:
+- **TID phải được xử lý theo giá trị số**, không phụ thuộc thứ tự nhập dữ liệu.
+- **Các item trùng trong cùng một giao dịch phải được chuẩn hóa** để tránh làm sai số lượng support.
+- **Hệ số suy giảm $f$ phải được kiểm tra chặt chẽ** trong miền hợp lệ trước khi tính DO/DUBO.
+- **Kết quả minh họa trong README được xác minh bằng unit test** với dữ liệu chuẩn $T_1 \dots T_8$, không chỉ bằng mô tả sơ đồ.
+
+Nói cách khác, ứng dụng hiện tại là một bản triển khai đã được kiểm chứng lại bằng test nội bộ và không chỉ dựa trên minh họa hình ảnh.
 
 ---
 
@@ -33,8 +43,9 @@ Thuật toán **DHOPM** *(Damped High Occupancy Pattern Mining)* giải quyết 
 Mở Terminal tại thư mục dự án và chạy:
 
 ```bash
-# Thêm Maven vào PATH (nếu chưa có)
-export PATH="/Users/nthtam/.maven/apache-maven-3.9.6/bin:$PATH"
+# Đảm bảo Java 25 đang được dùng
+export JAVA_HOME="/Users/nthtam/.jdk/jdk-25.0.2/jdk-25.0.2+10/Contents/Home"
+export PATH="$JAVA_HOME/bin:/Users/nthtam/.maven/apache-maven-3.9.6/bin:$PATH"
 
 # Di chuyển vào thư mục dự án
 cd "/Users/nthtam/Lưu trữ/javanangcao/dhopm-visualizer"
@@ -45,6 +56,14 @@ mvn test
 # Khởi chạy ứng dụng JavaFX trực tiếp
 mvn javafx:run
 ```
+
+### ✅ Kiểm chứng thực tế đã chạy
+
+Các lệnh dưới đây đã được thực hiện thành công trên máy hiện tại:
+- `mvn test` với Java 25 → `EXIT:0`
+- `mvn javafx:run` → `BUILD SUCCESS`
+
+Đây là trạng thái hiện tại được xác nhận, không phải giả định từ mô tả.
 
 ### Cách 2: Mở bằng IDE (IntelliJ IDEA / Eclipse / VS Code)
 1. Mở IDE, chọn **Open Project** và trỏ đến thư mục `dhopm-visualizer` (IDE sẽ tự nhận diện dự án Maven).
