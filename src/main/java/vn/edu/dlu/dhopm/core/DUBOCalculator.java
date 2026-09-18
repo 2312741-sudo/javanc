@@ -28,11 +28,11 @@ public class DUBOCalculator {
      * @return Gia tri can tren DUBO(X)
      */
     public static double calculate(List<Entry> entries, double f, int TL) {
-        if (entries == null || entries.isEmpty()) {
-            return 0.0;
-        }
         if (!Double.isFinite(f) || f <= 0.0 || f > 1.0) {
             throw new IllegalArgumentException("Decay factor f must be in (0, 1]");
+        }
+        if (entries == null || entries.isEmpty()) {
+            return 0.0;
         }
 
         // 1. Gom nhom cac entry theo do dai giao dich (tlen)
