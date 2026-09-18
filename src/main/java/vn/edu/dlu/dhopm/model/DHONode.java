@@ -26,12 +26,12 @@ public class DHONode {
     }
 
     public void addEntry(int tid, int tlen) {
-        this.entries.add(new Entry(tid, tlen));
-        this.support++;
+        addEntry(new Entry(tid, tlen));
     }
 
     public void addEntry(Entry entry) {
         this.entries.add(entry);
+        this.entries.sort(java.util.Comparator.comparingInt(Entry::tid));
         this.support++;
     }
 

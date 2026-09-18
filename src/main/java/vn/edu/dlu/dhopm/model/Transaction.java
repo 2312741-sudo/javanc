@@ -2,6 +2,7 @@ package vn.edu.dlu.dhopm.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -14,7 +15,7 @@ public class Transaction {
 
     public Transaction(int tid, List<String> items) {
         this.tid = tid;
-        this.items = new ArrayList<>(Objects.requireNonNull(items));
+        this.items = new ArrayList<>(new LinkedHashSet<>(Objects.requireNonNull(items)));
         Collections.sort(this.items);
     }
 

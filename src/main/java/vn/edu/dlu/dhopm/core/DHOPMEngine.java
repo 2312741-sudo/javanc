@@ -69,6 +69,7 @@ public class DHOPMEngine {
      * Pha 2: Tai cau truc Global DHO-List theo TL va he so f moi nhat.
      */
     public synchronized void phase2_reconstruct(double f, int TL) {
+        validateDecayParameters(f);
         this.currentF = f;
         this.currentTL = TL;
         globalList.reconstruct(f, TL);
@@ -183,6 +184,11 @@ public class DHOPMEngine {
      * DO(X) = sum ( (|X| / tlen) * f^(TL - tid) )
      */
     public static double calculateDO(List<Entry> entries, int patternLength, double f, int TL) {
+        validateDecayParameters(f);
+        if (patternLength <= 0) {
+            throw new IllegalArgumentException("Pattern length must be positive");
+        }
+
         double sum = 0.0;
         for (Entry e : entries) {
             double occ = (double) patternLength / e.tlen();
@@ -190,6 +196,12 @@ public class DHOPMEngine {
             sum += occ * decay;
         }
         return sum;
+    }
+
+    private static void validateDecayParameters(double f) {
+        if (!Double.isFinite(f) || f <= 0.0 || f > 1.0) {
+            throw new IllegalArgumentException("Decay factor f must be in (0, 1]");
+        }
     }
 
     /**

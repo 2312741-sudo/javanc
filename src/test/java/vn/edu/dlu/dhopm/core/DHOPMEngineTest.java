@@ -143,4 +143,41 @@ class DHOPMEngineTest {
         assertEquals(5, engine.getGlobalList().getNode("A").getSupport());
         assertEquals(6, engine.getGlobalList().getNode("E").getSupport());
     }
+
+    @Test
+    @DisplayName("Ho tro TID den khong theo thu tu khi giao entry")
+    void testOutOfOrderTids() {
+        engine.phase1_constructOrUpdate(Arrays.asList(
+                new Transaction(2, Arrays.asList("A", "B")),
+                new Transaction(1, Arrays.asList("A", "C"))
+        ));
+
+        List<PatternResult> results = engine.phase3_mine(0.0, 1.0, 2);
+
+        PatternResult ca = results.stream()
+            .filter(result -> result.pattern().equals("CA"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(ca);
+        assertEquals(1, ca.support());
+    }
+
+    @Test
+    @DisplayName("Moi item chi duoc tinh mot lan trong transaction")
+    void testDuplicateItemsAreDeduplicated() {
+        Transaction transaction = new Transaction(1, Arrays.asList("A", "A", "B"));
+
+        assertEquals(Arrays.asList("A", "B"), transaction.getItems());
+        assertEquals(2, transaction.getLength());
+
+        engine.phase1_constructOrUpdate(Collections.singletonList(transaction));
+        assertEquals(1, engine.getGlobalList().getNode("A").getSupport());
+    }
+
+    @Test
+    @DisplayName("Tu choi he so suy giam ngoai khoang hop le")
+    void testInvalidDecayFactor() {
+        assertThrows(IllegalArgumentException.class, () -> engine.phase2_reconstruct(0.0, 1));
+        assertThrows(IllegalArgumentException.class, () -> engine.phase2_reconstruct(1.1, 1));
+    }
 }
