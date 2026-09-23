@@ -21,7 +21,7 @@ public class Lab1VerificationRunner {
         System.out.println("          TRƯỜNG ĐẠI HỌC ĐÀ LẠT - KHOA CÔNG NGHỆ THÔNG TIN");
         System.out.println("          MÔN HỌC: LẬP TRÌNH JAVA NÂNG CAO");
         System.out.println("          BÁO CÁO THỰC NGHIỆM BÀI THỰC HÀNH 02 (LAB 2)");
-        System.out.println("          Sinh viên: Nguyễn Thành Tâm | MSSV: 2312741");
+        System.out.println("          Sinh viên: Nguyễn Thanh Tâm | MSSV: 2312741");
         System.out.println("==========================================================================================");
         System.out.println();
 
