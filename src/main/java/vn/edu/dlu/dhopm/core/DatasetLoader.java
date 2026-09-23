@@ -92,4 +92,34 @@ public class DatasetLoader {
         list.add(new Transaction(15, Arrays.asList("B", "C", "D", "E")));
         return list;
     }
+
+    /**
+     * Tra ve tap giao dich DB0 (T1..T4) cua bai bao.
+     */
+    public static List<Transaction> getDB0Dataset() {
+        return Arrays.asList(
+                new Transaction(1, Arrays.asList("A", "C", "D", "E")),
+                new Transaction(2, Arrays.asList("A", "E", "F")),
+                new Transaction(3, Arrays.asList("B", "C", "D", "E")),
+                new Transaction(4, Arrays.asList("C", "D", "F"))
+        );
+    }
+
+    /**
+     * Tra ve tap giao dich TC7_Custom (10 giao dich) tu Lab 1.
+     */
+    public static List<Transaction> getTC7CustomDataset() {
+        return Arrays.asList(
+                new Transaction(1, Arrays.asList("A", "B", "C")),
+                new Transaction(2, Arrays.asList("A", "B")),
+                new Transaction(3, Arrays.asList("B", "C", "D")),
+                new Transaction(4, Arrays.asList("A", "C")),
+                new Transaction(5, Arrays.asList("A", "B", "C", "D")),
+                new Transaction(6, Arrays.asList("B", "D")),
+                new Transaction(7, Arrays.asList("A", "C")),
+                new Transaction(8, Arrays.asList("A", "B", "C")),
+                new Transaction(9, Arrays.asList("B", "C", "D")),
+                new Transaction(10, Arrays.asList("A", "B"))
+        );
+    }
 }

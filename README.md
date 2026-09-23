@@ -50,8 +50,11 @@ export PATH="$JAVA_HOME/bin:/Users/nthtam/.maven/apache-maven-3.9.6/bin:$PATH"
 # Di chuyển vào thư mục dự án
 cd "/Users/nthtam/Lưu trữ/javanangcao/dhopm-visualizer"
 
-# Chạy Unit Tests kiểm tra tính đúng đắn thuật toán
+# Chạy Unit Tests kiểm tra tính đúng đắn thuật toán (18 tests xác thực Lab 1)
 mvn test
+
+# Chạy Runner in bảng đối chiếu chi tiết Lab 1 vs Lab 2 ra màn hình
+mvn compile exec:java -Dexec.mainClass="vn.edu.dlu.dhopm.core.Lab1VerificationRunner"
 
 # Khởi chạy ứng dụng JavaFX trực tiếp
 mvn javafx:run
@@ -60,7 +63,8 @@ mvn javafx:run
 ### ✅ Kiểm chứng thực tế đã chạy
 
 Các lệnh dưới đây đã được thực hiện thành công trên máy hiện tại:
-- `mvn test` với Java 25 → `EXIT:0`
+- `mvn test` với Java 25 → `18/18 tests PASS, EXIT:0`
+- `mvn compile exec:java -Dexec.mainClass="vn.edu.dlu.dhopm.core.Lab1VerificationRunner"` → `BUILD SUCCESS`
 - `mvn javafx:run` → `BUILD SUCCESS`
 
 Đây là trạng thái hiện tại được xác nhận, không phải giả định từ mô tả.
