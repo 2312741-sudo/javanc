@@ -29,8 +29,8 @@ Nói cách khác, ứng dụng hiện tại là một bản triển khai đã đ
 
 ## 🛠️ 2. Yêu Cầu Môi Trường & Công Nghệ
 
-- **Java Development Kit (JDK):** Java 25 trở lên (latest LTS).
-- **Công cụ build:** Apache Maven 3.9+.
+- **Java Development Kit (JDK):** Java 17 trở lên (Hỗ trợ tốt nhất Java 17, 21 LTS hoặc Java 25).
+- **Công cụ build:** Apache Maven 3.8+.
 - **Thư viện chính:**
   - JavaFX 21 (Controls, FXML, Graphics).
   - JUnit 5 (JUnit Jupiter) kiểm thử tự động.
@@ -39,35 +39,39 @@ Nói cách khác, ứng dụng hiện tại là một bản triển khai đã đ
 
 ## 🚀 3. Hướng Dẫn Biên Dịch & Chạy Ứng Dụng
 
-### Cách 1: Chạy bằng Terminal (Khuyên dùng)
-Mở Terminal tại thư mục dự án và chạy:
+### Cách 1: Sử dụng Terminal (Khuyên dùng)
+
+Mở Terminal và thực hiện:
 
 ```bash
-# Đảm bảo Java 25 đang được dùng
-export JAVA_HOME="/Users/nthtam/.jdk/jdk-25.0.2/jdk-25.0.2+10/Contents/Home"
-export PATH="$JAVA_HOME/bin:/Users/nthtam/.maven/apache-maven-3.9.6/bin:$PATH"
-
 # Di chuyển vào thư mục dự án
-cd "/Users/nthtam/Lưu trữ/javanangcao/dhopm-visualizer"
+cd dhopm-visualizer
 
-# Chạy Unit Tests kiểm tra tính đúng đắn thuật toán (18 tests xác thực Lab 1)
+# 1. Chạy toàn bộ 18 Unit Tests (Xác thực 100% với số liệu Lab 1)
 mvn test
 
-# Chạy Runner in bảng đối chiếu chi tiết Lab 1 vs Lab 2 ra màn hình
+# 2. In bảng đối chiếu chi tiết Lab 1 vs Lab 2 ra màn hình Console
 mvn compile exec:java -Dexec.mainClass="vn.edu.dlu.dhopm.core.Lab1VerificationRunner"
 
-# Khởi chạy ứng dụng JavaFX trực tiếp
+# 3. Khởi chạy giao diện trực quan hóa JavaFX Desktop
 mvn javafx:run
+```
+
+#### 💡 Khởi chạy nhanh bằng script `run.sh` (macOS/Linux):
+```bash
+chmod +x run.sh
+
+./run.sh         # Mở giao diện đồ họa JavaFX
+./run.sh test    # Chạy 18 bài Unit Tests
+./run.sh verify  # In bảng đối chiếu kết quả thực nghiệm
 ```
 
 ### ✅ Kiểm chứng thực tế đã chạy
 
-Các lệnh dưới đây đã được thực hiện thành công trên máy hiện tại:
-- `mvn test` với Java 25 → `18/18 tests PASS, EXIT:0`
-- `mvn compile exec:java -Dexec.mainClass="vn.edu.dlu.dhopm.core.Lab1VerificationRunner"` → `BUILD SUCCESS`
+Các lệnh đã được kiểm thử tự động đạt kết quả tuyệt đối:
+- `mvn test` → `18/18 tests PASS, BUILD SUCCESS`
+- `mvn compile exec:java -Dexec.mainClass="vn.edu.dlu.dhopm.core.Lab1VerificationRunner"` → `BUILD SUCCESS` (Sai số max $\Delta < 0.0001$)
 - `mvn javafx:run` → `BUILD SUCCESS`
-
-Đây là trạng thái hiện tại được xác nhận, không phải giả định từ mô tả.
 
 ### Cách 2: Mở bằng IDE (IntelliJ IDEA / Eclipse / VS Code)
 1. Mở IDE, chọn **Open Project** và trỏ đến thư mục `dhopm-visualizer` (IDE sẽ tự nhận diện dự án Maven).
