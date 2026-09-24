@@ -2,7 +2,7 @@
 > **Đồ Án Môn Học:** Lập Trình Java Nâng Cao  
 > **Trường:** Đại Học Đà Lạt (DLU) - Khoa Công Nghệ Thông Tin  
 > **Sinh viên thực hiện:** Nguyễn Thanh Tâm – MSSV: 2312741  
-> **Thành viên nhóm:** Nguyễn Thanh Sơn ([Tson-dev/JVNC](https://github.com/Tson-dev/JVNC))  
+> **Thành viên nhóm:** Nguyễn Hữu Trung Sơn ([Tson-dev/JVNC](https://github.com/Tson-dev/JVNC))  
 > **Dựa trên bài báo:** *"Damped window based high occupancy pattern mining with one scanning of data streams"*,  
 > Engineering Applications of Artificial Intelligence (EAAI), Vol. 174, 2026.  
 > DOI: [10.1016/j.engappai.2026.114511](https://doi.org/10.1016/j.engappai.2026.114511)
