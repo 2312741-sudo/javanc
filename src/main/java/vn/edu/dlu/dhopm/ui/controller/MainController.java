@@ -178,15 +178,19 @@ public class MainController implements Initializable {
             }
         });
 
-        // 2. ComboBox Limit
+        // 2. ComboBox Limit (Editable: vừa chọn nhanh, vừa tự gõ số tùy ý)
+        cbTsonLimit.setEditable(true);
         cbTsonLimit.setItems(FXCollections.observableArrayList(
-                "Toàn bộ (Đầy đủ)",
+                "Toàn bộ (0)",
                 "1,000 tx",
                 "5,000 tx",
                 "10,000 tx",
-                "50,000 tx"
+                "25,000 tx",
+                "50,000 tx",
+                "100,000 tx"
         ));
-        cbTsonLimit.setValue("Toàn bộ (Đầy đủ)");
+        cbTsonLimit.setValue("Toàn bộ (0)");
+        cbTsonLimit.getEditor().setPromptText("Tự gõ số (VD: 2500)");
 
         // 3. Nút Browse file ngoài
         btnBrowseDataset.setOnAction(e -> handleBrowseDataset());
@@ -238,13 +242,26 @@ public class MainController implements Initializable {
     }
 
     private long resolveLimit() {
-        String val = cbTsonLimit.getValue();
-        if (val == null || val.startsWith("Toàn bộ")) return 0;
-        if (val.startsWith("1,000")) return 1000;
-        if (val.startsWith("5,000")) return 5000;
-        if (val.startsWith("10,000")) return 10000;
-        if (val.startsWith("50,000")) return 50000;
-        return 0;
+        String val = null;
+        if (cbTsonLimit.getEditor() != null && cbTsonLimit.getEditor().getText() != null) {
+            val = cbTsonLimit.getEditor().getText().trim();
+        }
+        if (val == null || val.isBlank()) {
+            val = cbTsonLimit.getValue();
+        }
+        if (val == null || val.isBlank() || val.startsWith("Toàn bộ") || val.equalsIgnoreCase("all") || val.equals("0")) {
+            return 0;
+        }
+
+        // Trích xuất số nguyên từ chuỗi người dùng gõ (ví dụ "2500", "1,000 tx", "5000 dòng")
+        String cleaned = val.replaceAll("[^0-9]", "");
+        if (cleaned.isEmpty()) return 0;
+        try {
+            long parsed = Long.parseLong(cleaned);
+            return Math.max(0, parsed);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     // ── Tson Actions (Lệnh CLI biến thành Nút Bấm) ───────────────────────────

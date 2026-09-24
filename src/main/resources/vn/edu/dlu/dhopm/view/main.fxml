@@ -69,8 +69,8 @@
                     <!-- Limit & Browse -->
                     <HBox spacing="8.0" alignment="CENTER_LEFT">
                         <VBox spacing="4.0" HBox.hgrow="ALWAYS">
-                            <Label text="Giới hạn tx:" styleClass="field-label"/>
-                            <ComboBox fx:id="cbTsonLimit" maxWidth="Infinity" prefHeight="30.0"/>
+                            <Label text="Giới hạn tx (tự gõ số):" styleClass="field-label"/>
+                            <ComboBox fx:id="cbTsonLimit" editable="true" promptText="VD: 2500 (0=hết)" maxWidth="Infinity" prefHeight="30.0"/>
                         </VBox>
                         <VBox spacing="4.0">
                             <Label text="File ngoài:" styleClass="field-label"/>
