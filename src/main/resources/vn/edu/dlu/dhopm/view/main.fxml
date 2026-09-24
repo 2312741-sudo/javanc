@@ -40,6 +40,18 @@
                     <Insets top="16.0" right="16.0" bottom="16.0" left="16.0"/>
                 </padding>
 
+                <!-- PANEL 0: ENGINE SELECTOR -->
+                <VBox spacing="10.0" styleClass="panel-card">
+                    <Label text="🔌 CHỌN ENGINE" styleClass="panel-title"/>
+                    <ComboBox fx:id="cbEngineMode" maxWidth="Infinity" prefHeight="34.0"/>
+                    <Label fx:id="lblEngineName" text="Tâm-Simulation" styleClass="help-text" style="-fx-text-fill: #2563eb; -fx-font-weight: bold;"/>
+                    <HBox alignment="CENTER_LEFT" spacing="8.0">
+                        <Label text="Pha cuối:" styleClass="stat-label"/>
+                        <Label fx:id="lblLastPhase" text="—" styleClass="stat-number" style="-fx-font-size: 11px;"/>
+                    </HBox>
+                    <ProgressBar fx:id="progressMining" maxWidth="Infinity" progress="0.0" prefHeight="8.0"/>
+                </VBox>
+
                 <!-- PANEL 1: THAM SO THUAT TOAN -->
                 <VBox spacing="12.0" styleClass="panel-card">
                     <Label text="⚙️ THAM SỐ THUẬT TOÁN" styleClass="panel-title"/>

@@ -11,6 +11,9 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.layout.FlowPane;
+import vn.edu.dlu.dhopm.bridge.BridgeEngine;
+import vn.edu.dlu.dhopm.bridge.EngineFactory;
+import vn.edu.dlu.dhopm.bridge.EngineMode;
 import vn.edu.dlu.dhopm.core.DatasetLoader;
 import vn.edu.dlu.dhopm.core.DHOPMEngine;
 import vn.edu.dlu.dhopm.core.StreamSimulator;
@@ -25,8 +28,16 @@ import java.util.ResourceBundle;
 
 /**
  * Controller dieu khien toan bo giao dien JavaFX cho DHOPM Visualizer.
+ * Version 2.0: Tích hợp Bridge Engine – hỗ trợ chuyển đổi giữa
+ * Tâm Simulation Engine và Tson V1 Standard Engine tại runtime.
  */
 public class MainController implements Initializable {
+
+    // ── Engine Selector ──────────────────────────────────────────────────────
+    @FXML private ComboBox<EngineMode> cbEngineMode;
+    @FXML private Label lblEngineName;
+    @FXML private Label lblLastPhase;
+    @FXML private ProgressBar progressMining;
 
     // Controls & Sliders
     @FXML private Slider sliderF;
@@ -62,28 +73,109 @@ public class MainController implements Initializable {
 
     @FXML private LineChart<String, Number> lineChartDO;
 
-    // Backend engine & data
-    private DHOPMEngine engine;
+    // ── Backend ──────────────────────────────────────────────────────────────
+    /** Engine Tâm (dùng cho step-by-step animation + DHO-List visualization) */
+    private DHOPMEngine tamEngine;
     private StreamSimulator streamSimulator;
+
+    /** Bridge Engine hiện tại (có thể là Tâm hoặc Tson) */
+    private BridgeEngine bridgeEngine;
+
     private final ObservableList<PatternResult> tableData = FXCollections.observableArrayList();
+    private EngineMode currentMode = EngineMode.TAM_SIMULATION;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        initEngine();
+        initEngineSelectorPanel();
+        initTamEngine();
         initTableView();
         initEventHandlers();
         loadInitialPaperData();
     }
 
-    private void initEngine() {
-        engine = new DHOPMEngine();
-        streamSimulator = new StreamSimulator(engine);
+    // ── Engine Selector ──────────────────────────────────────────────────────
 
-        // Lang nghe su kien khi co batch moi qua stream
-        engine.addStreamListener((newBatch, currentTL) -> Platform.runLater(() -> {
-            updateUI();
-        }));
+    private void initEngineSelectorPanel() {
+        cbEngineMode.setItems(FXCollections.observableArrayList(EngineMode.values()));
+        cbEngineMode.setValue(EngineMode.TAM_SIMULATION);
+
+        // Đổi engine khi chọn từ ComboBox
+        cbEngineMode.setOnAction(e -> switchEngine(cbEngineMode.getValue()));
+
+        // Format tên hiển thị
+        cbEngineMode.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(EngineMode item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getDisplayName());
+            }
+        });
+        cbEngineMode.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(EngineMode item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getDisplayName());
+            }
+        });
     }
+
+    private void switchEngine(EngineMode mode) {
+        if (mode == null || mode == currentMode) return;
+        currentMode = mode;
+
+        // Dừng stream nếu đang chạy
+        streamSimulator.stop();
+        btnStartStream.setDisable(false);
+        btnPauseStream.setDisable(true);
+        lblStreamStatus.setText("Sẵn sàng");
+        lblStreamStatus.setStyle("-fx-text-fill: #2563eb;");
+
+        // Tạo BridgeEngine mới theo mode được chọn
+        buildBridgeEngine();
+
+        // Nạp lại dữ liệu gốc vào engine mới
+        loadInitialPaperData();
+
+        // Cập nhật nhãn engine
+        lblEngineName.setText("⚡ " + bridgeEngine.engineName());
+
+        // Bật/tắt nút step (chỉ Tâm mới có animation step-by-step)
+        boolean isTam = mode == EngineMode.TAM_SIMULATION;
+        btnStartStream.setDisable(!isTam);
+        btnStepStream.setDisable(!isTam);
+        lblSortOrder.setVisible(isTam);
+    }
+
+    private void buildBridgeEngine() {
+        double f = sliderF != null ? sliderF.getValue() : 0.9;
+        double ratio = sliderMinSup != null ? sliderMinSup.getValue() : 0.15;
+        bridgeEngine = EngineFactory.create(currentMode, ratio, f);
+
+        // Gắn Phase Observer: hiển thị pha + thời gian lên lblLastPhase
+        bridgeEngine.onPhaseUpdate((phase, ms) ->
+                lblLastPhase.setText(phase + "  (" + String.format("%.2f", ms) + " ms)")
+        );
+
+        // Gắn Progress Observer: cập nhật ProgressBar
+        bridgeEngine.onMiningProgress(fraction ->
+                progressMining.setProgress(fraction)
+        );
+    }
+
+    // ── Tâm Engine (step-by-step, DHO-List visualization) ────────────────────
+
+    private void initTamEngine() {
+        tamEngine = new DHOPMEngine();
+        streamSimulator = new StreamSimulator(tamEngine);
+
+        tamEngine.addStreamListener((newBatch, currentTL) ->
+                Platform.runLater(this::updateUI));
+
+        // Tạo bridge engine mặc định (Tâm mode)
+        buildBridgeEngine();
+    }
+
+    // ── TableView ────────────────────────────────────────────────────────────
 
     private void initTableView() {
         colPattern.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().pattern()));
@@ -98,7 +190,7 @@ public class MainController implements Initializable {
                         .orElse("")
         ));
 
-        // Format mau sac dong theo trang thai DHOP / Pruned
+        // Format màu sắc dòng theo trạng thái DHOP / Pruned
         tableResults.setRowFactory(tv -> new TableRow<>() {
             @Override
             protected void updateItem(PatternResult item, boolean empty) {
@@ -118,6 +210,8 @@ public class MainController implements Initializable {
         tableResults.setItems(tableData);
     }
 
+    // ── Event Handlers ────────────────────────────────────────────────────────
+
     private void initEventHandlers() {
         // Slider f
         sliderF.valueProperty().addListener((obs, oldVal, newVal) -> {
@@ -135,7 +229,7 @@ public class MainController implements Initializable {
 
         // Buttons
         btnStartStream.setOnAction(e -> {
-            streamSimulator.start(1500); // bom moi 1.5 giay
+            streamSimulator.start(1500);
             btnStartStream.setDisable(true);
             btnPauseStream.setDisable(false);
             lblStreamStatus.setText("Đang chạy ●");
@@ -155,102 +249,122 @@ public class MainController implements Initializable {
             if (t != null) {
                 updateUI();
             } else {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Đã bơm hết toàn bộ giao dịch trong luồng mẫu!");
-                alert.show();
+                new Alert(Alert.AlertType.INFORMATION, "Đã bơm hết toàn bộ giao dịch trong luồng mẫu!").show();
             }
         });
 
-        btnReset.setOnAction(e -> loadInitialPaperData());
+        btnReset.setOnAction(e -> {
+            bridgeEngine.reset();
+            loadInitialPaperData();
+        });
     }
 
-    /**
-     * Nap 8 giao dich goc cua bai bao de khoi dau.
-     */
+    // ── Data Loading ──────────────────────────────────────────────────────────
+
     private void loadInitialPaperData() {
         streamSimulator.stop();
-        btnStartStream.setDisable(false);
         btnPauseStream.setDisable(true);
         lblStreamStatus.setText("Sẵn sàng");
         lblStreamStatus.setStyle("-fx-text-fill: #2563eb;");
 
-        engine.reset();
-        List<Transaction> paperData = DatasetLoader.getPaperDataset();
-        engine.phase1_constructOrUpdate(paperData);
+        // Reset cả 2 engine
+        tamEngine.reset();
+        if (bridgeEngine != null) bridgeEngine.reset();
 
-        // Nap hang doi cac giao dich tiep theo cho stream
+        List<Transaction> paperData = DatasetLoader.getPaperDataset();
+
+        // Nạp vào Tâm engine (để DHO-List visualization, stream)
+        tamEngine.phase1_constructOrUpdate(paperData);
         streamSimulator.setStreamQueue(DatasetLoader.getSyntheticStreamDataset());
+
+        // Nạp vào Bridge engine (để mining)
+        if (bridgeEngine != null) {
+            bridgeEngine.feedTransactions(paperData);
+        }
 
         sliderF.setValue(0.90);
         sliderMinSup.setValue(0.15);
+        progressMining.setProgress(0);
+        lblLastPhase.setText("—");
+        lblEngineName.setText("⚡ " + (bridgeEngine != null ? bridgeEngine.engineName() : "Tâm-Simulation"));
 
         updateUI();
     }
 
-    /**
-     * Tinh toan lai toan bo khi f hoac minSup thay doi, hoac khi co du lieu moi.
-     */
+    // ── Render ────────────────────────────────────────────────────────────────
+
     private void recalculateAndRender() {
         double f = sliderF.getValue();
         double ratio = sliderMinSup.getValue();
-        int totalTrans = engine.getAllTransactions().size();
+        int totalTrans = tamEngine.getAllTransactions().size();
         double minSup = totalTrans * ratio;
 
         lblAbsoluteMinSup.setText(String.format("%.2f", minSup));
 
-        // Khai pha DFS
-        int TL = engine.getCurrentTL();
-        List<PatternResult> results = engine.phase3_mine(minSup, f, TL);
-        List<PatternResult> dhops = results.stream().filter(PatternResult::isDHOP).toList();
+        List<PatternResult> results;
+        if (currentMode == EngineMode.TAM_SIMULATION || bridgeEngine == null) {
+            // ── Chế độ Tâm: khai phá trực tiếp qua DHOPMEngine (đầy đủ DFS tree)
+            int TL = tamEngine.getCurrentTL();
+            results = tamEngine.phase3_mine(minSup, f, TL);
 
-        // Cap nhat cac Label thong ke
-        lblTL.setText("T" + TL);
+            lblTL.setText("T" + TL);
+            updateDHONodes(f, TL, minSup);
+        } else {
+            // ── Chế độ Tson: dùng Bridge engine
+            bridgeEngine.reset();
+            bridgeEngine.feedTransactions(tamEngine.getAllTransactions());
+            results = bridgeEngine.executeAndGetResults();
+
+            lblTL.setText("T" + bridgeEngine.lastTid());
+            // DHO-List nodes vẫn từ Tâm engine để visualize
+            updateDHONodes(f, tamEngine.getCurrentTL(), minSup);
+        }
+
+        // Thống kê
+        List<PatternResult> dhops = results.stream().filter(PatternResult::isDHOP).toList();
         lblTransCount.setText(String.valueOf(totalTrans));
         lblDhopCount.setText(dhops.size() + " mẫu");
         lblVisitedCount.setText(results.size() + " mẫu");
 
         long prunedCount = results.stream().filter(PatternResult::isPruned).count();
-        lblPrunedCount.setText(prunedCount + " mẫu (" + String.format("%.1f%%", ((double) prunedCount / results.size()) * 100) + ")");
+        String prunedText = results.isEmpty() ? "0 mẫu"
+                : prunedCount + " mẫu (" + String.format("%.1f%%", ((double) prunedCount / results.size()) * 100) + ")";
+        lblPrunedCount.setText(prunedText);
 
-        // Cap nhat thu tu sap xep Support
-        List<DHONode> sortedNodes = engine.getGlobalList().getSortedNodes();
+        // TableView + Chart
+        tableData.setAll(results);
+        updateChart(results, f, minSup);
+    }
+
+    private void updateDHONodes(double f, int TL, double minSup) {
+        List<DHONode> sortedNodes = tamEngine.getGlobalList().getSortedNodes();
+
         StringBuilder orderSb = new StringBuilder();
         for (int i = 0; i < sortedNodes.size(); i++) {
             orderSb.append(sortedNodes.get(i).getItemName())
                    .append(" (S=").append(sortedNodes.get(i).getSupport()).append(")");
-            if (i < sortedNodes.size() - 1) {
-                orderSb.append(" ≺ ");
-            }
+            if (i < sortedNodes.size() - 1) orderSb.append(" ≺ ");
         }
         lblSortOrder.setText(orderSb.toString());
 
-        // 1. Ve danh sach DHO-List Nodes
         dhoNodesPane.getChildren().clear();
         for (DHONode node : sortedNodes) {
             dhoNodesPane.getChildren().add(new DHONodeCard(node, f, TL, minSup));
         }
-
-        // 2. Cap nhat TableView
-        tableData.setAll(results);
-
-        // 3. Cap nhat Line Chart DO
-        updateChart(results, f, minSup);
     }
 
     private void updateChart(List<PatternResult> results, double f, double minSup) {
         lineChartDO.getData().clear();
 
-        // Series 1: DO cua cac Item don le theo thu tu sap xep
         XYChart.Series<String, Number> itemSeries = new XYChart.Series<>();
         itemSeries.setName("DO(Items đơn lẻ)");
-
-        for (DHONode node : engine.getGlobalList().getSortedNodes()) {
+        for (DHONode node : tamEngine.getGlobalList().getSortedNodes()) {
             itemSeries.getData().add(new XYChart.Data<>(node.getItemName(), node.getDoValue()));
         }
 
-        // Series 2: Nguong minSup
         XYChart.Series<String, Number> minSupSeries = new XYChart.Series<>();
         minSupSeries.setName("Ngưỡng minSup (" + String.format("%.2f", minSup) + ")");
-        for (DHONode node : engine.getGlobalList().getSortedNodes()) {
+        for (DHONode node : tamEngine.getGlobalList().getSortedNodes()) {
             minSupSeries.getData().add(new XYChart.Data<>(node.getItemName(), minSup));
         }
 
