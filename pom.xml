@@ -36,6 +36,19 @@
             <version>${javafx.version}</version>
         </dependency>
 
+        <!-- ★ BRIDGE: Tson Engine (dhopm-common + dhopm-v1-standard) -->
+        <!-- Cài trước: cd /tmp/tson_jvnc/implementation && JAVA_HOME=... mvn install -DskipTests -->
+        <dependency>
+            <groupId>org.jvnc.dhopm</groupId>
+            <artifactId>dhopm-common</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jvnc.dhopm</groupId>
+            <artifactId>dhopm-v1-standard</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+
         <!-- JUnit 5 Testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
