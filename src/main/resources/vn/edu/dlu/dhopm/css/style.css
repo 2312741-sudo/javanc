@@ -154,6 +154,63 @@
     -fx-background-color: #f1f5f9;
 }
 
+.btn-purple {
+    -fx-background-color: #7c3aed;
+    -fx-text-fill: white;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 14 8 14;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+.btn-purple:hover {
+    -fx-background-color: #6d28d9;
+}
+
+.btn-emerald {
+    -fx-background-color: #059669;
+    -fx-text-fill: white;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 14 8 14;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+.btn-emerald:hover {
+    -fx-background-color: #047857;
+}
+
+.btn-indigo {
+    -fx-background-color: #4f46e5;
+    -fx-text-fill: white;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 14 8 14;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+}
+.btn-indigo:hover {
+    -fx-background-color: #4338ca;
+}
+
+.kpi-card {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10 14 10 14;
+}
+.kpi-title {
+    -fx-font-size: 11px;
+    -fx-text-fill: #64748b;
+    -fx-font-weight: 600;
+}
+.kpi-value {
+    -fx-font-size: 17px;
+    -fx-text-fill: #0f172a;
+    -fx-font-weight: bold;
+}
+
 .status-badge {
     -fx-background-color: #dbeafe;
     -fx-text-fill: #1d4ed8;

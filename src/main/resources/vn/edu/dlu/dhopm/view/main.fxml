@@ -52,6 +52,47 @@
                     <ProgressBar fx:id="progressMining" maxWidth="Infinity" progress="0.0" prefHeight="8.0"/>
                 </VBox>
 
+                <!-- PANEL 0.5: TSON FIMI DATASETS & TOOLS -->
+                <VBox spacing="10.0" styleClass="panel-card" style="-fx-border-color: #cbd5e1; -fx-border-width: 1.5;">
+                    <HBox alignment="CENTER_LEFT" spacing="6.0">
+                        <Label text="📦 TẬP DỮ LIỆU FIMI (TSON)" styleClass="panel-title"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label text="V1 CLI" styleClass="status-badge" style="-fx-background-color: #ede9fe; -fx-text-fill: #7c3aed;"/>
+                    </HBox>
+
+                    <!-- ComboBox Dataset -->
+                    <VBox spacing="4.0">
+                        <Label text="Chọn Dataset chuẩn:" styleClass="field-label"/>
+                        <ComboBox fx:id="cbTsonDataset" maxWidth="Infinity" prefHeight="30.0"/>
+                    </VBox>
+
+                    <!-- Limit & Browse -->
+                    <HBox spacing="8.0" alignment="CENTER_LEFT">
+                        <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                            <Label text="Giới hạn tx:" styleClass="field-label"/>
+                            <ComboBox fx:id="cbTsonLimit" maxWidth="Infinity" prefHeight="30.0"/>
+                        </VBox>
+                        <VBox spacing="4.0">
+                            <Label text="File ngoài:" styleClass="field-label"/>
+                            <Button fx:id="btnBrowseDataset" text="📂 Chọn..." prefHeight="30.0" styleClass="btn-outline"/>
+                        </VBox>
+                    </HBox>
+
+                    <Separator/>
+
+                    <!-- Actions directly matching Tson's README commands -->
+                    <Label text="Chạy lệnh (không cần terminal):" styleClass="field-label" style="-fx-font-weight: bold;"/>
+                    
+                    <Button fx:id="btnTsonMine" text="🚀 Khai Phá Dataset (Mine)" maxWidth="Infinity" prefHeight="34.0" styleClass="btn-primary" style="-fx-background-color: #2563eb;"/>
+                    
+                    <HBox spacing="6.0">
+                        <Button fx:id="btnTsonInspect" text="📊 Thống kê (Inspect)" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="btn-emerald"/>
+                        <Button fx:id="btnTsonDetail" text="🔬 Top DO (Detail)" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="btn-indigo"/>
+                    </HBox>
+                    
+                    <Button fx:id="btnTsonGolden" text="🏆 Chạy TestKit Vàng (Golden TC1-8)" maxWidth="Infinity" styleClass="btn-purple"/>
+                </VBox>
+
                 <!-- PANEL 1: THAM SO THUAT TOAN -->
                 <VBox spacing="12.0" styleClass="panel-card">
                     <Label text="⚙️ THAM SỐ THUẬT TOÁN" styleClass="panel-title"/>
@@ -142,7 +183,7 @@
 
     <!-- CENTER: TABS -->
     <center>
-        <TabPane tabClosingPolicy="UNAVAILABLE" styleClass="main-tab-pane">
+        <TabPane fx:id="mainTabPane" tabClosingPolicy="UNAVAILABLE" styleClass="main-tab-pane">
             <!-- TAB 1: DHO-LIST NODES -->
             <Tab text="🗂️ Global DHO-List Nodes">
                 <VBox spacing="12.0">
@@ -203,6 +244,51 @@
                             <NumberAxis label="Giá trị DO"/>
                         </yAxis>
                     </LineChart>
+                </VBox>
+            </Tab>
+
+            <!-- TAB 4: TSON CONSOLE & BENCHMARK -->
+            <Tab text="💻 Console &amp; Benchmark Tson">
+                <VBox spacing="14.0">
+                    <padding>
+                        <Insets top="14.0" right="16.0" bottom="14.0" left="16.0"/>
+                    </padding>
+
+                    <!-- 4 KPI CARDS -->
+                    <HBox spacing="12.0">
+                        <VBox styleClass="kpi-card" HBox.hgrow="ALWAYS" spacing="4.0">
+                            <Label text="⏱️ TỔNG THỜI GIAN" styleClass="kpi-title"/>
+                            <Label fx:id="lblKpiTime" text="— ms" styleClass="kpi-value" style="-fx-text-fill: #2563eb;"/>
+                            <Label fx:id="lblKpiPhases" text="Constr: — | Reconst: — | Mine: —" styleClass="help-text"/>
+                        </VBox>
+                        <VBox styleClass="kpi-card" HBox.hgrow="ALWAYS" spacing="4.0">
+                            <Label text="💾 BỘ NHỚ PEAK HEAP" styleClass="kpi-title"/>
+                            <Label fx:id="lblKpiHeap" text="— MB" styleClass="kpi-value" style="-fx-text-fill: #059669;"/>
+                            <Label text="Đo đạc mức JVM Heap" styleClass="help-text"/>
+                        </VBox>
+                        <VBox styleClass="kpi-card" HBox.hgrow="ALWAYS" spacing="4.0">
+                            <Label text="🎯 SỐ MẪU DHOP" styleClass="kpi-title"/>
+                            <Label fx:id="lblKpiPatterns" text="— mẫu" styleClass="kpi-value" style="-fx-text-fill: #7c3aed;"/>
+                            <Label fx:id="lblKpiMinSup" text="minSup: —" styleClass="help-text"/>
+                        </VBox>
+                        <VBox styleClass="kpi-card" HBox.hgrow="ALWAYS" spacing="4.0">
+                            <Label text="⚡ TỐC ĐỘ (THROUGHPUT)" styleClass="kpi-title"/>
+                            <Label fx:id="lblKpiThroughput" text="— tx/s" styleClass="kpi-value" style="-fx-text-fill: #ea580c;"/>
+                            <Label fx:id="lblKpiTrans" text="Tổng giao dịch: —" styleClass="help-text"/>
+                        </VBox>
+                    </HBox>
+
+                    <!-- CONSOLE OUTPUT -->
+                    <VBox spacing="8.0" VBox.vgrow="ALWAYS">
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <Label text="🖥️ Nhật ký thực thi (Terminal Output tương đương CLI):" style="-fx-font-weight: bold; -fx-text-fill: #334155;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="btnCopyConsole" text="📋 Sao chép log" styleClass="btn-outline"/>
+                            <Button fx:id="btnClearConsole" text="🗑️ Xóa log" styleClass="btn-outline"/>
+                        </HBox>
+                        <TextArea fx:id="txtTsonConsole" VBox.vgrow="ALWAYS" editable="false" wrapText="true"
+                                  style="-fx-font-family: 'JetBrains Mono', 'Menlo', 'Courier New', monospace; -fx-font-size: 12px; -fx-control-inner-background: #0f172a; -fx-text-fill: #4ade80; -fx-highlight-fill: #334155;"/>
+                    </VBox>
                 </VBox>
             </Tab>
         </TabPane>
