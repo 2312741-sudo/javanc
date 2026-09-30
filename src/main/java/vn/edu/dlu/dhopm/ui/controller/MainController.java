@@ -18,6 +18,7 @@ import javafx.stage.FileChooser;
 import vn.edu.dlu.dhopm.bridge.BridgeEngine;
 import vn.edu.dlu.dhopm.bridge.EngineFactory;
 import vn.edu.dlu.dhopm.bridge.EngineMode;
+import vn.edu.dlu.dhopm.bridge.TableFormatter;
 import vn.edu.dlu.dhopm.bridge.TsonToolsService;
 import vn.edu.dlu.dhopm.bridge.TsonToolsService.DatasetItem;
 import vn.edu.dlu.dhopm.bridge.TsonToolsService.MineExecutionResult;
@@ -437,21 +438,17 @@ public class MainController implements Initializable {
         task.setOnSucceeded(e -> {
             setButtonsDisable(false);
             MineExecutionResult res = task.getValue();
-            StringBuilder sb = new StringBuilder();
-            sb.append(String.format("=== CHI TIẾT TOP 15 MẪU THEO DO (DETAIL DEBUG) ===%n"));
-            sb.append(String.format("  Tập tin: %s | ∂=%.4f | f=%.2f | Tổng mẫu: %,d%n",
-                    path.getFileName(), partial, f, res.patternCount()));
-            sb.append(String.format("--------------------------------------------------%n"));
-            sb.append(String.format("  %-24s %-12s %-10s%n", "Mẫu (Itemset)", "DO", "Support (TIDs)"));
-            sb.append(String.format("--------------------------------------------------%n"));
+            int limitTop = Math.min(20, res.uiPatterns().size());
+            List<PatternResult> topPatterns = res.uiPatterns().subList(0, limitTop);
 
-            int limitTop = Math.min(15, res.uiPatterns().size());
-            for (int i = 0; i < limitTop; i++) {
-                PatternResult p = res.uiPatterns().get(i);
-                sb.append(String.format("  %-24s %-12.6f %-10d%n", p.pattern(), p.doValue(), p.support()));
-            }
-            sb.append(String.format("==================================================%n"));
-            appendConsoleLog(sb.toString());
+            String tableOutput = TableFormatter.formatDetailTable(
+                    path.getFileName().toString(),
+                    partial,
+                    f,
+                    res.patternCount(),
+                    topPatterns
+            );
+            appendConsoleLog(tableOutput);
 
             tableData.setAll(res.uiPatterns());
         });
