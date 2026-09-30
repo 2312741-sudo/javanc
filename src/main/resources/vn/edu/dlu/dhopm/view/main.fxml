@@ -247,8 +247,8 @@
                 </VBox>
             </Tab>
 
-            <!-- TAB 4: TSON CONSOLE & BENCHMARK -->
-            <Tab text="💻 Console &amp; Benchmark Tson">
+            <!-- TAB 4: KẾT QUẢ & BENCHMARK TSON (UI THAY VÌ TERMINAL) -->
+            <Tab text="📊 Kết Quả &amp; Benchmark Tson">
                 <VBox spacing="14.0">
                     <padding>
                         <Insets top="14.0" right="16.0" bottom="14.0" left="16.0"/>
@@ -278,17 +278,82 @@
                         </VBox>
                     </HBox>
 
-                    <!-- CONSOLE OUTPUT -->
-                    <VBox spacing="8.0" VBox.vgrow="ALWAYS">
-                        <HBox alignment="CENTER_LEFT" spacing="10.0">
-                            <Label text="🖥️ Nhật ký thực thi (Terminal Output tương đương CLI):" style="-fx-font-weight: bold; -fx-text-fill: #334155;"/>
-                            <Region HBox.hgrow="ALWAYS"/>
-                            <Button fx:id="btnCopyConsole" text="📋 Sao chép log" styleClass="btn-outline"/>
-                            <Button fx:id="btnClearConsole" text="🗑️ Xóa log" styleClass="btn-outline"/>
+                    <!-- VIEW SWITCHER & SUB-HEADER -->
+                    <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-padding: 8 12 8 12; -fx-background-color: #f1f5f9; -fx-background-radius: 8;">
+                        <Label fx:id="lblTsonViewTitle" text="📋 Danh Sách Mẫu Chi Tiết (Tson V1 Engine)" style="-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #0f172a;"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <HBox spacing="6.0">
+                            <Button fx:id="btnViewPatterns" text="📋 Bảng Mẫu DHOPs" styleClass="btn-outline"/>
+                            <Button fx:id="btnViewInspect" text="📊 Thống Kê Items" styleClass="btn-outline"/>
+                            <Button fx:id="btnViewGolden" text="🏆 Bộ TestKit Vàng" styleClass="btn-outline"/>
                         </HBox>
-                        <TextArea fx:id="txtTsonConsole" VBox.vgrow="ALWAYS" editable="false" wrapText="true"
-                                  style="-fx-font-family: 'JetBrains Mono', 'Menlo', 'Courier New', monospace; -fx-font-size: 12px; -fx-control-inner-background: #0f172a; -fx-text-fill: #4ade80; -fx-highlight-fill: #334155;"/>
-                    </VBox>
+                    </HBox>
+
+                    <!-- MAIN STACKED CONTENT AREA -->
+                    <StackPane VBox.vgrow="ALWAYS">
+                        <!-- VIEW 1: BẢNG MẪU DHOPs TSON -->
+                        <TableView fx:id="tblTsonPatterns" styleClass="results-table">
+                            <columns>
+                                <TableColumn fx:id="colTsonIndex" text="STT" prefWidth="55.0" style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colTsonPattern" text="Mẫu mục chiếm dụng (Itemset X)" prefWidth="380.0"/>
+                                <TableColumn fx:id="colTsonDO" text="Độ đo DO(X)" prefWidth="120.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;"/>
+                                <TableColumn fx:id="colTsonSupport" text="Support (tx)" prefWidth="100.0" style="-fx-alignment: CENTER-RIGHT;"/>
+                                <TableColumn fx:id="colTsonLength" text="Độ dài |X|" prefWidth="80.0" style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colTsonTids" text="Danh sách giao dịch (TIDs)" prefWidth="250.0"/>
+                            </columns>
+                            <columnResizePolicy>
+                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                            </columnResizePolicy>
+                        </TableView>
+
+                        <!-- VIEW 2: BẢNG THỐNG KÊ DATASET (INSPECT) -->
+                        <VBox fx:id="boxTsonInspect" spacing="12.0" visible="false">
+                            <!-- Card tổng quan thuộc tính dataset -->
+                            <HBox spacing="12.0">
+                                <VBox spacing="6.0" styleClass="kpi-card" HBox.hgrow="ALWAYS">
+                                    <Label text="THÔNG TIN TẬP DỮ LIỆU" styleClass="kpi-title"/>
+                                    <HBox styleClass="stat-row"><Label text="Tập tin:" styleClass="stat-label"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="lblInspectFile" text="—" styleClass="stat-number"/></HBox>
+                                    <HBox styleClass="stat-row"><Label text="Tổng số giao dịch:" styleClass="stat-label"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="lblInspectTx" text="—" styleClass="stat-number"/></HBox>
+                                    <HBox styleClass="stat-row"><Label text="TID mới nhất (TL):" styleClass="stat-label"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="lblInspectTL" text="—" styleClass="stat-number"/></HBox>
+                                </VBox>
+                                <VBox spacing="6.0" styleClass="kpi-card" HBox.hgrow="ALWAYS">
+                                    <Label text="ĐẶC TRƯNG MẶT HÀNG" styleClass="kpi-title"/>
+                                    <HBox styleClass="stat-row"><Label text="Số mặt hàng khác biệt:" styleClass="stat-label"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="lblInspectItems" text="—" styleClass="stat-number"/></HBox>
+                                    <HBox styleClass="stat-row"><Label text="Độ dài trung bình:" styleClass="stat-label"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="lblInspectAvgLen" text="—" styleClass="stat-number"/></HBox>
+                                    <HBox styleClass="stat-row"><Label text="Độ dài lớn nhất:" styleClass="stat-label"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="lblInspectMaxLen" text="—" styleClass="stat-number"/></HBox>
+                                </VBox>
+                            </HBox>
+
+                            <!-- Bảng Top Items -->
+                            <TableView fx:id="tblInspectTopItems" VBox.vgrow="ALWAYS" styleClass="results-table">
+                                <columns>
+                                    <TableColumn fx:id="colInspectRank" text="Hạng" prefWidth="60.0" style="-fx-alignment: CENTER;"/>
+                                    <TableColumn fx:id="colInspectItem" text="Mã mặt hàng (Item ID / Name)" prefWidth="320.0"/>
+                                    <TableColumn fx:id="colInspectSupport" text="Tần số xuất hiện (Support)" prefWidth="180.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;"/>
+                                    <TableColumn fx:id="colInspectPercentage" text="Tỷ lệ xuất hiện (%)" prefWidth="160.0" style="-fx-alignment: CENTER-RIGHT;"/>
+                                </columns>
+                                <columnResizePolicy>
+                                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                                </columnResizePolicy>
+                            </TableView>
+                        </VBox>
+
+                        <!-- VIEW 3: BẢNG MA TRẬN TESTKIT VÀNG (GOLDEN TC1 - TC8) -->
+                        <TableView fx:id="tblTsonGolden" styleClass="results-table" visible="false">
+                            <columns>
+                                <TableColumn fx:id="colGoldenCase" text="Test Case" prefWidth="80.0" style="-fx-alignment: CENTER; -fx-font-weight: bold;"/>
+                                <TableColumn fx:id="colGoldenF" text="Hệ số f" prefWidth="80.0" style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colGoldenPartial" text="Ngưỡng ∂" prefWidth="90.0" style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colGoldenMinSup" text="minSup" prefWidth="90.0" style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colGoldenExpected" text="Kỳ vọng (Bài báo gốc)" prefWidth="220.0"/>
+                                <TableColumn fx:id="colGoldenActual" text="Thực tế (Engine Tson)" prefWidth="180.0"/>
+                                <TableColumn fx:id="colGoldenStatus" text="Trạng thái kiểm định" prefWidth="140.0" style="-fx-alignment: CENTER;"/>
+                            </columns>
+                            <columnResizePolicy>
+                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                            </columnResizePolicy>
+                        </TableView>
+                    </StackPane>
                 </VBox>
             </Tab>
         </TabPane>

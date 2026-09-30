@@ -77,7 +77,19 @@ public class TsonToolsService {
             double minSupAbsolute,
             List<Map.Entry<String, Integer>> topItems,
             String textOutput
-    ) {}
+    ) {
+        public List<TopItemStat> toTopItemStats() {
+            List<TopItemStat> stats = new java.util.ArrayList<>();
+            if (topItems != null) {
+                for (int i = 0; i < topItems.size(); i++) {
+                    var e = topItems.get(i);
+                    double pct = totalTransactions > 0 ? (100.0 * e.getValue() / totalTransactions) : 0;
+                    stats.add(new TopItemStat(i + 1, e.getKey(), e.getValue(), pct));
+                }
+            }
+            return stats;
+        }
+    }
 
     /**
      * Danh sách các dataset chuẩn của Tson kèm tham số ∂ khuyến nghị.
@@ -217,6 +229,54 @@ public class TsonToolsService {
             sb.append(String.format("  >>> CẢNH BÁO: CÓ TEST CASE CHƯA ĐẠT CHUẨN! <<<%n"));
         }
         return sb.toString();
+    }
+
+    /**
+     * Chạy kiểm thử TC1-TC8 và trả về danh sách đối tượng GoldenRow cho UI TableView.
+     */
+    public List<GoldenRow> runGoldenTestKitRows() {
+        List<GoldenCase> cases = GoldenCases.all();
+        List<GoldenRow> rows = new java.util.ArrayList<>(cases.size());
+
+        String[] expectedSummaries = {
+            "2 mẫu: AE, F",
+            "0 mẫu (trống)",
+            "15 mẫu DHOPs",
+            "0 mẫu (f=0.8 suy giảm)",
+            "9 mẫu (f=1.0 không suy)",
+            "3 mẫu (DB0, 4 TID)",
+            "9 mẫu (10 TID tùy chỉnh)",
+            "1 mẫu: A (1 item/TID)"
+        };
+
+        for (int i = 0; i < cases.size(); i++) {
+            GoldenCase c = cases.get(i);
+            StringBuilder caseReport = new StringBuilder();
+            boolean ok;
+            int foundPatterns = 0;
+            try (MiningEngine engine = new MiningEngine(MiningConfig.of(c.partial(), c.decayFactor()))) {
+                ok = GoldenRunner.run(engine, c, GoldenAssert.GOLDEN_TOLERANCE, caseReport);
+                foundPatterns = engine.mineNow().patterns().size();
+            } catch (Exception e) {
+                ok = false;
+            }
+            String exp = i < expectedSummaries.length ? expectedSummaries[i] : "Đạt chuẩn";
+            String actual = foundPatterns + " mẫu";
+            double effectiveN = (i == 5 ? 4 : (i == 6 ? 10 : (i == 7 ? 5 : 8)));
+            double minSup = c.partial() * effectiveN;
+
+            rows.add(new GoldenRow(
+                "TC" + (i + 1),
+                c.decayFactor(),
+                c.partial(),
+                minSup,
+                exp,
+                actual,
+                ok ? "✅ PASS 100%" : "❌ FAIL",
+                ok
+            ));
+        }
+        return rows;
     }
 
     /**

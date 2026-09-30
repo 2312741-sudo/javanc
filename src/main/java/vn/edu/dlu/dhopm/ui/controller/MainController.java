@@ -11,15 +11,10 @@ import javafx.fxml.Initializable;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
-import javafx.scene.input.Clipboard;
-import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
-import vn.edu.dlu.dhopm.bridge.BridgeEngine;
-import vn.edu.dlu.dhopm.bridge.EngineFactory;
-import vn.edu.dlu.dhopm.bridge.EngineMode;
-import vn.edu.dlu.dhopm.bridge.TableFormatter;
-import vn.edu.dlu.dhopm.bridge.TsonToolsService;
+import vn.edu.dlu.dhopm.bridge.*;
 import vn.edu.dlu.dhopm.bridge.TsonToolsService.DatasetItem;
 import vn.edu.dlu.dhopm.bridge.TsonToolsService.MineExecutionResult;
 import vn.edu.dlu.dhopm.bridge.TsonToolsService.InspectReport;
@@ -40,15 +35,8 @@ import java.util.ResourceBundle;
 
 /**
  * Controller điều khiển toàn bộ giao diện JavaFX cho DHOPM Visualizer.
- * Version 3.0: Tích hợp đầy đủ bộ công cụ Tson V1 từ README:
- * <ul>
- *   <li>Dropdown chọn dataset FIMI (chess, retail, mushroom, connect, kosarak...)</li>
- *   <li>Nút "🚀 Khai Phá (Mine)" thay thế lệnh CLI mine</li>
- *   <li>Nút "📊 Thống Kê (Inspect)" thay thế lệnh CLI inspect</li>
- *   <li>Nút "🏆 Golden TC1-TC8" thay thế lệnh CLI golden</li>
- *   <li>Nút "🔬 Top DO (Detail)" thay thế lệnh CLI detail</li>
- *   <li>Tab Console &amp; Benchmark với KPI cards thời gian, heap, throughput</li>
- * </ul>
+ * Version 4.0: Chuyển đổi 100% Terminal text sang các bảng TableView đồ họa cao cấp,
+ * thẳng hàng tuyệt đối, hỗ trợ sắp xếp và co giãn cột mượt mà.
  *
  * @author Nguyễn Thanh Tâm (2312741) &amp; Nguyễn Thanh Sơn
  */
@@ -104,7 +92,7 @@ public class MainController implements Initializable {
 
     @FXML private LineChart<String, Number> lineChartDO;
 
-    // ── Tab 4: Tson Console & KPI Cards ──────────────────────────────────────
+    // ── Tab 4: Tson Results & Benchmark TableViews & KPI Cards ───────────────
     @FXML private Label lblKpiTime;
     @FXML private Label lblKpiPhases;
     @FXML private Label lblKpiHeap;
@@ -112,9 +100,44 @@ public class MainController implements Initializable {
     @FXML private Label lblKpiMinSup;
     @FXML private Label lblKpiThroughput;
     @FXML private Label lblKpiTrans;
-    @FXML private TextArea txtTsonConsole;
-    @FXML private Button btnCopyConsole;
-    @FXML private Button btnClearConsole;
+
+    @FXML private Label lblTsonViewTitle;
+    @FXML private Button btnViewPatterns;
+    @FXML private Button btnViewInspect;
+    @FXML private Button btnViewGolden;
+
+    // View 1: Mẫu DHOPs TableView
+    @FXML private TableView<PatternResult> tblTsonPatterns;
+    @FXML private TableColumn<PatternResult, Number> colTsonIndex;
+    @FXML private TableColumn<PatternResult, String> colTsonPattern;
+    @FXML private TableColumn<PatternResult, String> colTsonDO;
+    @FXML private TableColumn<PatternResult, String> colTsonSupport;
+    @FXML private TableColumn<PatternResult, Number> colTsonLength;
+    @FXML private TableColumn<PatternResult, String> colTsonTids;
+
+    // View 2: Inspect Card & TableView
+    @FXML private VBox boxTsonInspect;
+    @FXML private Label lblInspectFile;
+    @FXML private Label lblInspectTx;
+    @FXML private Label lblInspectTL;
+    @FXML private Label lblInspectItems;
+    @FXML private Label lblInspectAvgLen;
+    @FXML private Label lblInspectMaxLen;
+    @FXML private TableView<TopItemStat> tblInspectTopItems;
+    @FXML private TableColumn<TopItemStat, Number> colInspectRank;
+    @FXML private TableColumn<TopItemStat, String> colInspectItem;
+    @FXML private TableColumn<TopItemStat, String> colInspectSupport;
+    @FXML private TableColumn<TopItemStat, String> colInspectPercentage;
+
+    // View 3: Golden Matrix TableView
+    @FXML private TableView<GoldenRow> tblTsonGolden;
+    @FXML private TableColumn<GoldenRow, String> colGoldenCase;
+    @FXML private TableColumn<GoldenRow, String> colGoldenF;
+    @FXML private TableColumn<GoldenRow, String> colGoldenPartial;
+    @FXML private TableColumn<GoldenRow, String> colGoldenMinSup;
+    @FXML private TableColumn<GoldenRow, String> colGoldenExpected;
+    @FXML private TableColumn<GoldenRow, String> colGoldenActual;
+    @FXML private TableColumn<GoldenRow, String> colGoldenStatus;
 
     // ── Backend Services ─────────────────────────────────────────────────────
     private DHOPMEngine tamEngine;
@@ -123,8 +146,11 @@ public class MainController implements Initializable {
     private final TsonToolsService tsonService = new TsonToolsService();
 
     private final ObservableList<PatternResult> tableData = FXCollections.observableArrayList();
-    private EngineMode currentMode = EngineMode.TAM_SIMULATION;
+    private final ObservableList<PatternResult> tsonPatternsData = FXCollections.observableArrayList();
+    private final ObservableList<TopItemStat> inspectTopItemsData = FXCollections.observableArrayList();
+    private final ObservableList<GoldenRow> goldenRowsData = FXCollections.observableArrayList();
 
+    private EngineMode currentMode = EngineMode.TAM_SIMULATION;
     private Path selectedCustomDatasetPath = null;
 
     @Override
@@ -133,8 +159,8 @@ public class MainController implements Initializable {
         initTsonToolsPanel();
         initTamEngine();
         initTableView();
+        initTsonTableViews();
         initEventHandlers();
-        initConsolePanel();
         loadInitialPaperData();
     }
 
@@ -167,15 +193,12 @@ public class MainController implements Initializable {
         // 1. Nạp danh sách datasets
         List<DatasetItem> presets = TsonToolsService.getPresetDatasets();
         cbTsonDataset.setItems(FXCollections.observableArrayList(presets));
-        cbTsonDataset.setValue(presets.get(0)); // Mặc định default.dat
+        cbTsonDataset.setValue(presets.get(0));
 
-        // Khi chọn dataset, tự động gợi ý tham số partial (∂) chuẩn
         cbTsonDataset.setOnAction(e -> {
             DatasetItem item = cbTsonDataset.getValue();
             if (item != null) {
                 sliderMinSup.setValue(item.defaultPartial());
-                appendConsoleLog(String.format("[DATASET] Đã chọn: %s | Gợi ý ∂ = %.2f%%%n",
-                        item.displayName(), item.defaultPartial() * 100));
             }
         });
 
@@ -221,7 +244,6 @@ public class MainController implements Initializable {
             );
             cbTsonDataset.getItems().add(customItem);
             cbTsonDataset.setValue(customItem);
-            appendConsoleLog("[FILE] Đã chọn file ngoài: " + file.getAbsolutePath());
         }
     }
 
@@ -232,7 +254,6 @@ public class MainController implements Initializable {
         DatasetItem item = cbTsonDataset.getValue();
         String filename = (item != null) ? item.filename() : "default.dat";
 
-        // Thử tìm trong thư mục dataset của dự án
         Path p = Paths.get("dataset", filename);
         if (java.nio.file.Files.exists(p)) return p;
 
@@ -254,7 +275,6 @@ public class MainController implements Initializable {
             return 0;
         }
 
-        // Trích xuất số nguyên từ chuỗi người dùng gõ (ví dụ "2500", "1,000 tx", "5000 dòng")
         String cleaned = val.replaceAll("[^0-9]", "");
         if (cleaned.isEmpty()) return 0;
         try {
@@ -265,7 +285,102 @@ public class MainController implements Initializable {
         }
     }
 
-    // ── Tson Actions (Lệnh CLI biến thành Nút Bấm) ───────────────────────────
+    // ── Tab 4: Tson TableViews Setup ──────────────────────────────────────────
+
+    private void initTsonTableViews() {
+        // ── 1. Setup View Switcher Buttons
+        btnViewPatterns.setOnAction(e -> showTsonView(1));
+        btnViewInspect.setOnAction(e -> showTsonView(2));
+        btnViewGolden.setOnAction(e -> showTsonView(3));
+
+        // ── 2. View 1: tblTsonPatterns (Mẫu DHOPs)
+        colTsonIndex.setCellValueFactory(cellData ->
+                new SimpleIntegerProperty(1 + tblTsonPatterns.getItems().indexOf(cellData.getValue())));
+        colTsonPattern.setCellValueFactory(cellData -> {
+            String raw = cellData.getValue().pattern();
+            String[] parts = raw.split("[,\\s]+");
+            return new SimpleStringProperty("{" + String.join(", ", parts) + "}");
+        });
+        colTsonDO.setCellValueFactory(cellData ->
+                new SimpleStringProperty(String.format("%.6f", cellData.getValue().doValue())));
+        colTsonSupport.setCellValueFactory(cellData ->
+                new SimpleStringProperty(String.format("%,d tx", cellData.getValue().support())));
+        colTsonLength.setCellValueFactory(cellData -> {
+            String raw = cellData.getValue().pattern().replace("{", "").replace("}", "").trim();
+            return new SimpleIntegerProperty(raw.split("[,\\s]+").length);
+        });
+        colTsonTids.setCellValueFactory(cellData ->
+                new SimpleStringProperty(cellData.getValue().transactionIds().stream()
+                        .limit(8)
+                        .map(tid -> "T" + tid)
+                        .reduce((a, b) -> a + ", " + b)
+                        .map(str -> cellData.getValue().transactionIds().size() > 8 ? str + "..." : str)
+                        .orElse("")));
+
+        tblTsonPatterns.setItems(tsonPatternsData);
+
+        // ── 3. View 2: tblInspectTopItems (Top Items)
+        colInspectRank.setCellValueFactory(cellData -> new SimpleIntegerProperty(cellData.getValue().rank()));
+        colInspectItem.setCellValueFactory(cellData -> new SimpleStringProperty("Mục " + cellData.getValue().item()));
+        colInspectSupport.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getFormattedSupport()));
+        colInspectPercentage.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getFormattedPercentage()));
+        tblInspectTopItems.setItems(inspectTopItemsData);
+
+        // ── 4. View 3: tblTsonGolden (Ma Trận Vàng)
+        colGoldenCase.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().caseName()));
+        colGoldenF.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getFormattedF()));
+        colGoldenPartial.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getFormattedPartial()));
+        colGoldenMinSup.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getFormattedMinSup()));
+        colGoldenExpected.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().expected()));
+        colGoldenActual.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().actual()));
+        colGoldenStatus.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().status()));
+
+        colGoldenStatus.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    if (item.contains("PASS")) {
+                        setStyle("-fx-text-fill: #16a34a; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    } else {
+                        setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    }
+                }
+            }
+        });
+
+        tblTsonGolden.setItems(goldenRowsData);
+
+        // Mặc định hiển thị View 1
+        showTsonView(1);
+    }
+
+    private void showTsonView(int viewIndex) {
+        tblTsonPatterns.setVisible(viewIndex == 1);
+        tblTsonPatterns.setManaged(viewIndex == 1);
+        boxTsonInspect.setVisible(viewIndex == 2);
+        boxTsonInspect.setManaged(viewIndex == 2);
+        tblTsonGolden.setVisible(viewIndex == 3);
+        tblTsonGolden.setManaged(viewIndex == 3);
+
+        btnViewPatterns.setStyle(viewIndex == 1 ? "-fx-background-color: #2563eb; -fx-text-fill: white;" : "");
+        btnViewInspect.setStyle(viewIndex == 2 ? "-fx-background-color: #059669; -fx-text-fill: white;" : "");
+        btnViewGolden.setStyle(viewIndex == 3 ? "-fx-background-color: #7c3aed; -fx-text-fill: white;" : "");
+
+        if (viewIndex == 1) {
+            lblTsonViewTitle.setText("📋 Danh Sách Mẫu Chi Tiết (Tson V1 Engine)");
+        } else if (viewIndex == 2) {
+            lblTsonViewTitle.setText("📊 Phân Tích Thuộc Tính & Top Mặt Hàng (Inspect)");
+        } else {
+            lblTsonViewTitle.setText("🏆 Bảng Ma Trận Kiểm Định 8 Bài Toán Vàng (Golden TC1 - TC8)");
+        }
+    }
+
+    // ── Tson Actions (Lệnh CLI biến thành Nút Bấm Đồ Họa) ─────────────────────
 
     /**
      * Nút "🚀 Khai Phá (Mine)": Chạy mining bằng engine Tson trên dataset đã chọn.
@@ -276,28 +391,23 @@ public class MainController implements Initializable {
         double f = sliderF.getValue();
         long limit = resolveLimit();
 
-        // Chuyển sang Tson Engine mode
         if (cbEngineMode.getValue() != EngineMode.TSON_V1_STANDARD) {
             cbEngineMode.setValue(EngineMode.TSON_V1_STANDARD);
         }
 
-        // Chuyển sang Tab 4 (Console) để xem tiến trình
+        // Mở Tab 4 và kích hoạt View 1 (Bảng mẫu)
         mainTabPane.getSelectionModel().select(3);
+        showTsonView(1);
 
         setButtonsDisable(true);
-        progressMining.setProgress(-1); // Indeterminate spinner
-        appendConsoleLog(String.format("%n[LỆNH MINE] Bắt đầu khai phá %s với ∂=%.4f, f=%.2f, limit=%d...%n",
-                path.getFileName(), partial, f, limit));
+        progressMining.setProgress(-1);
 
         Task<MineExecutionResult> task = new Task<>() {
             @Override
             protected MineExecutionResult call() throws Exception {
                 return tsonService.runMine(
                         path, partial, f, 4, limit,
-                        phaseMsg -> Platform.runLater(() -> {
-                            lblLastPhase.setText(phaseMsg);
-                            appendConsoleLog("  " + phaseMsg);
-                        }),
+                        phaseMsg -> Platform.runLater(() -> lblLastPhase.setText(phaseMsg)),
                         progress -> Platform.runLater(() -> progressMining.setProgress(progress))
                 );
             }
@@ -307,9 +417,6 @@ public class MainController implements Initializable {
             setButtonsDisable(false);
             progressMining.setProgress(1.0);
             MineExecutionResult res = task.getValue();
-
-            // Cập nhật Console
-            appendConsoleLog(res.logOutput());
 
             // Cập nhật KPI Cards
             lblKpiTime.setText(String.format("%,d ms", res.totalMs()));
@@ -322,22 +429,23 @@ public class MainController implements Initializable {
             lblKpiThroughput.setText(String.format("%,.0f tx/s", throughput));
             lblKpiTrans.setText(String.format("Tổng giao dịch: %,d", res.totalTransactions()));
 
-            // Cập nhật TableView và biểu đồ
+            // Cập nhật TableView Tab 4 và TableView Tab 2
+            tsonPatternsData.setAll(res.uiPatterns());
             tableData.setAll(res.uiPatterns());
+
             lblDhopCount.setText(res.patternCount() + " mẫu");
             lblVisitedCount.setText(res.patternCount() + " mẫu");
             lblTransCount.setText(String.valueOf(res.totalTransactions()));
             lblTL.setText("T" + res.rawResult().lastTid());
 
-            // Cập nhật biểu đồ đường nếu có mẫu
             updateChartFromPatterns(res.uiPatterns(), res.rawResult().minSup());
+            showTsonView(1);
         });
 
         task.setOnFailed(e -> {
             setButtonsDisable(false);
             progressMining.setProgress(0);
             Throwable err = task.getException();
-            appendConsoleLog("[LỖI] Khai phá thất bại: " + err.getMessage());
             err.printStackTrace();
             new Alert(Alert.AlertType.ERROR, "Lỗi khi chạy Tson Mine: " + err.getMessage()).show();
         });
@@ -353,32 +461,43 @@ public class MainController implements Initializable {
         double partial = sliderMinSup.getValue();
         long limit = resolveLimit();
 
-        mainTabPane.getSelectionModel().select(3); // Mở Tab Console
+        mainTabPane.getSelectionModel().select(3);
         setButtonsDisable(true);
-        appendConsoleLog(String.format("%n[LỆNH INSPECT] Đang phân tích tập tin %s...%n", path.getFileName()));
 
         Task<InspectReport> task = new Task<>() {
             @Override
             protected InspectReport call() throws Exception {
-                return tsonService.runInspect(path, partial, limit, 10);
+                return tsonService.runInspect(path, partial, limit, 15);
             }
         };
 
         task.setOnSucceeded(e -> {
             setButtonsDisable(false);
             InspectReport rep = task.getValue();
-            appendConsoleLog(rep.textOutput());
 
-            // Cập nhật các label thống kê
+            // Cập nhật thẻ tổng quan Inspect
+            lblInspectFile.setText(path.getFileName().toString());
+            lblInspectTx.setText(String.format("%,d giao dịch %s", rep.totalTransactions(), limit > 0 ? "(limit=" + limit + ")" : "(toàn bộ)"));
+            lblInspectTL.setText("TID = " + rep.lastTid());
+            lblInspectItems.setText(String.format("%,d mặt hàng khác biệt", rep.distinctItems()));
+            lblInspectAvgLen.setText(String.format("%.2f mục / giao dịch", rep.avgLength()));
+            lblInspectMaxLen.setText(rep.maxLength() + " mục");
+
+            // Nạp bảng Top Items
+            inspectTopItemsData.setAll(rep.toTopItemStats());
+
+            // Cập nhật các label thống kê ở sidebar
             lblTransCount.setText(String.format("%,d", rep.totalTransactions()));
             lblTL.setText("T" + rep.lastTid());
             lblKpiTrans.setText(String.format("Tổng giao dịch: %,d", rep.totalTransactions()));
             lblKpiMinSup.setText(String.format("minSup = %.2f", rep.minSupAbsolute()));
+
+            showTsonView(2);
         });
 
         task.setOnFailed(e -> {
             setButtonsDisable(false);
-            appendConsoleLog("[LỖI] Inspect thất bại: " + task.getException().getMessage());
+            new Alert(Alert.AlertType.ERROR, "Lỗi khi phân tích tập dữ liệu: " + task.getException().getMessage()).show();
         });
 
         new Thread(task, "TsonInspectWorker").start();
@@ -388,28 +507,28 @@ public class MainController implements Initializable {
      * Nút "🏆 Golden TC1-TC8": Chạy bộ kiểm thử vàng nghiệm thu của Tson.
      */
     private void executeTsonGolden() {
-        mainTabPane.getSelectionModel().select(3); // Mở Tab Console
+        mainTabPane.getSelectionModel().select(3);
         setButtonsDisable(true);
         progressMining.setProgress(-1);
-        appendConsoleLog(String.format("%n[LỆNH GOLDEN] Bắt đầu chạy bộ kiểm định TestKit TC1 - TC8...%n"));
 
-        Task<String> task = new Task<>() {
+        Task<List<GoldenRow>> task = new Task<>() {
             @Override
-            protected String call() {
-                return tsonService.runGoldenTestKit();
+            protected List<GoldenRow> call() {
+                return tsonService.runGoldenTestKitRows();
             }
         };
 
         task.setOnSucceeded(e -> {
             setButtonsDisable(false);
             progressMining.setProgress(1.0);
-            appendConsoleLog(task.getValue());
+            goldenRowsData.setAll(task.getValue());
+            showTsonView(3);
         });
 
         task.setOnFailed(e -> {
             setButtonsDisable(false);
             progressMining.setProgress(0);
-            appendConsoleLog("[LỖI] Golden TestKit thất bại: " + task.getException().getMessage());
+            new Alert(Alert.AlertType.ERROR, "Lỗi khi chạy Golden TestKit: " + task.getException().getMessage()).show();
         });
 
         new Thread(task, "TsonGoldenWorker").start();
@@ -426,7 +545,6 @@ public class MainController implements Initializable {
 
         mainTabPane.getSelectionModel().select(3);
         setButtonsDisable(true);
-        appendConsoleLog(String.format("%n[LỆNH DETAIL] Đang lọc chi tiết Top mẫu theo DO cho %s...%n", path.getFileName()));
 
         Task<MineExecutionResult> task = new Task<>() {
             @Override
@@ -438,24 +556,25 @@ public class MainController implements Initializable {
         task.setOnSucceeded(e -> {
             setButtonsDisable(false);
             MineExecutionResult res = task.getValue();
-            int limitTop = Math.min(20, res.uiPatterns().size());
-            List<PatternResult> topPatterns = res.uiPatterns().subList(0, limitTop);
 
-            String tableOutput = TableFormatter.formatDetailTable(
-                    path.getFileName().toString(),
-                    partial,
-                    f,
-                    res.patternCount(),
-                    topPatterns
-            );
-            appendConsoleLog(tableOutput);
-
+            // Cập nhật TableView Tab 4 và Tab 2
+            tsonPatternsData.setAll(res.uiPatterns());
             tableData.setAll(res.uiPatterns());
+
+            // Cập nhật KPI Cards
+            lblKpiTime.setText(String.format("%,d ms", res.totalMs()));
+            lblKpiPhases.setText(String.format("Constr: %dms | Reconst: %dms | Mine: %dms",
+                    res.constrMs(), res.reconstMs(), res.miningMs()));
+            lblKpiHeap.setText(String.format("%.1f MB", res.peakHeapMb()));
+            lblKpiPatterns.setText(String.format("%,d mẫu", res.patternCount()));
+            lblKpiMinSup.setText(String.format("minSup = %.2f", res.rawResult().minSup()));
+
+            showTsonView(1);
         });
 
         task.setOnFailed(e -> {
             setButtonsDisable(false);
-            appendConsoleLog("[LỖI] Detail thất bại: " + task.getException().getMessage());
+            new Alert(Alert.AlertType.ERROR, "Lỗi khi lọc chi tiết mẫu: " + task.getException().getMessage()).show();
         });
 
         new Thread(task, "TsonDetailWorker").start();
@@ -467,32 +586,6 @@ public class MainController implements Initializable {
         btnTsonDetail.setDisable(disable);
         btnTsonGolden.setDisable(disable);
         btnStartStream.setDisable(disable);
-    }
-
-    // ── Console Panel ────────────────────────────────────────────────────────
-
-    private void initConsolePanel() {
-        btnCopyConsole.setOnAction(e -> {
-            Clipboard clipboard = Clipboard.getSystemClipboard();
-            ClipboardContent content = new ClipboardContent();
-            content.putString(txtTsonConsole.getText());
-            clipboard.setContent(content);
-            appendConsoleLog("[HỆ THỐNG] Đã sao chép toàn bộ nhật ký vào Clipboard!");
-        });
-
-        btnClearConsole.setOnAction(e -> txtTsonConsole.clear());
-
-        appendConsoleLog("⚡ DHOPM Stream Visualizer v3.0 sẵn sàng.");
-        appendConsoleLog("  • Bấm '🚀 Khai Phá Dataset' để chạy engine Tson không cần gõ lệnh.");
-        appendConsoleLog("  • Bấm '🏆 Chạy TestKit Vàng' để soát 8 test cases chuẩn bài báo.");
-        appendConsoleLog("  • Bấm '📊 Thống kê' để phân tích đặc trưng dataset FIMI.");
-    }
-
-    private void appendConsoleLog(String text) {
-        Platform.runLater(() -> {
-            txtTsonConsole.appendText(text + "\n");
-            txtTsonConsole.positionCaret(txtTsonConsole.getText().length());
-        });
     }
 
     // ── Switch Engine ────────────────────────────────────────────────────────
@@ -673,6 +766,7 @@ public class MainController implements Initializable {
         lblPrunedCount.setText(prunedText);
 
         tableData.setAll(results);
+        tsonPatternsData.setAll(results);
         updateChart(results, f, minSup);
     }
 
