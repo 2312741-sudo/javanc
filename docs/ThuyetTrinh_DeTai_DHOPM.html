@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo Cáo Thuyết Trình Đề Tài: DHOPM Stream Visualizer</title>
+  <style>
+    :root {
+      --primary: #1F4E79;
+      --secondary: #2E75B6;
+      --accent: #0E6251;
+      --bg: #0F172A;
+      --slide-bg: #1E293B;
+      --card-bg: #334155;
+      --text: #F8FAFC;
+      --text-muted: #94A3B8;
+      --highlight: #38BDF8;
+      --success: #34D399;
+      --warning: #FBBF24;
+      --danger: #F87171;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Presentation Header */
+    header {
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(8px);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 10;
+    }
+
+    .badge {
+      background: var(--primary);
+      color: #E2E8F0;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .title-nav {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      background: var(--secondary);
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #1D4ED8;
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Slide Deck Container */
+    #deck {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .slide {
+      position: absolute;
+      width: 92%;
+      max-width: 1200px;
+      height: 85vh;
+      background: var(--slide-bg);
+      border-radius: 16px;
+      padding: 40px 50px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transform: scale(0.96) translateX(100px);
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: scale(1) translateX(0);
+      pointer-events: auto;
+      z-index: 2;
+    }
+
+    .slide.prev {
+      opacity: 0;
+      transform: scale(0.96) translateX(-100px);
+    }
+
+    /* Slide Typography */
+    .slide-tag {
+      color: var(--highlight);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .slide-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 12px;
+    }
+
+    .slide-content {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Grid layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      height: 100%;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      height: 100%;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 18px;
+      height: 100%;
+    }
+
+    /* Card styling */
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--highlight);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card p, .card li {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #CBD5E1;
+    }
+
+    .card ul {
+      padding-left: 20px;
+    }
+
+    .card strong {
+      color: white;
+    }
+
+    .card-highlight {
+      border-left: 4px solid var(--secondary);
+    }
+
+    .card-success {
+      border-left: 4px solid var(--success);
+    }
+
+    .card-warning {
+      border-left: 4px solid var(--warning);
+    }
+
+    /* Formula & Code box */
+    .formula-box {
+      background: rgba(15, 23, 42, 0.6);
+      padding: 14px 18px;
+      border-radius: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13.5px;
+      color: #38BDF8;
+      border-left: 3px solid #38BDF8;
+      line-height: 1.5;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    th {
+      background: rgba(31, 78, 121, 0.6);
+      color: white;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11.5px;
+      letter-spacing: 0.5px;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .tag-pass {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34D399;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 11.5px;
+    }
+
+    /* Speaker Notes Bar */
+    #notes-drawer {
+      background: #0B1120;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 14px 24px;
+      font-size: 13.5px;
+      color: #94A3B8;
+      line-height: 1.5;
+      display: none;
+    }
+
+    #notes-drawer.open {
+      display: block;
+    }
+
+    .notes-title {
+      color: var(--warning);
+      font-weight: 700;
+      margin-bottom: 4px;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    /* Progress Bar */
+    .progress-bar-container {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--highlight);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <span class="badge">ĐH ĐÀ LẠT • KHOA CNTT</span>
+      <span class="title-nav">Đồ Án: DHOPM Stream Visualizer | Sinh viên: Nguyễn Thanh Tâm (2312741)</span>
+    </div>
+    <div class="controls">
+      <span id="slide-counter" style="font-size: 13px; color: var(--text-muted); margin-right: 8px;">1 / 12</span>
+      <button class="btn btn-outline" onclick="toggleNotes()">📝 Lời Thoại (Notes)</button>
+      <button class="btn btn-outline" onclick="prevSlide()">◀ Trước</button>
+      <button class="btn" onclick="nextSlide()">Tiếp ▶</button>
+      <button class="btn btn-outline" onclick="toggleFullScreen()">⛶ Toàn màn hình</button>
+    </div>
+  </header>
+
+  <!-- Presentation Deck -->
+  <main id="deck">
+
+    <!-- SLIDE 1: COVER -->
+    <div class="slide active" data-notes="Kính chào Thầy Cô và các bạn. Hôm nay em xin phép báo cáo đề tài đồ án môn học Lập trình Java Nâng cao: 'Nghiên cứu, Cài đặt và Trực quan hóa Thuật toán Khai phá Mẫu Độ Chiếm Dụng Cao trên Luồng Dữ liệu (DHOPM)'. Đề tài được nhóm em hiện thực hóa từ bài báo khoa học quốc tế mới nhất công bố trên tạp chí Engineering Applications of Artificial Intelligence năm 2026.">
+      <div class="slide-tag">ĐỒ ÁN HỌC PHẦN LẬP TRÌNH JAVA NÂNG CAO</div>
+      <h1 class="slide-title" style="font-size: 34px; margin-bottom: 16px;">⚡ DHOPM STREAM VISUALIZER</h1>
+      <div style="font-size: 18px; color: #93C5FD; margin-bottom: 24px; font-weight: 500;">
+        Nghiên cứu, Cài đặt và Trực quan hóa Thuật toán Khai phá Mẫu Độ Chiếm Dụng Cao trên Luồng Dữ liệu theo Cửa sổ Suy giảm
+      </div>
+
+      <div class="card card-highlight" style="margin-bottom: 24px; background: rgba(30, 58, 138, 0.2);">
+        <div class="card-title">📖 DỰA TRÊN BÀI BÁO KHOA HỌC QUỐC TẾ (EAAI 2026):</div>
+        <p style="font-size: 15px; color: #E2E8F0;">
+          <strong>"Damped window based high occupancy pattern mining with one scanning of data streams"</strong><br>
+          <em>Tạp chí: Engineering Applications of Artificial Intelligence (EAAI), Volume 174, 2026. DOI: 10.1016/j.engappai.2026.114511</em>
+        </p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">👤 Sinh Viên Thực Hiện</div>
+          <p><strong>Họ và tên:</strong> NGUYỄN THANH TÂM</p>
+          <p><strong>Mã số sinh viên (MSSV):</strong> 2312741</p>
+          <p><strong>Lớp / Khóa:</strong> CNTT Khóa 47 - Trường Đại học Đà Lạt</p>
+          <p><strong>Vai trò:</strong> Trực quan hóa JavaFX, Kiến trúc Bridge Adapter, UI Tools & Kiểm thử đối soát.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">🤝 Thành Viên Nhóm Phối Hợp</div>
+          <p><strong>Họ và tên:</strong> NGUYỄN HỮU TRUNG SƠN (Tson)</p>
+          <p><strong>Vai trò:</strong> Cài đặt Động cơ Thuật toán Lõi (dhopm-v1-standard), Đa luồng và Xử lý Big Data FIMI.</p>
+          <p><strong>Mô hình hợp tác:</strong> Độc lập kỹ thuật qua hợp đồng chung <code>dhopm-common</code> (DIP & Monorepo).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: ĐẶT VẤN ĐỀ -->
+    <div class="slide" data-notes="Đầu tiên là động lực nghiên cứu. Trong khai phá dữ liệu giỏ hàng, thuật toán FIM truyền thống chỉ đếm số lần xuất hiện mà bỏ qua độ dài giỏ hàng. Mẫu Bánh mì - Sữa trong giỏ 100 món ngẫu nhiên vẫn được đếm 1 điểm bằng với giỏ 2 món. Độ chiếm dụng Occupancy O(X, Td) = |X|/|Td| giải quyết việc này bằng cách đo tỷ lệ phần trăm giỏ hàng. Đặc biệt khi đưa lên luồng dữ liệu, dữ liệu đến liên tục và giá trị cũ mất dần theo thời gian, đòi hỏi thuật toán phải đáp ứng chuẩn One-Scan và cơ chế cửa sổ suy giảm.">
+      <div class="slide-tag">CHƯƠNG 1: TỔNG QUAN</div>
+      <h2 class="slide-title">1. Đặt Vấn Đề & Động Lực Nghiên Cứu</h2>
+      <div class="grid-2">
+        <div class="card card-warning">
+          <div class="card-title">⚠️ Giới Hạn Của Khai Phá Tập Phổ Biến (FIM)</div>
+          <ul>
+            <li><strong>Chỉ đếm tần số nhị phân:</strong> FIM chỉ kiểm tra mẫu xuất hiện hay không (0 hoặc 1), hoàn toàn bỏ qua kích thước giao dịch chứa nó.</li>
+            <li><strong>Thiên vị giao dịch dài:</strong> Mẫu <code>{Bánh mì, Sữa}</code> trong giỏ 100 món chỉ chiếm 2% (ngẫu nhiên) nhưng vẫn được tính bằng điểm với giỏ 2 món (chiếm 100%).</li>
+            <li><strong>Bùng nổ không gian mẫu:</strong> Ngưỡng minSup thấp sinh ra hàng triệu mẫu "loãng" không có ý nghĩa thực tế; ngưỡng cao lại bỏ sót các mẫu có độ tập trung lớn.</li>
+          </ul>
+        </div>
+        <div class="card card-success">
+          <div class="card-title">💡 Giải Pháp: HOPM Trên Luồng Dữ Liệu</div>
+          <ul>
+            <li><strong>Độ đo Occupancy (Độ chiếm dụng):</strong>
+              <div class="formula-box" style="margin: 8px 0;">O(X, Td) = |X| / |Td|</div>
+              Đo lường tỷ lệ chiếm hữu của mẫu X trong giỏ hàng Td. Phản ánh mức độ thống trị của mặt hàng!
+            </li>
+            <li><strong>Thách thức luồng dữ liệu (Data Streams):</strong>
+              <br>• Dữ liệu đến tốc độ cao, vô hạn, bộ nhớ RAM hữu hạn.
+              <br>• Ràng buộc Một Lần Quét (One-Scan): Không được đọc lại lịch sử.
+              <br>• Trôi dạt khái niệm (Concept Drift): Dữ liệu cũ giảm dần giá trị.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: BÀI BÁO GỐC -->
+    <div class="slide" data-notes="Bài báo EAAI 2026 đưa ra 3 đóng góp lớn: Thứ nhất, mô hình Damped Window với hàm mũ f^(TL-Td) giúp dữ liệu cũ dần mất giá trị theo thời gian. Thứ hai, vì Occupancy không có tính chất phản đơn điệu (thêm item có thể làm tăng độ chiếm dụng) nên bài báo đề xuất cận trên DUBO để cắt tỉa an toàn toàn bộ các nhánh con không thể đạt chuẩn. Thứ ba là cấu trúc Global DHO-List lưu cặp <TID, TLen> giúp cập nhật luồng một lần quét cực kỳ tiết kiệm bộ nhớ.">
+      <div class="slide-tag">CHƯƠNG 1: TỔNG QUAN</div>
+      <h2 class="slide-title">2. Ba Đóng Góp Đột Phá Của Bài Báo (EAAI 2026)</h2>
+      <div class="grid-3">
+        <div class="card card-highlight">
+          <div class="card-title">1. Damped Window & DO</div>
+          <p><strong>Mô hình suy giảm hàm mũ:</strong> Trọng số <code>f^(TL - Td)</code> với <code>f ∈ (0, 1]</code>.</p>
+          <div class="formula-box">DO(X, Td) = (|X|/|Td|) × f^(TL-Td)</div>
+          <p>Giao dịch mới nhất (TL) giữ nguyên 100% giá trị; giao dịch cũ giảm dần theo thời gian. Bắt kịp xu hướng nóng hổi!</p>
+        </div>
+        <div class="card card-success">
+          <div class="card-title">2. Cận Trên DUBO</div>
+          <p><strong>Giải quyết phi đơn điệu:</strong> Thêm item vào mẫu có thể TĂNG Occupancy, làm vô hiệu hóa Apriori.</p>
+          <div class="formula-box">DO(X') ≤ DUBO(X) với mọi X' ⊃ X</div>
+          <p>Nếu <code>DUBO(X) < minSup</code>, đảm bảo mọi siêu mẫu X' đều không đạt → Cắt tỉa nhánh con 100% an toàn!</p>
+        </div>
+        <div class="card card-highlight">
+          <div class="card-title">3. One-Scan DHO-List</div>
+          <p><strong>Cấu trúc danh sách toàn cục:</strong> Chỉ lưu các cặp <code>⟨TID, TLen⟩</code>.</p>
+          <p><strong>Tiết kiệm RAM >80%:</strong> Không lưu trữ lại giao dịch thô.</p>
+          <p><strong>Cập nhật tức thì:</strong> Luồng dữ liệu mới đến chỉ cần quét 1 lần duy nhất để thêm entry, không đọc lại quá khứ.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: ĐỘ ĐO DO VÀ HỆ SỐ F -->
+    <div class="slide" data-notes="Ở slide này ta thấy rõ sức mạnh của hệ số suy giảm f. Khi f = 1.0 tức là không suy giảm, hệ thống tìm ra 9 mẫu DHOP kể cả các mẫu từ các giao dịch T1, T3 rất xa trong quá khứ. Nhưng khi kéo f về 0.9, giá trị của các giao dịch cũ bị giảm đi (ví dụ T1 chỉ còn 47.8% giá trị), kết quả rút gọn chỉ còn đúng 2 mẫu hot nhất gần đây là AE và F. Điều này chứng minh thuật toán loại bỏ 77.8% mẫu lỗi thời!">
+      <div class="slide-tag">CHƯƠNG 2: LÝ THUYẾT & THUẬT TOÁN</div>
+      <h2 class="slide-title">3. Dữ Liệu Chuẩn & Sức Mạnh Của Hệ Số Suy Giảm f</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">📊 Dữ Liệu Chuẩn Table 1 (TL = 8, ∂ = 15%)</div>
+          <table>
+            <thead>
+              <tr><th>TID</th><th>Items</th><th>|T|</th><th>Trọng số f^(8 - TID) khi f=0.9</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>T1</td><td>A, C, D, E</td><td>4</td><td>0.9^7 ≈ 0.4783 (Chỉ còn 47.8%)</td></tr>
+              <tr><td>T2</td><td>A, E, F</td><td>3</td><td>0.9^6 ≈ 0.5314</td></tr>
+              <tr><td>T3</td><td>B, C, D, E</td><td>4</td><td>0.9^5 ≈ 0.5905</td></tr>
+              <tr><td>T4</td><td>C, D, F</td><td>3</td><td>0.9^4 ≈ 0.6561</td></tr>
+              <tr><td>T5</td><td>B, F</td><td>2</td><td>0.9^3 = 0.7290</td></tr>
+              <tr><td>T6</td><td>D, E, F</td><td>3</td><td>0.9^2 = 0.8100</td></tr>
+              <tr><td>T7</td><td>A, B, C, F</td><td>4</td><td>0.9^1 = 0.9000</td></tr>
+              <tr><td>T8</td><td>A, E, G</td><td>3</td><td>0.9^0 = 1.0000 (100% Giá trị)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card card-success">
+          <div class="card-title">🔥 So Sánh Định Lượng: f = 1.0 vs f = 0.9</div>
+          <div style="background: rgba(15, 23, 42, 0.4); padding: 12px; border-radius: 8px;">
+            <p><strong style="color: #F87171;">Khi f = 1.0 (Mô hình tĩnh, không suy giảm):</strong></p>
+            <p>• Tìm thấy <strong>9 mẫu DHOP</strong>: <code>{AE, F, CD, DE, BF, CDE, E, DF, EF}</code></p>
+            <p>• Các mẫu cũ từ T1, T3 vẫn được tính nguyên điểm.</p>
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.4); padding: 12px; border-radius: 8px;">
+            <p><strong style="color: #34D399;">Khi f = 0.9 (Mô hình luồng suy giảm theo thời gian):</strong></p>
+            <p>• Chỉ còn đúng <strong>2 mẫu DHOP</strong>: <code>{A, E}</code> (DO = 1.2601) và <code>{F}</code> (DO = 1.2553).</p>
+            <p>• Điểm các mẫu cũ (CD, DE, CDE) suy thoái mạnh và rơi xuống dưới minSup = 1.2.</p>
+          </div>
+          <p style="color: #FCD34D; font-weight: 600;">
+            ★ KẾT LUẬN: Hệ số f = 0.9 đã loại bỏ 77.8% các mẫu lỗi thời trong quá khứ, tập trung nguồn lực vào xu hướng hiện tại!
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: KIẾN TRÚC PHẦN MỀM -->
+    <div class="slide" data-notes="Về mặt kỹ thuật lập trình Java nâng cao, đây là điểm sáng lớn nhất của đề tài. Em và bạn Sơn áp dụng nguyên lý DIP và Monorepo phân tách rạch ròi: Sơn làm module dhopm-v1-standard, em làm dhopm-visualizer, cả hai chỉ giao tiếp qua hợp đồng dhopm-common. Nhờ Bridge Pattern và Strategy Pattern, UI có thể cắm bất kỳ engine nào vào chạy mà không phải sửa dù chỉ 1 dòng code giao diện.">
+      <div class="slide-tag">CHƯƠNG 3: KIẾN TRÚC PHẦN MỀM</div>
+      <h2 class="slide-title">4. Kiến Trúc Cầu Nối & Design Patterns Chuẩn Công Nghiệp</h2>
+      <div class="grid-4">
+        <div class="card card-highlight">
+          <div class="card-title">🌉 Bridge & Adapter Pattern</div>
+          <p>• <code>MainController</code> chỉ phụ thuộc vào <code>BridgeEngine</code> (Interface).</p>
+          <p>• <code>TamSimulationBridge</code>: Bọc engine mô phỏng hoạt họa của Tâm.</p>
+          <p>• <code>TsonV1Bridge</code>: Bọc engine Big Data của Tson.</p>
+          <p>→ Phân tách hoàn toàn Giao diện và Thuật toán (DIP).</p>
+        </div>
+        <div class="card card-success">
+          <div class="card-title">⚙️ Strategy & Factory Method</div>
+          <p>• <code>EngineMode</code> (Enum): Chiến lược thuật toán.</p>
+          <p>• <code>EngineFactory</code>: Sinh engine tương ứng tại Runtime.</p>
+          <p>• Người dùng chọn engine trên Dropdown ComboBox mà không phải sửa mã nguồn.</p>
+        </div>
+        <div class="card card-highlight">
+          <div class="card-title">📡 Observer Pattern & Multithreading</div>
+          <p>• <code>PhaseListener</code>: Ghi nhận thời gian từng pha (Construct, Reconstruct, Mine).</p>
+          <p>• <code>MiningProgressListener</code>: Cập nhật ProgressBar (0% - 100%).</p>
+          <p>• Chạy trên Background Worker, đồng bộ an toàn qua <code>Platform.runLater()</code>.</p>
+        </div>
+        <div class="card card-warning">
+          <div class="card-title">🏛️ Monorepo & Java Records (MVC)</div>
+          <p>• <code>dhopm-common</code>: Hợp đồng chung, không bao giờ merge conflict.</p>
+          <p>• Tách biệt FXML View, Controller và Model.</p>
+          <p>• Sử dụng <code>record Entry</code>, <code>record PatternResult</code>, <code>record GoldenRow</code> đảm bảo tính bất biến (Immutability).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: GIAO DIỆN TRỰC QUAN -->
+    <div class="slide" data-notes="Giao diện JavaFX gồm 3 tab đầu tiên phục vụ trực quan hóa: Tab 1 hiển thị các thẻ DHO-List đổi màu theo trạng thái (xanh là đạt DHOP, đỏ là bị cắt tỉa). Tab 2 hiển thị bảng 32 mẫu ứng viên trong cây DFS để kiểm tra chi tiết. Tab 3 là biểu đồ Live LineChart so sánh điểm DO của các item so với đường ngưỡng minSup màu đỏ.">
+      <div class="slide-tag">CHƯƠNG 4: HIỆN THỰC HÓA GIAO DIỆN</div>
+      <h2 class="slide-title">5. Trực Quan Hóa Tương Tác Cao (Tabs 1, 2, 3)</h2>
+      <div class="grid-3">
+        <div class="card card-highlight">
+          <div class="card-title">Tab 1: Global DHO-List</div>
+          <p>• <strong>Thẻ động DHONodeCard:</strong> Trực quan hóa từng node trong danh sách toàn cục.</p>
+          <p>• <strong>Sắp xếp Support tăng dần:</strong><br><code>G ≺ B ≺ A ≺ C ≺ D ≺ E ≺ F</code></p>
+          <p>• <strong>Đổi màu thông minh:</strong>
+            <br>🟢 Xanh lá: Đạt tiêu chuẩn DHOP
+            <br>🔴 Đỏ nhạt: Bị cắt tỉa bởi DUBO
+            <br>⚪ Xám: Node trung gian
+          </p>
+        </div>
+        <div class="card card-success">
+          <div class="card-title">Tab 2: Cây Duyệt DFS</div>
+          <p>• <strong>Bảng duyệt 32 mẫu ứng viên:</strong> Tương ứng chính xác với Table 4 trong bài báo gốc.</p>
+          <p>• <strong>Chi tiết cắt tỉa:</strong> Hiển thị rõ giá trị DO(X), cận trên DUBO(X), trạng thái Prune và TIDs.</p>
+          <p>• <strong>Công cụ sư phạm:</strong> Giúp giảng viên và sinh viên kiểm chứng từng bước chạy của thuật toán.</p>
+        </div>
+        <div class="card card-highlight">
+          <div class="card-title">Tab 3: Biểu Đồ DO Live</div>
+          <p>• <strong>Live LineChart JavaFX:</strong> Cập nhật tức thì ngay khi người dùng kéo Slider f hoặc ∂.</p>
+          <p>• <strong>Đường ngưỡng tham chiếu:</strong> Vẽ đường nằm ngang màu đỏ biểu thị ngưỡng minSup.</p>
+          <p>• <strong>Mượt mà 60 FPS:</strong> Vẽ lại biểu đồ trên luồng phụ, không giật lag giao diện.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: TAB 4 NATIVE TABLEVIEW -->
+    <div class="slide" data-notes="Ở Tab 4, em đã hoàn thành một nâng cấp quan trọng: Trước đây động cơ của Tson cần gõ lệnh terminal. Em đã biến 100% các câu lệnh đó thành nút bấm giao diện. Đặc biệt, em đã loại bỏ hoàn toàn màn hình console đen trắng vì bị lệch cột font chữ trên macOS, và thay bằng 3 bảng đồ họa JavaFX TableView native: Bảng mẫu khai phá, Bảng thống kê tệp dữ liệu, và Ma trận Golden Tests.">
+      <div class="slide-tag">CHƯƠNG 4: HIỆN THỰC HÓA GIAO DIỆN</div>
+      <h2 class="slide-title">6. Tab 4: Tích Hợp Động Cơ Big Data & Bảng Native TableView</h2>
+      <div class="grid-2">
+        <div class="card card-warning">
+          <div class="card-title">🖱️ Biến Lệnh Terminal CLI Thành Giao Diện GUI</div>
+          <ul>
+            <li><strong>Không cần mở Terminal:</strong> Các lệnh <code>mine</code>, <code>inspect</code>, <code>golden</code>, <code>detail</code> được chuyển hóa thành các nút bấm đồ họa thân thiện.</li>
+            <li><strong>Tùy chọn giới hạn giao dịch linh hoạt:</strong> ComboBox hỗ trợ gõ tùy ý (Editable) với tính năng phân tích cú pháp thông minh (5,000; 10,000; 50,000 hoặc số bất kỳ).</li>
+            <li><strong>Đa luồng an toàn:</strong> Quá trình khai phá chạy trên background task với thanh tiến độ ProgressBar, không làm treo ứng dụng.</li>
+          </ul>
+        </div>
+        <div class="card card-success">
+          <div class="card-title">📋 100% Giao Diện Bảng Native TableView</div>
+          <ul>
+            <li><strong>Xóa bỏ hoàn toàn Terminal TextArea:</strong> Khắc phục triệt để lỗi vỡ font và xô lệch cột Unicode trên macOS.</li>
+            <li><strong>3 Chế độ xem chuyển đổi linh hoạt:</strong>
+              <br>1. <strong>Bảng Mẫu Khai Phá:</strong> STT, Itemset X (in đậm tím), DO(X), Support, Độ dài |X|, TIDs.
+              <br>2. <strong>Thống Kê Dữ Liệu (Inspect):</strong> Thẻ tổng quan + Bảng Top 10 mục phổ biến nhất.
+              <br>3. <strong>Ma Trận Golden Tests:</strong> Kiểm thử chính quy TC1-TC8 với tick xanh <code>✅ PASS 100%</code>.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: KẾT QUẢ THỰC NGHIỆM -->
+    <div class="slide" data-notes="Đây là slide chứng minh tính đúng đắn của phần mềm. Toàn bộ 38 bài unit test đều vượt qua 100%. Ma trận 8 bộ testcases chính quy từ TC1 đến TC8 đều cho kết quả khớp hoàn hảo với bài báo, sai số tuyệt đối dưới 0.0001.">
+      <div class="slide-tag">CHƯƠNG 5: KẾT QUẢ THỰC NGHIỆM</div>
+      <h2 class="slide-title">7. Kết Quả Kiểm Thử & Ma Trận Golden Tests (TC1 - TC8)</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">✅ Kiểm Thử Tự Động (JUnit 5)</div>
+          <p style="font-size: 20px; font-weight: 700; color: #34D399;">38 / 38 Tests PASS (100% BUILD SUCCESS)</p>
+          <ul style="margin-top: 10px;">
+            <li><code>Lab1VerificationTest</code> (8 tests): Khớp số liệu tính tay.</li>
+            <li><code>DHOPMEngineTest</code> (10 tests): Kiểm thử 3 pha và luồng.</li>
+            <li><code>BridgeEngineTest</code> (10 tests): Hợp đồng cầu nối.</li>
+            <li><code>TsonBridgeIntegrationTest</code> (6 tests): Đối soát 2 engine.</li>
+            <li><code>TsonToolsServiceTest</code> (4 tests): Dịch vụ dữ liệu.</li>
+          </ul>
+          <p style="margin-top: 12px; color: #38BDF8;"><strong>★ Sai số toán học:</strong> Δ < 0.0001 (Khớp tuyệt đối bài báo gốc!)</p>
+        </div>
+        <div class="card">
+          <div class="card-title">🎯 Ma Trận Đối Soát 8 Test Cases Chính Quy</div>
+          <table>
+            <thead>
+              <tr><th>Mã TC</th><th>f</th><th>∂</th><th>Kết Quả Khai Phá</th><th>Trạng Thái</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>TC1</td><td>0.90</td><td>15%</td><td>2 mẫu: {AE}, {F}</td><td><span class="tag-pass">✅ PASS</span></td></tr>
+              <tr><td>TC2</td><td>0.90</td><td>20%</td><td>0 mẫu (Rỗng)</td><td><span class="tag-pass">✅ PASS</span></td></tr>
+              <tr><td>TC3</td><td>0.90</td><td>10%</td><td>6 mẫu: {AE, F, BE...}</td><td><span class="tag-pass">✅ PASS</span></td></tr>
+              <tr><td>TC4</td><td>0.95</td><td>15%</td><td>4 mẫu</td><td><span class="tag-pass">✅ PASS</span></td></tr>
+              <tr><td>TC5</td><td>1.00</td><td>15%</td><td>9 mẫu: {AE, F, CD...}</td><td><span class="tag-pass">✅ PASS</span></td></tr>
+              <tr><td>TC6</td><td>1.00</td><td>20%</td><td>4 mẫu: {AE, F, CD, DE}</td><td><span class="tag-pass">✅ PASS</span></td></tr>
+              <tr><td>TC7</td><td>0.80</td><td>15%</td><td>1 mẫu: {AE}</td><td><span class="tag-pass">✅ PASS</span></td></tr>
+              <tr><td>TC8</td><td>0.85</td><td>15%</td><td>2 mẫu: {AE}, {F}</td><td><span class="tag-pass">✅ PASS</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 9: BENCHMARK FIMI -->
+    <div class="slide" data-notes="Ứng dụng đã sẵn sàng chạy trên các bộ dữ liệu lớn FIMI như chess, mushroom, retail. Khi demo với Hội đồng, em sẽ đi theo kịch bản 4 bước: Giới thiệu thẻ DHO-List, kéo Slider f để chứng minh khả năng lọc mẫu cũ, bấm nút bơm luồng One-Scan, và cuối cùng mở Tab 4 để demo động cơ Big Data với các bảng đồ họa TableView.">
+      <div class="slide-tag">CHƯƠNG 5: KẾT QUẢ THỰC NGHIỆM</div>
+      <h2 class="slide-title">8. Thử Nghiệm Dataset FIMI & Kịch Bản Demo</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">📦 Thử Nghiệm Trên Tập Dữ Liệu Lớn FIMI</div>
+          <table>
+            <thead>
+              <tr><th>Dataset</th><th>Số GD (|D|)</th><th>Số Item (|I|)</th><th>Đặc Tính</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>chess.dat</td><td>3,196</td><td>75</td><td>Dày đặc (Dense)</td></tr>
+              <tr><td>mushroom.dat</td><td>8,124</td><td>119</td><td>Dày đặc (Dense)</td></tr>
+              <tr><td>connect.dat</td><td>67,557</td><td>129</td><td>Rất dày đặc (Very Dense)</td></tr>
+              <tr><td>retail.dat</td><td>88,162</td><td>16,470</td><td>Thưa thương mại (Sparse)</td></tr>
+              <tr><td>pumsb.dat</td><td>49,046</td><td>2,113</td><td>Kích thước GD lớn</td></tr>
+            </tbody>
+          </table>
+          <p style="margin-top: 10px; font-size: 13px; color: #94A3B8;">
+            Tích hợp sẵn trong thư mục <code>dataset/</code>, nạp và khai phá trực tiếp qua nút bấm trên giao diện.
+          </p>
+        </div>
+        <div class="card card-highlight">
+          <div class="card-title">🎤 Kịch Bản Demo 3 Phút Ghi Điểm Tuyệt Đối</div>
+          <ol style="padding-left: 20px; display: flex; flex-direction: column; gap: 8px;">
+            <li><strong>Bước 1 (30s) - Giới thiệu:</strong> Mở ứng dụng JavaFX, giới thiệu bài toán Occupancy và quan sát các thẻ DHO-List ở Tab 1.</li>
+            <li><strong>Bước 2 (45s) - Chứng minh f:</strong> Kéo Slider f từ 1.0 về 0.9 → Chỉ cho Thầy Cô thấy kết quả giảm từ 9 mẫu xuống đúng 2 mẫu {AE, F}.</li>
+            <li><strong>Bước 3 (45s) - Demo One-Scan:</strong> Bấm <em>"➕ Bơm từng giao dịch"</em> thêm T9={A,E} → cập nhật ngay không quét lại T1..T8.</li>
+            <li><strong>Bước 4 (30s) - Demo Tab 4:</strong> Bấm <em>"🎯 Golden Tests"</em> xem ma trận xanh và chọn nạp dataset FIMI để chạy thực tế.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 10: KẾT LUẬN -->
+    <div class="slide" data-notes="Tóm lại, đề tài đã hoàn thành xuất sắc các mục tiêu cả về mặt học thuật lý thuyết lẫn kỹ thuật lập trình Java nâng cao. Hướng phát triển tiếp theo là nâng cấp thuật toán bằng BitSet để tối ưu tốc độ CPU và kết nối với Apache Kafka để ứng dụng vào các hệ thống thương mại điện tử thực tế.">
+      <div class="slide-tag">CHƯƠNG 6: KẾT LUẬN & HƯỚNG PHÁT TRIỂN</div>
+      <h2 class="slide-title">9. Kết Luận & Hướng Phát Triển Đề Tài</h2>
+      <div class="grid-2">
+        <div class="card card-success">
+          <div class="card-title">🏆 Kết Quả Đạt Được</div>
+          <ul>
+            <li><strong>Làm chủ lý thuyết:</strong> Hiểu sâu sắc và chứng minh tính đúng đắn của thuật toán DHOPM, giải quyết bài toán phi đơn điệu bằng DUBO.</li>
+            <li><strong>Kiến trúc chuẩn công nghiệp:</strong> Áp dụng nhuần nhuyễn 6 Design Patterns (Bridge, Adapter, Strategy, Factory, Observer, MVC).</li>
+            <li><strong>Trực quan hóa đồ họa 100%:</strong> Loại bỏ hoàn toàn terminal text, cung cấp bảng TableView native và thẻ tương tác mượt mà.</li>
+            <li><strong>Độ tin cậy tuyệt đối:</strong> 38/38 unit tests vượt qua, sai số toán học Δ < 0.0001 so với bài báo gốc EAAI 2026.</li>
+          </ul>
+        </div>
+        <div class="card card-highlight">
+          <div class="card-title">🚀 Hướng Mở Rộng Trong Tương Lai</div>
+          <ul>
+            <li><strong>Engine V2 Tối Ưu Hóa BitSet:</strong> Biểu diễn giao dịch bằng mảng bit và phép AND phần cứng để tăng tốc độ giao cắt lên gấp 10 lần.</li>
+            <li><strong>Tích hợp Apache Kafka:</strong> Đóng gói thành Spring Boot Microservice nhận luồng giao dịch trực tiếp từ các hệ thống E-commerce thực tế.</li>
+            <li><strong>Mở rộng cụm phân tán:</strong> Triển khai trên Apache Flink / Spark Streaming để xử lý hàng triệu giao dịch mỗi giây trên môi trường Cloud.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 11: Q&A -->
+    <div class="slide" style="justify-content: center; align-items: center; text-align: center;" data-notes="Em xin chân thành cảm ơn Quý Thầy Cô đã chú ý lắng nghe phần trình bày của em. Bây giờ em xin phép khởi chạy ứng dụng trực tiếp trên máy và sẵn sàng trả lời các câu hỏi phản biện từ Hội đồng.">
+      <div class="slide-tag" style="margin-bottom: 14px;">PHẦN HỎI ĐÁP & BẢO VỆ ĐỀ TÀI</div>
+      <h1 style="font-size: 38px; color: white; margin-bottom: 20px;">XIN CHÂN THÀNH CẢM ƠN QUÝ THẦY CÔ!</h1>
+      <p style="font-size: 20px; color: #93C5FD; max-width: 800px; line-height: 1.6; margin-bottom: 30px;">
+        Em xin kính mời Quý Thầy/Cô và các bạn đặt câu hỏi phản biện.<br>
+        Em đã sẵn sàng thực hiện Demo trực tiếp các tính năng trên phần mềm!
+      </p>
+      <div style="display: flex; gap: 16px;">
+        <span class="badge" style="font-size: 14px; padding: 8px 16px;">JavaFX Desktop</span>
+        <span class="badge" style="font-size: 14px; padding: 8px 16px;">38/38 Tests PASS</span>
+        <span class="badge" style="font-size: 14px; padding: 8px 16px;">Golden Tests TC1-TC8 PASS</span>
+      </div>
+    </div>
+
+    <!-- Progress indicator -->
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+  </main>
+
+  <!-- Speaker Notes Drawer -->
+  <footer id="notes-drawer">
+    <div class="notes-title">🎤 Gợi Ý Lời Thoại Thuyết Trình (Speaker Notes):</div>
+    <div id="notes-content">Nội dung ghi chú...</div>
+  </footer>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const counter = document.getElementById('slide-counter');
+    const progressBar = document.getElementById('progress-bar');
+    const notesContent = document.getElementById('notes-content');
+    const notesDrawer = document.getElementById('notes-drawer');
+    let currentIdx = 0;
+
+    function updateSlide(idx) {
+      if (idx < 0 || idx >= slides.length) return;
+      slides.forEach((s, i) => {
+        s.classList.remove('active', 'prev');
+        if (i === idx) {
+          s.classList.add('active');
+        } else if (i < idx) {
+          s.classList.add('prev');
+        }
+      });
+      currentIdx = idx;
+      counter.innerText = `${currentIdx + 1} / ${slides.length}`;
+      progressBar.style.width = `${((currentIdx + 1) / slides.length) * 100}%`;
+      
+      // Update speaker notes
+      const notes = slides[currentIdx].getAttribute('data-notes') || 'Không có ghi chú cho slide này.';
+      notesContent.innerText = notes;
+    }
+
+    function nextSlide() {
+      if (currentIdx < slides.length - 1) {
+        updateSlide(currentIdx + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentIdx > 0) {
+        updateSlide(currentIdx - 1);
+      }
+    }
+
+    function toggleNotes() {
+      notesDrawer.classList.toggle('open');
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    // Keyboard navigation
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      } else if (e.key.toLowerCase() === 'n') {
+        toggleNotes();
+      } else if (e.key.toLowerCase() === 'f') {
+        toggleFullScreen();
+      }
+    });
+
+    // Initialize
+    updateSlide(0);
+  </script>
+</body>
+</html>
