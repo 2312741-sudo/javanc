@@ -28,8 +28,10 @@ import vn.edu.dlu.dhopm.log.CalculationLogEntry;
 import vn.edu.dlu.dhopm.log.CalculationLogger;
 import vn.edu.dlu.dhopm.core.DatasetLoader;
 import vn.edu.dlu.dhopm.core.DHOPMEngine;
+import vn.edu.dlu.dhopm.core.MinSupSweepService;
 import vn.edu.dlu.dhopm.core.StreamSimulator;
 import vn.edu.dlu.dhopm.model.DHONode;
+import vn.edu.dlu.dhopm.model.MinSupSweepPoint;
 import vn.edu.dlu.dhopm.model.PatternResult;
 import vn.edu.dlu.dhopm.model.Transaction;
 import vn.edu.dlu.dhopm.ui.component.DHONodeCard;
@@ -109,15 +111,45 @@ public class MainController implements Initializable {
     @FXML private TableColumn<PatternResult, String> colStatus;
     @FXML private TableColumn<PatternResult, String> colTransactions;
 
-    // ── Tab 3: Trực quan hoá chi tiết & Lịch sử Mining ───────────────────────
+    // ── Tab 3: minSup Sweep Controls & Paper Benchmark Figures ───────────────
+    @FXML private TextField txtSweepStart;
+    @FXML private TextField txtSweepEnd;
+    @FXML private TextField txtSweepStep;
+    @FXML private Button btnPresetPaper;
+    @FXML private Button btnPresetFine;
+    @FXML private Button btnRunSweep;
+    @FXML private Button btnCancelSweep;
+    @FXML private ProgressBar progressSweep;
+    @FXML private Label lblSweepStatus;
+    @FXML private Label lblSweepEta;
+    @FXML private Label lblSweepCountBadge;
+
+    @FXML private Button btnChartFig11;
+    @FXML private Button btnChartFig6;
+    @FXML private Button btnChartFig13;
     @FXML private Button btnChartModeDO;
     @FXML private Button btnChartModeHistory;
-    @FXML private Button btnChartModeDistribution;
-    @FXML private Label lblHistoryCountBadge;
+    @FXML private LineChart<String, Number> lineChartFig11;
+    @FXML private LineChart<String, Number> lineChartFig6;
+    @FXML private LineChart<String, Number> lineChartFig13;
     @FXML private LineChart<String, Number> lineChartDO;
     @FXML private LineChart<String, Number> lineChartHistory;
     @FXML private BarChart<String, Number> barChartDistribution;
+
+    @FXML private Button btnViewSweepTable;
+    @FXML private Button btnViewHistoryTable;
     @FXML private Button btnClearHistory;
+
+    @FXML private TableView<MinSupSweepPoint> tblSweepResults;
+    @FXML private TableColumn<MinSupSweepPoint, String> colSwpPartial;
+    @FXML private TableColumn<MinSupSweepPoint, String> colSwpMinSup;
+    @FXML private TableColumn<MinSupSweepPoint, String> colSwpDhops;
+    @FXML private TableColumn<MinSupSweepPoint, String> colSwpPruned;
+    @FXML private TableColumn<MinSupSweepPoint, String> colSwpPrunedRatio;
+    @FXML private TableColumn<MinSupSweepPoint, String> colSwpCandidates;
+    @FXML private TableColumn<MinSupSweepPoint, String> colSwpRuntime;
+    @FXML private TableColumn<MinSupSweepPoint, String> colSwpHeap;
+
     @FXML private TableView<MiningRunMemento> tblMiningHistory;
     @FXML private TableColumn<MiningRunMemento, Number> colHistRunId;
     @FXML private TableColumn<MiningRunMemento, String> colHistTime;
@@ -130,6 +162,10 @@ public class MainController implements Initializable {
     @FXML private TableColumn<MiningRunMemento, String> colHistDhops;
     @FXML private TableColumn<MiningRunMemento, String> colHistPruned;
     @FXML private TableColumn<MiningRunMemento, String> colHistRuntime;
+
+    private final MinSupSweepService sweepService = new MinSupSweepService();
+    private final ObservableList<MinSupSweepPoint> sweepData = FXCollections.observableArrayList();
+    private Task<List<MinSupSweepPoint>> activeSweepTask;
 
     // ── Tab 4: Tson Results & Benchmark TableViews & KPI Cards ───────────────
     @FXML private Label lblKpiTime;
@@ -452,36 +488,93 @@ public class MainController implements Initializable {
 
     // ── Tab 3: Mining History & Multi-Chart Setup ─────────────────────────────
 
+    // ── Tab 3: Mining History & Multi-Chart Setup (minSup Sweep & Paper Figures) ──
+
     private void initMiningHistoryViews() {
-        if (colHistRunId == null) return;
+        // ── 1. Cấu hình bảng Memento Lịch sử (tblMiningHistory)
+        if (colHistRunId != null) {
+            colHistRunId.setCellValueFactory(cellData -> new SimpleIntegerProperty(cellData.getValue().getRunId()));
+            colHistTime.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getTimestamp()));
+            colHistEngine.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getEngineName()));
+            colHistDataset.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getDatasetName()));
+            colHistF.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%.2f", cellData.getValue().getF())));
+            colHistPartial.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%.1f%%", cellData.getValue().getPartial() * 100.0)));
+            colHistMinSup.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%.2f", cellData.getValue().getMinSup())));
+            colHistTx.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%,d", cellData.getValue().getTotalTransactions())));
+            colHistDhops.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%,d mẫu", cellData.getValue().getDhopCount())));
+            colHistPruned.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%,d (%.0f%%)",
+                    cellData.getValue().getPrunedCount(), cellData.getValue().getPrunedRatio() * 100.0)));
+            colHistRuntime.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%,d ms", cellData.getValue().getRuntimeMs())));
 
-        colHistRunId.setCellValueFactory(cellData -> new SimpleIntegerProperty(cellData.getValue().getRunId()));
-        colHistTime.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getTimestamp()));
-        colHistEngine.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getEngineName()));
-        colHistDataset.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getDatasetName()));
-        colHistF.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%.2f", cellData.getValue().getF())));
-        colHistPartial.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%.1f%%", cellData.getValue().getPartial() * 100.0)));
-        colHistMinSup.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%.2f", cellData.getValue().getMinSup())));
-        colHistTx.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%,d", cellData.getValue().getTotalTransactions())));
-        colHistDhops.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%,d mẫu", cellData.getValue().getDhopCount())));
-        colHistPruned.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%,d (%.0f%%)",
-                cellData.getValue().getPrunedCount(), cellData.getValue().getPrunedRatio() * 100.0)));
-        colHistRuntime.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%,d ms", cellData.getValue().getRuntimeMs())));
+            tblMiningHistory.setItems(MiningHistoryManager.getInstance().getHistory());
 
-        tblMiningHistory.setItems(MiningHistoryManager.getInstance().getHistory());
+            MiningHistoryManager.getInstance().getHistory().addListener((javafx.collections.ListChangeListener<MiningRunMemento>) c -> {
+                updateHistoryCharts();
+            });
 
-        MiningHistoryManager.getInstance().getHistory().addListener((javafx.collections.ListChangeListener<MiningRunMemento>) c -> {
-            int count = MiningHistoryManager.getInstance().size();
-            if (lblHistoryCountBadge != null) {
-                lblHistoryCountBadge.setText(count + " lần chạy đã lưu");
-            }
-            updateHistoryCharts();
-        });
+            tblMiningHistory.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal != null && !newVal.getTopPatterns().isEmpty()) {
+                    tableData.setAll(newVal.getTopPatterns());
+                    tsonPatternsData.setAll(newVal.getTopPatterns());
+                    updateChartFromPatterns(newVal.getTopPatterns(), newVal.getMinSup());
+                }
+            });
+        }
 
-        if (btnChartModeDO != null) btnChartModeDO.setOnAction(e -> showChartMode(1));
-        if (btnChartModeHistory != null) btnChartModeHistory.setOnAction(e -> showChartMode(2));
-        if (btnChartModeDistribution != null) btnChartModeDistribution.setOnAction(e -> showChartMode(3));
-        showChartMode(1);
+        // ── 2. Cấu hình bảng Quét minSup (tblSweepResults)
+        if (tblSweepResults != null) {
+            colSwpPartial.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getPartialPercentFormatted()));
+            colSwpMinSup.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getMinSupFormatted()));
+            colSwpDhops.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getDhopCountFormatted()));
+            colSwpPruned.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getPrunedCountFormatted()));
+            colSwpPrunedRatio.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getPrunedRatioFormatted()));
+            colSwpCandidates.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getTotalCandidatesFormatted()));
+            colSwpRuntime.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getRuntimeFormatted()));
+            colSwpHeap.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getHeapFormatted()));
+
+            tblSweepResults.setItems(sweepData);
+
+            tblSweepResults.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal != null) {
+                    sliderMinSup.setValue(newVal.partial());
+                    if (txtMinSupRatio != null) {
+                        txtMinSupRatio.setText(newVal.getPartialPercentFormatted());
+                    }
+                }
+            });
+        }
+
+        // ── 3. Bộ nút chuyển đổi Biểu Đồ Bài Báo EAAI 2026
+        if (btnChartFig11 != null) btnChartFig11.setOnAction(e -> showChartFigure(1));
+        if (btnChartFig6 != null) btnChartFig6.setOnAction(e -> showChartFigure(2));
+        if (btnChartFig13 != null) btnChartFig13.setOnAction(e -> showChartFigure(3));
+        if (btnChartModeDO != null) btnChartModeDO.setOnAction(e -> showChartFigure(4));
+        if (btnChartModeHistory != null) btnChartModeHistory.setOnAction(e -> showChartFigure(5));
+
+        // ── 4. Bộ nút chuyển đổi Bảng Dữ Liệu
+        if (btnViewSweepTable != null) btnViewSweepTable.setOnAction(e -> switchTableView(1));
+        if (btnViewHistoryTable != null) btnViewHistoryTable.setOnAction(e -> switchTableView(2));
+        switchTableView(1);
+
+        // ── 5. Nút Presets Quét
+        if (btnPresetPaper != null) {
+            btnPresetPaper.setOnAction(e -> {
+                txtSweepStart.setText("5%");
+                txtSweepEnd.setText("30%");
+                txtSweepStep.setText("5%");
+            });
+        }
+        if (btnPresetFine != null) {
+            btnPresetFine.setOnAction(e -> {
+                txtSweepStart.setText("2%");
+                txtSweepEnd.setText("20%");
+                txtSweepStep.setText("2%");
+            });
+        }
+
+        // ── 6. Nút Hành Động Quét Dải minSup
+        if (btnRunSweep != null) btnRunSweep.setOnAction(e -> executeSweepBenchmark());
+        if (btnCancelSweep != null) btnCancelSweep.setOnAction(e -> cancelSweepBenchmark());
 
         if (btnClearHistory != null) {
             btnClearHistory.setOnAction(e -> {
@@ -490,32 +583,202 @@ public class MainController implements Initializable {
             });
         }
 
-        tblMiningHistory.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null && !newVal.getTopPatterns().isEmpty()) {
-                tableData.setAll(newVal.getTopPatterns());
-                tsonPatternsData.setAll(newVal.getTopPatterns());
-                updateChartFromPatterns(newVal.getTopPatterns(), newVal.getMinSup());
+        // ── 7. Khởi tạo sẵn dữ liệu Quét Mặc Định theo Bài Báo (default.dat 8 tx)
+        try {
+            List<MinSupSweepPoint> initialPoints = sweepService.generateInitialPaperBenchmarkPoints(tamEngine, sliderF.getValue());
+            if (!initialPoints.isEmpty()) {
+                sweepData.setAll(initialPoints);
+                updateSweepCharts(initialPoints);
+                if (lblSweepCountBadge != null) {
+                    lblSweepCountBadge.setText(initialPoints.size() + " mốc minSup đã quét");
+                }
             }
-        });
+        } catch (Exception ignored) {}
+
+        showChartFigure(1); // Mặc định mở Fig 11 (Runtime vs minSup)
     }
 
-    private void showChartMode(int mode) {
-        if (lineChartDO != null) {
-            lineChartDO.setVisible(mode == 1);
-            lineChartDO.setManaged(mode == 1);
+    /**
+     * Chuyển đổi hiển thị biểu đồ tương ứng các Figures trong bài báo.
+     * 1: Fig 11 (Runtime vs minSup)
+     * 2: Fig 6 (DHOPs & DUBO Pruning vs minSup)
+     * 3: Fig 13 (Peak Heap RAM vs minSup)
+     * 4: Fig 2 (Item DO vs minSup)
+     * 5: History LineChart
+     */
+    private void showChartFigure(int mode) {
+        if (lineChartFig11 != null) { lineChartFig11.setVisible(mode == 1); lineChartFig11.setManaged(mode == 1); }
+        if (lineChartFig6 != null) { lineChartFig6.setVisible(mode == 2); lineChartFig6.setManaged(mode == 2); }
+        if (lineChartFig13 != null) { lineChartFig13.setVisible(mode == 3); lineChartFig13.setManaged(mode == 3); }
+        if (lineChartDO != null) { lineChartDO.setVisible(mode == 4); lineChartDO.setManaged(mode == 4); }
+        if (lineChartHistory != null) { lineChartHistory.setVisible(mode == 5); lineChartHistory.setManaged(mode == 5); }
+        if (barChartDistribution != null) { barChartDistribution.setVisible(false); barChartDistribution.setManaged(false); }
+
+        String active = "-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold;";
+        if (btnChartFig11 != null) btnChartFig11.setStyle(mode == 1 ? active : "");
+        if (btnChartFig6 != null) btnChartFig6.setStyle(mode == 2 ? active : "");
+        if (btnChartFig13 != null) btnChartFig13.setStyle(mode == 3 ? active : "");
+        if (btnChartModeDO != null) btnChartModeDO.setStyle(mode == 4 ? active : "");
+        if (btnChartModeHistory != null) btnChartModeHistory.setStyle(mode == 5 ? active : "");
+    }
+
+    /**
+     * Chuyển đổi giữa Bảng Quét minSup (1) và Bảng Lịch Sử Memento (2).
+     */
+    private void switchTableView(int mode) {
+        if (tblSweepResults != null) {
+            tblSweepResults.setVisible(mode == 1);
+            tblSweepResults.setManaged(mode == 1);
         }
-        if (lineChartHistory != null) {
-            lineChartHistory.setVisible(mode == 2);
-            lineChartHistory.setManaged(mode == 2);
+        if (tblMiningHistory != null) {
+            tblMiningHistory.setVisible(mode == 2);
+            tblMiningHistory.setManaged(mode == 2);
         }
-        if (barChartDistribution != null) {
-            barChartDistribution.setVisible(mode == 3);
-            barChartDistribution.setManaged(mode == 3);
+        String active = "-fx-background-color: #0f172a; -fx-text-fill: white; -fx-font-weight: bold;";
+        if (btnViewSweepTable != null) btnViewSweepTable.setStyle(mode == 1 ? active : "");
+        if (btnViewHistoryTable != null) btnViewHistoryTable.setStyle(mode == 2 ? active : "");
+    }
+
+    /**
+     * Cập nhật toàn bộ các biểu đồ chuẩn bài báo từ danh sách điểm quét minSup.
+     */
+    private void updateSweepCharts(List<MinSupSweepPoint> points) {
+        if (points == null || points.isEmpty()) return;
+
+        // 1. Figure 11: Runtime vs minSup (∂)
+        if (lineChartFig11 != null) {
+            lineChartFig11.getData().clear();
+            XYChart.Series<String, Number> sRuntime = new XYChart.Series<>();
+            sRuntime.setName("⏱️ Runtime DHOPM (ms)");
+            for (MinSupSweepPoint p : points) {
+                sRuntime.getData().add(new XYChart.Data<>(p.getPartialPercentFormatted(), p.runtimeMs()));
+            }
+            lineChartFig11.getData().add(sRuntime);
         }
 
-        if (btnChartModeDO != null) btnChartModeDO.setStyle(mode == 1 ? "-fx-background-color: #2563eb; -fx-text-fill: white;" : "");
-        if (btnChartModeHistory != null) btnChartModeHistory.setStyle(mode == 2 ? "-fx-background-color: #059669; -fx-text-fill: white;" : "");
-        if (btnChartModeDistribution != null) btnChartModeDistribution.setStyle(mode == 3 ? "-fx-background-color: #7c3aed; -fx-text-fill: white;" : "");
+        // 2. Figure 6: DHOPs & DUBO Pruning vs minSup (∂)
+        if (lineChartFig6 != null) {
+            lineChartFig6.getData().clear();
+            XYChart.Series<String, Number> sDhop = new XYChart.Series<>();
+            sDhop.setName("🟢 Mẫu DHOP Hợp Lệ");
+
+            XYChart.Series<String, Number> sPruned = new XYChart.Series<>();
+            sPruned.setName("🔴 Cắt Tỉa Bởi DUBO");
+
+            XYChart.Series<String, Number> sTotal = new XYChart.Series<>();
+            sTotal.setName("⚪ Tổng Ứng Viên DFS Duyệt");
+
+            for (MinSupSweepPoint p : points) {
+                sDhop.getData().add(new XYChart.Data<>(p.getPartialPercentFormatted(), p.dhopCount()));
+                sPruned.getData().add(new XYChart.Data<>(p.getPartialPercentFormatted(), p.prunedCount()));
+                sTotal.getData().add(new XYChart.Data<>(p.getPartialPercentFormatted(), p.totalCandidates()));
+            }
+            lineChartFig6.getData().addAll(sDhop, sPruned, sTotal);
+        }
+
+        // 3. Figure 13: Memory Heap vs minSup (∂)
+        if (lineChartFig13 != null) {
+            lineChartFig13.getData().clear();
+            XYChart.Series<String, Number> sHeap = new XYChart.Series<>();
+            sHeap.setName("💾 Bộ Nhớ Peak Heap RAM (MB)");
+            for (MinSupSweepPoint p : points) {
+                sHeap.getData().add(new XYChart.Data<>(p.getPartialPercentFormatted(), p.peakHeapMb()));
+            }
+            lineChartFig13.getData().add(sHeap);
+        }
+    }
+
+    /**
+     * Thực thi chạy quét thực nghiệm theo dải minSup (Sweep Benchmark Runner).
+     */
+    private void executeSweepBenchmark() {
+        double start = parseRatioText(txtSweepStart != null ? txtSweepStart.getText() : "5%", 0.05);
+        double end = parseRatioText(txtSweepEnd != null ? txtSweepEnd.getText() : "30%", 0.30);
+        double step = parseRatioText(txtSweepStep != null ? txtSweepStep.getText() : "5%", 0.05);
+
+        List<Double> steps = MinSupSweepService.generatePartialSteps(start, end, step);
+        double f = sliderF.getValue();
+        EngineMode mode = cbEngineMode.getValue();
+        Path path = resolveDatasetPath();
+        long limit = resolveLimit();
+
+        if (btnRunSweep != null) btnRunSweep.setDisable(true);
+        if (btnCancelSweep != null) btnCancelSweep.setDisable(false);
+        if (progressSweep != null) progressSweep.setProgress(-1);
+        if (lblSweepStatus != null) lblSweepStatus.setText("Đang khởi động quá trình quét " + steps.size() + " mốc minSup...");
+
+        Task<List<MinSupSweepPoint>> task = new Task<>() {
+            @Override
+            protected List<MinSupSweepPoint> call() throws Exception {
+                return sweepService.executeSweep(
+                        steps, f, mode, tamEngine, tsonService, path, limit,
+                        progress -> Platform.runLater(() -> {
+                            if (progressSweep != null) {
+                                progressSweep.setProgress((double) progress.currentStep() / progress.totalSteps());
+                            }
+                            if (lblSweepStatus != null) {
+                                lblSweepStatus.setText(progress.message());
+                            }
+                        }),
+                        this::isCancelled
+                );
+            }
+        };
+
+        activeSweepTask = task;
+
+        task.setOnSucceeded(e -> {
+            activeSweepTask = null;
+            if (btnRunSweep != null) btnRunSweep.setDisable(false);
+            if (btnCancelSweep != null) btnCancelSweep.setDisable(true);
+            if (progressSweep != null) progressSweep.setProgress(1.0);
+
+            List<MinSupSweepPoint> result = task.getValue();
+            if (result != null && !result.isEmpty()) {
+                sweepData.setAll(result);
+                updateSweepCharts(result);
+                if (lblSweepCountBadge != null) {
+                    lblSweepCountBadge.setText(result.size() + " mốc minSup đã quét");
+                }
+                if (lblSweepStatus != null) {
+                    lblSweepStatus.setText("✅ Đã hoàn tất quét " + result.size() + " mốc minSup thành công!");
+                }
+                showChartFigure(1); // Mở Figure 11 (Runtime vs minSup)
+                switchTableView(1); // Mở Bảng Sweep
+            }
+        });
+
+        task.setOnCancelled(e -> {
+            activeSweepTask = null;
+            if (btnRunSweep != null) btnRunSweep.setDisable(false);
+            if (btnCancelSweep != null) btnCancelSweep.setDisable(true);
+            if (progressSweep != null) progressSweep.setProgress(0.0);
+            if (lblSweepStatus != null) lblSweepStatus.setText("⏹ Đã dừng quét theo yêu cầu.");
+        });
+
+        task.setOnFailed(e -> {
+            activeSweepTask = null;
+            if (btnRunSweep != null) btnRunSweep.setDisable(false);
+            if (btnCancelSweep != null) btnCancelSweep.setDisable(true);
+            if (progressSweep != null) progressSweep.setProgress(0.0);
+            Throwable ex = task.getException();
+            if (lblSweepStatus != null) {
+                lblSweepStatus.setText("❌ Lỗi khi quét: " + (ex != null ? ex.getMessage() : "Không xác định"));
+            }
+        });
+
+        Thread t = new Thread(task, "DHOPM-MinSup-Sweep-Worker");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void cancelSweepBenchmark() {
+        if (activeSweepTask != null && activeSweepTask.isRunning()) {
+            activeSweepTask.cancel(true);
+            if (lblSweepStatus != null) {
+                lblSweepStatus.setText("Đang yêu cầu dừng quét...");
+            }
+        }
     }
 
     private void updateHistoryCharts() {
@@ -562,6 +825,17 @@ public class MainController implements Initializable {
                 barPrunedSeries.getData().add(new XYChart.Data<>(label, r.getPrunedCount()));
             }
             barChartDistribution.getData().addAll(barDhopSeries, barPrunedSeries);
+        }
+    }
+
+    private static double parseRatioText(String text, double defaultValue) {
+        if (text == null || text.isBlank()) return defaultValue;
+        String clean = text.trim().replace("%", "").replace(",", ".").trim();
+        try {
+            double parsed = Double.parseDouble(clean);
+            return parsed > 1.0 ? parsed / 100.0 : parsed;
+        } catch (NumberFormatException e) {
+            return defaultValue;
         }
     }
 

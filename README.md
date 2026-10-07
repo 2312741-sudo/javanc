@@ -254,11 +254,14 @@ classDiagram
      - **Pha 2:** Khai triển công thức $DO(i) = \sum \frac{1}{|T_d|} \cdot f^{T_L - T_d}$ và $DUBO(i) = \max_k \{ \sum n_j \frac{l_k}{l_j} \} \cdot f^{T_L - T_k}$ chi tiết cho từng mục.
      - **Pha 3:** Khám phá từng nút cây DFS, so sánh với $minSup$, hiển thị quyết định rõ ràng: 🟢 DHOP (Đạt chuẩn), 🔴 CẮT TỈA (Pruned bởi DUBO), ⚪ MỞ RỘNG (Duyệt tiếp cây con).
    - Thanh công cụ hỗ trợ tìm kiếm theo Item (`AE`, `F`), lọc theo Pha, nút **Xóa Log** và nút **Sao chép Log** vào Clipboard.
-3. **Tab 3 — Trực Quan Hóa Đa Biểu Đồ & Bảng Lưu Trữ Lịch Sử (Memento Pattern):**
-   - **Chế độ 1 — Điểm DO & Ngưỡng:** Biểu đồ đường so sánh $DO(X)$ với đường ngưỡng $minSup$.
-   - **Chế độ 2 — Lịch Sử Các Lần Khai Phá:** Biểu đồ xu hướng biểu diễn số mẫu DHOP, số mẫu bị cắt tỉa và thời gian chạy qua các lượt chạy (Run #1, Run #2...).
-   - **Chế độ 3 — Phân Bố Trạng Thái:** Biểu đồ cột phân bố tỷ lệ mẫu đạt DHOP vs mẫu bị cắt tỉa.
-   - **Bảng Lưu Trữ Lịch Sử:** Hiển thị danh sách các lần mining trước đó kèm nút xóa và xem lại kết quả cũ.
+3. **Tab 3 — Trực Quan Hóa Quét minSup Chuẩn Bài Báo (Figures 6, 11, 13) & Memento Caretaker:**
+   - **Bộ điều khiển quét dải minSup (Sweep Benchmark Runner):** Cho phép nhập dải ngưỡng $\partial$ (từ 5% đến 30%, bước nhảy 5% hoặc tùy chỉnh), kèm Presets bài báo (5%→30%) và độ mịn cao (2%→20%), nút một chạm *"🚀 Chạy Quét Từng minSup"*, thanh tiến trình `ProgressBar` và nút *"⏹ Dừng Quét"*.
+   - **Figure 11 (Bài báo EAAI 2026) — Runtime vs minSup ($\partial$):** Trục X biểu diễn các mốc minSup $\partial$, trục Y là thời gian thực thi (ms). Đường cong giảm mạnh chứng minh thời gian giảm theo cấp số nhân khi $\partial$ tăng!
+   - **Figure 6 (Bài báo EAAI 2026) — Mẫu DHOP & Cắt tỉa DUBO vs minSup ($\partial$):** So sánh 3 đường đồng quy: Số mẫu DHOP hợp lệ, Số mẫu bị DUBO cắt tỉa, và Tổng số ứng viên DFS. Trực quan hóa tỷ lệ cắt tỉa áp đảo từ 60% đến hơn 95%!
+   - **Figure 13 (Bài báo EAAI 2026) — Bộ nhớ Peak Heap RAM vs minSup ($\partial$):** Minh chứng mức RAM JVM duy trì cực thấp và ổn định nhờ cấu trúc DHO-List One-Scan.
+   - **Figure 2 — Item DO vs minSup:** So sánh giá trị DO từng mục với đường tham chiếu ngưỡng $minSup$.
+   - **Bảng kết quả quét từng minSup (`tblSweepResults`):** Đối chiếu chi tiết từng điểm dữ liệu: Mốc $\partial$, $minSup$ tuyệt đối, Số DHOPs, Mẫu cắt tỉa, Tỷ lệ cắt tỉa %, Tổng ứng viên, Runtime (ms), và Peak Heap (MB).
+   - **Bảng lưu trữ lịch sử (`tblMiningHistory`):** Tích hợp Memento Pattern lưu giữ snapshot các lần chạy đơn lẻ.
 4. **Mô Phỏng Luồng Dữ Liệu Thời Gian Thực (Multithreading):**
    - Nút **"▶ Bắt đầu"**: Luồng nền (`StreamSimulator` sử dụng `ScheduledExecutorService`) tự động bơm giao dịch mới theo chu kỳ.
    - Nút **"➕ Bơm từng giao dịch (Step Next)"**: Bơm thủ công từng giao dịch tiếp theo ($T_9, T_{10}, \dots$) để quan sát quá trình One-Scan cập nhật DHO-List.

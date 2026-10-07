@@ -287,11 +287,14 @@ classDiagram
    - Tự động đổi màu: 🟢 Xanh (đạt DHOP), 🔴 Đỏ (bị cắt tỉa DUBO), ⚪ Xám (node trung gian).
 2. **Tab 2 — Chi Tiết Cây Duyệt Mẫu DFS:**
    - Bảng dữ liệu hiển thị toàn bộ 32 mẫu ứng viên với $DO(X)$, $DUBO(X)$, trạng thái và danh sách giao dịch.
-3. **Tab 3 — Trực Quan Hóa Đa Biểu Đồ & Lịch Sử Mining (Memento Pattern):**
-   - **Chế độ 1:** Biểu đồ đường $DO(X)$ so sánh với đường ngưỡng $minSup$.
-   - **Chế độ 2:** Biểu đồ xu hướng qua các lần khai phá (DHOP count, Pruned count, Runtime qua Run #1, Run #2...).
-   - **Chế độ 3:** Biểu đồ cột phân bố trạng thái mẫu.
-   - **Bảng lưu trữ lịch sử:** Lưu giữ thông số các lần chạy trước, cho phép chọn xem lại và xóa lịch sử.
+3. **Tab 3 — Trực Quan Hóa Quét minSup Chuẩn Bài Báo (Figures 6, 11, 13) & Lịch Sử (Memento Pattern):**
+   - **Bộ điều khiển quét dải minSup (Sweep Benchmark Runner):** Cho phép nhập dải ngưỡng $\partial$ (từ 5% đến 30%, bước nhảy 5% hoặc tùy chỉnh), kèm Presets chuẩn bài báo (5%→30%) và độ mịn cao (2%→20%), nút một chạm *"🚀 Chạy Quét Từng minSup"*, thanh tiến trình `ProgressBar` và nút *"⏹ Dừng Quét"*.
+   - **Figure 11 (Bài báo EAAI 2026) — Thời gian thực thi vs minSup ($\partial$):** Trục hoành X biểu diễn các mốc minSup $\partial$, trục tung Y là thời gian thực thi (ms). Đường cong thể hiện thời gian chạy giảm theo hàm mũ khi $\partial$ tăng.
+   - **Figure 6 (Bài báo EAAI 2026) — Mẫu DHOP & Hiệu quả cắt tỉa DUBO vs minSup ($\partial$):** So sánh 3 đường đồng quy: Số mẫu DHOP hợp lệ, Số mẫu bị DUBO cắt tỉa, và Tổng số ứng viên DFS. Trực quan hóa tỷ lệ cắt tỉa vượt trội từ 60% đến hơn 95%.
+   - **Figure 13 (Bài báo EAAI 2026) — Bộ nhớ JVM Peak Heap vs minSup ($\partial$):** Minh chứng mức tiêu thụ RAM duy trì thấp và ổn định nhờ cấu trúc DHO-List One-Scan.
+   - **Figure 2 — Item DO vs minSup:** So sánh giá trị DO từng mục theo thứ tự Support $G \prec B \prec A \prec C \prec D \prec E \prec F$ với đường ngưỡng $minSup$.
+   - **Bảng kết quả quét từng minSup (`tblSweepResults`):** Đối chiếu chi tiết từng điểm dữ liệu: Mốc $\partial$, $minSup$ tuyệt đối, Số DHOPs, Mẫu cắt tỉa, Tỷ lệ cắt tỉa %, Tổng ứng viên, Runtime (ms), và Peak Heap (MB).
+   - **Bảng lưu trữ lịch sử (`tblMiningHistory`):** Áp dụng Memento Pattern lưu snapshot toàn bộ các lần chạy, cho phép xem lại hoặc xóa lịch sử.
 4. **Tab 4 — Trung Tâm Khai Phá Big Data FIMI (Tson V1 Engine):**
    - Tích hợp 4 tác vụ: `Mine`, `Inspect`, `Top DO Detail`, và `Golden TC1-8 TestKit`.
    - Nút **🛑 Dừng Khai Phá (Stop Mining)** tức thời và tính toán **ETA thời gian còn lại**.

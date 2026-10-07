@@ -240,72 +240,139 @@
                 </VBox>
             </Tab>
 
-            <!-- TAB 3: TRỰC QUAN HOÁ & LỊCH SỬ MINING -->
+            <!-- TAB 3: TRỰC QUAN HOÁ & LỊCH SỬ MINING (QUÉT THEO TỪNG MINSUP) -->
             <Tab text="📈 Trực Quan Hoá &amp; Lịch Sử">
-                <VBox spacing="10.0">
+                <VBox spacing="8.0">
                     <padding>
-                        <Insets top="10.0" right="16.0" bottom="10.0" left="16.0"/>
+                        <Insets top="8.0" right="14.0" bottom="8.0" left="14.0"/>
                     </padding>
 
-                    <!-- VIEW SWITCHER CHO TAB 3 -->
-                    <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-padding: 6 12 6 12; -fx-background-color: #f8fafc; -fx-background-radius: 8; -fx-border-color: #e2e8f0; -fx-border-radius: 8;">
-                        <Label text="📊 Chế Độ Biểu Đồ:" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #1e293b;"/>
-                        <HBox spacing="6.0">
-                            <Button fx:id="btnChartModeDO" text="📈 Điểm DO &amp; Ngưỡng" styleClass="btn-outline" style="-fx-font-size: 11px;"/>
-                            <Button fx:id="btnChartModeHistory" text="🕒 Lịch Sử Các Lần Khai Phá" styleClass="btn-outline" style="-fx-font-size: 11px;"/>
-                            <Button fx:id="btnChartModeDistribution" text="🍩 Phân Bố Trạng Thái" styleClass="btn-outline" style="-fx-font-size: 11px;"/>
+                    <!-- THANH ĐIỀU KHIỂN QUÉT DẢI MINSUP (BENCHMARK SWEEP RUNNER) -->
+                    <VBox spacing="6.0" style="-fx-padding: 8 12 8 12; -fx-background-color: #f8fafc; -fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;">
+                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <Label text="🔬 Quét Thực Nghiệm Theo minSup (Chuẩn Figures Bài Báo EAAI 2026):" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #0f172a;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Label text="Preset nhanh:" style="-fx-font-size: 11px; -fx-text-fill: #64748b;"/>
+                            <Button fx:id="btnPresetPaper" text="📄 Bài Báo (5%→30%)" styleClass="btn-outline" style="-fx-font-size: 10px; -fx-padding: 2 6 2 6;"/>
+                            <Button fx:id="btnPresetFine" text="🔬 Mịn (2%→20%)" styleClass="btn-outline" style="-fx-font-size: 10px; -fx-padding: 2 6 2 6;"/>
                         </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <Label text="Từ ∂:" style="-fx-font-size: 11px; -fx-text-fill: #334155;"/>
+                            <TextField fx:id="txtSweepStart" text="5%" prefWidth="55.0" style="-fx-font-size: 11px; -fx-alignment: CENTER;"/>
+                            <Label text="Đến ∂:" style="-fx-font-size: 11px; -fx-text-fill: #334155;"/>
+                            <TextField fx:id="txtSweepEnd" text="30%" prefWidth="55.0" style="-fx-font-size: 11px; -fx-alignment: CENTER;"/>
+                            <Label text="Bước:" style="-fx-font-size: 11px; -fx-text-fill: #334155;"/>
+                            <TextField fx:id="txtSweepStep" text="5%" prefWidth="55.0" style="-fx-font-size: 11px; -fx-alignment: CENTER;"/>
+                            <Button fx:id="btnRunSweep" text="🚀 Chạy Quét Từng minSup" styleClass="btn-primary" style="-fx-font-size: 11px; -fx-font-weight: bold;"/>
+                            <Button fx:id="btnCancelSweep" text="⏹ Dừng" disable="true" styleClass="btn-danger" style="-fx-font-size: 11px;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <ProgressBar fx:id="progressSweep" prefWidth="130.0" progress="0.0"/>
+                            <Label fx:id="lblSweepStatus" text="Sẵn sàng quét" style="-fx-font-size: 11px; -fx-text-fill: #059669; -fx-font-weight: bold;"/>
+                            <Label fx:id="lblSweepEta" text="" style="-fx-font-size: 11px; -fx-text-fill: #ea580c; -fx-font-weight: bold;"/>
+                        </HBox>
+                    </VBox>
+
+                    <!-- VIEW SWITCHER CHO TAB 3 -->
+                    <HBox alignment="CENTER_LEFT" spacing="6.0" style="-fx-padding: 4 10 4 10; -fx-background-color: #ffffff; -fx-background-radius: 8; -fx-border-color: #e2e8f0; -fx-border-radius: 8;">
+                        <Label text="📊 Biểu Đồ Bài Báo:" style="-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #1e293b;"/>
+                        <Button fx:id="btnChartFig11" text="⏱️ Runtime vs minSup (Fig 11)" styleClass="btn-outline" style="-fx-font-size: 11px;"/>
+                        <Button fx:id="btnChartFig6" text="🎯 DHOPs &amp; Cắt Tỉa vs minSup (Fig 6)" styleClass="btn-outline" style="-fx-font-size: 11px;"/>
+                        <Button fx:id="btnChartFig13" text="💾 Heap RAM vs minSup (Fig 13)" styleClass="btn-outline" style="-fx-font-size: 11px;"/>
+                        <Button fx:id="btnChartModeDO" text="📈 Item DO vs minSup (Fig 2)" styleClass="btn-outline" style="-fx-font-size: 11px;"/>
+                        <Button fx:id="btnChartModeHistory" text="🕒 Lịch Sử Tất Cả Lần Chạy" styleClass="btn-outline" style="-fx-font-size: 11px;"/>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <Label fx:id="lblHistoryCountBadge" text="0 lần chạy đã lưu" styleClass="badge-version"/>
+                        <Label fx:id="lblSweepCountBadge" text="6 mốc minSup đã quét" styleClass="badge-version"/>
                     </HBox>
 
                     <!-- KHU VỰC BIỂU ĐỒ (STACKPANE) -->
-                    <StackPane VBox.vgrow="ALWAYS" prefHeight="310.0">
-                        <!-- Biểu đồ 1: LineChart DO vs minSup -->
-                        <LineChart fx:id="lineChartDO" styleClass="trend-chart" title="So sánh Damped Occupancy (DO) của các Mục với Ngưỡng minSup">
+                    <StackPane VBox.vgrow="ALWAYS" prefHeight="290.0">
+                        <!-- Biểu đồ Fig 11: Runtime vs minSup (∂) -->
+                        <LineChart fx:id="lineChartFig11" styleClass="trend-chart" title="Figure 11 (Bài Báo Gốc): Thời Gian Thực Thi Theo Từng Ngưỡng minSup (∂)">
+                            <xAxis><CategoryAxis label="Ngưỡng Hỗ Trợ Tối Thiểu (minSup ratio ∂)"/></xAxis>
+                            <yAxis><NumberAxis label="Thời gian thực thi (ms)"/></yAxis>
+                        </LineChart>
+
+                        <!-- Biểu đồ Fig 6: DHOPs & Cắt Tỉa DUBO vs minSup (∂) -->
+                        <LineChart fx:id="lineChartFig6" styleClass="trend-chart" title="Figure 6 &amp; Hiệu Quả Cắt Tỉa DUBO: Số Lượng Mẫu &amp; Ứng Viên Theo Từng minSup (∂)" visible="false">
+                            <xAxis><CategoryAxis label="Ngưỡng Hỗ Trợ Tối Thiểu (minSup ratio ∂)"/></xAxis>
+                            <yAxis><NumberAxis label="Số lượng mẫu / nhánh DFS"/></yAxis>
+                        </LineChart>
+
+                        <!-- Biểu đồ Fig 13: Memory Heap vs minSup (∂) -->
+                        <LineChart fx:id="lineChartFig13" styleClass="trend-chart" title="Figure 13 (Bài Báo Gốc): Dung Lượng Bộ Nhớ Peak Heap RAM Theo Từng minSup (∂)" visible="false">
+                            <xAxis><CategoryAxis label="Ngưỡng Hỗ Trợ Tối Thiểu (minSup ratio ∂)"/></xAxis>
+                            <yAxis><NumberAxis label="Bộ nhớ JVM Heap (MB)"/></yAxis>
+                        </LineChart>
+
+                        <!-- Biểu đồ Fig 2: LineChart DO vs minSup -->
+                        <LineChart fx:id="lineChartDO" styleClass="trend-chart" title="Figure 2: So Sánh Damped Occupancy (DO) Của Các Mục Với Ngưỡng minSup" visible="false">
                             <xAxis><CategoryAxis label="Mục / Mẫu theo thứ tự Support"/></xAxis>
                             <yAxis><NumberAxis label="Giá trị DO"/></yAxis>
                         </LineChart>
 
-                        <!-- Biểu đồ 2: LineChart Lịch sử các lần mining -->
+                        <!-- Biểu đồ Lịch sử các lần mining -->
                         <LineChart fx:id="lineChartHistory" styleClass="trend-chart" title="Biểu Đồ Xu Hướng Qua Các Lần Khai Phá (DHOPs, Cắt Tỉa, Runtime)" visible="false">
                             <xAxis><CategoryAxis label="Lượt chạy (Mining Runs)"/></xAxis>
                             <yAxis><NumberAxis label="Số lượng mẫu / ms"/></yAxis>
                         </LineChart>
 
-                        <!-- Biểu đồ 3: BarChart Phân bố kết quả -->
+                        <!-- Biểu đồ BarChart Phân bố kết quả -->
                         <BarChart fx:id="barChartDistribution" styleClass="trend-chart" title="Tỷ Lệ Mẫu Đạt DHOP vs Bị Cắt Tỉa Bởi DUBO Qua Các Lần Chạy" visible="false">
                             <xAxis><CategoryAxis label="Lượt chạy"/></xAxis>
                             <yAxis><NumberAxis label="Số lượng mẫu"/></yAxis>
                         </BarChart>
                     </StackPane>
 
-                    <!-- KHU VỰC BẢNG LỊCH SỬ LƯU TRỮ -->
-                    <VBox spacing="6.0" prefHeight="220.0">
+                    <!-- KHU VỰC BẢNG DỮ LIỆU CHI TIẾT (STACKED / SWITCHABLE) -->
+                    <VBox spacing="4.0" prefHeight="200.0">
                         <HBox alignment="CENTER_LEFT" spacing="8.0">
-                            <Label text="💾 BẢNG LƯU TRỮ LỊCH SỬ CÁC LẦN KHAI PHÁ (MEMENTO PATTERN)" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #334155;"/>
+                            <Label text="📋 DỮ LIỆU ĐO ĐẠC CHI TIẾT:" style="-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #334155;"/>
+                            <HBox spacing="4.0">
+                                <Button fx:id="btnViewSweepTable" text="🔬 Bảng Kết Quả Quét Từng minSup" styleClass="btn-outline" style="-fx-font-size: 10px;"/>
+                                <Button fx:id="btnViewHistoryTable" text="💾 Lịch Sử Các Lần Khai Phá (Memento)" styleClass="btn-outline" style="-fx-font-size: 10px;"/>
+                            </HBox>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <Button fx:id="btnClearHistory" text="🗑️ Xóa Lịch Sử" style="-fx-font-size: 11px;" styleClass="btn-outline"/>
+                            <Button fx:id="btnClearHistory" text="🗑️ Xóa Lịch Sử" style="-fx-font-size: 10px;" styleClass="btn-outline"/>
                         </HBox>
 
-                        <TableView fx:id="tblMiningHistory" VBox.vgrow="ALWAYS" styleClass="results-table">
-                            <columns>
-                                <TableColumn fx:id="colHistRunId" text="Lần #" prefWidth="55.0" style="-fx-alignment: CENTER;"/>
-                                <TableColumn fx:id="colHistTime" text="Thời gian" prefWidth="85.0" style="-fx-alignment: CENTER;"/>
-                                <TableColumn fx:id="colHistEngine" text="Engine" prefWidth="120.0"/>
-                                <TableColumn fx:id="colHistDataset" text="Dataset" prefWidth="130.0"/>
-                                <TableColumn fx:id="colHistF" text="f" prefWidth="55.0" style="-fx-alignment: CENTER;"/>
-                                <TableColumn fx:id="colHistPartial" text="∂ (%)" prefWidth="65.0" style="-fx-alignment: CENTER;"/>
-                                <TableColumn fx:id="colHistMinSup" text="minSup" prefWidth="75.0" style="-fx-alignment: CENTER;"/>
-                                <TableColumn fx:id="colHistTx" text="Giao dịch" prefWidth="85.0" style="-fx-alignment: CENTER-RIGHT;"/>
-                                <TableColumn fx:id="colHistDhops" text="Số DHOPs" prefWidth="85.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-text-fill: #16a34a;"/>
-                                <TableColumn fx:id="colHistPruned" text="Cắt tỉa" prefWidth="85.0" style="-fx-alignment: CENTER-RIGHT; -fx-text-fill: #dc2626;"/>
-                                <TableColumn fx:id="colHistRuntime" text="Runtime (ms)" prefWidth="100.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;"/>
-                            </columns>
-                            <columnResizePolicy>
-                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-                            </columnResizePolicy>
-                        </TableView>
+                        <StackPane VBox.vgrow="ALWAYS">
+                            <!-- BẢNG 1: KẾT QUẢ QUÉT TỪNG MINSUP -->
+                            <TableView fx:id="tblSweepResults" styleClass="results-table">
+                                <columns>
+                                    <TableColumn fx:id="colSwpPartial" text="Mốc ∂ (%)" prefWidth="85.0" style="-fx-alignment: CENTER; -fx-font-weight: bold;"/>
+                                    <TableColumn fx:id="colSwpMinSup" text="minSup" prefWidth="80.0" style="-fx-alignment: CENTER;"/>
+                                    <TableColumn fx:id="colSwpDhops" text="Số DHOPs" prefWidth="95.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-text-fill: #16a34a;"/>
+                                    <TableColumn fx:id="colSwpPruned" text="DUBO Cắt Tỉa" prefWidth="105.0" style="-fx-alignment: CENTER-RIGHT; -fx-text-fill: #dc2626;"/>
+                                    <TableColumn fx:id="colSwpPrunedRatio" text="Tỷ lệ cắt tỉa" prefWidth="95.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-text-fill: #dc2626;"/>
+                                    <TableColumn fx:id="colSwpCandidates" text="Tổng Ứng Viên" prefWidth="105.0" style="-fx-alignment: CENTER-RIGHT;"/>
+                                    <TableColumn fx:id="colSwpRuntime" text="Runtime (ms)" prefWidth="105.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-text-fill: #2563eb;"/>
+                                    <TableColumn fx:id="colSwpHeap" text="Peak Heap RAM" prefWidth="110.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-text-fill: #059669;"/>
+                                </columns>
+                                <columnResizePolicy>
+                                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                                </columnResizePolicy>
+                            </TableView>
+
+                            <!-- BẢNG 2: LỊCH SỬ CÁC LẦN MINING (MEMENTO) -->
+                            <TableView fx:id="tblMiningHistory" styleClass="results-table" visible="false">
+                                <columns>
+                                    <TableColumn fx:id="colHistRunId" text="Lần #" prefWidth="55.0" style="-fx-alignment: CENTER;"/>
+                                    <TableColumn fx:id="colHistTime" text="Thời gian" prefWidth="85.0" style="-fx-alignment: CENTER;"/>
+                                    <TableColumn fx:id="colHistEngine" text="Engine" prefWidth="120.0"/>
+                                    <TableColumn fx:id="colHistDataset" text="Dataset" prefWidth="130.0"/>
+                                    <TableColumn fx:id="colHistF" text="f" prefWidth="55.0" style="-fx-alignment: CENTER;"/>
+                                    <TableColumn fx:id="colHistPartial" text="∂ (%)" prefWidth="65.0" style="-fx-alignment: CENTER;"/>
+                                    <TableColumn fx:id="colHistMinSup" text="minSup" prefWidth="75.0" style="-fx-alignment: CENTER;"/>
+                                    <TableColumn fx:id="colHistTx" text="Giao dịch" prefWidth="85.0" style="-fx-alignment: CENTER-RIGHT;"/>
+                                    <TableColumn fx:id="colHistDhops" text="Số DHOPs" prefWidth="85.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-text-fill: #16a34a;"/>
+                                    <TableColumn fx:id="colHistPruned" text="Cắt tỉa" prefWidth="85.0" style="-fx-alignment: CENTER-RIGHT; -fx-text-fill: #dc2626;"/>
+                                    <TableColumn fx:id="colHistRuntime" text="Runtime (ms)" prefWidth="100.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;"/>
+                                </columns>
+                                <columnResizePolicy>
+                                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                                </columnResizePolicy>
+                            </TableView>
+                        </StackPane>
                     </VBox>
                 </VBox>
             </Tab>

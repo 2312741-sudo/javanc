@@ -575,30 +575,39 @@
       </div>
     </div>
 
-    <!-- SLIDE 9: TAB 3 TRỰC QUAN HOÁ ĐA BIỂU ĐỒ & LỊCH SỬ -->
-    <div class="slide" data-notes="Ở Tab 3, em đã phát triển Trung tâm trực quan hóa đa biểu đồ và lưu trữ lịch sử mining: Chế độ 1 xem điểm DO so với minSup; Chế độ 2 xem biểu đồ xu hướng số mẫu DHOP và thời gian qua các lần chạy Run #1, Run #2; Chế độ 3 xem biểu đồ cột phân bố trạng thái. Phía dưới là bảng lịch sử lưu trữ toàn bộ các lần chạy nhờ Memento Pattern.">
+    <!-- SLIDE 9: TAB 3 TRỰC QUAN HOÁ QUÉT MINSUP CHUẨN BÀI BÁO (FIGURES 6, 11, 13) -->
+    <div class="slide" data-notes="Ở Tab 3, em đã nâng cấp toàn diện tính năng Trực quan hóa chạy quét theo từng ngưỡng minSup giống hệt các biểu đồ trong bài báo gốc EAAI 2026: Người dùng có thể bấm nút 'Chạy Quét Từng minSup' để hệ thống tự động lặp qua các mốc partial từ 5% đến 30%. Biểu đồ vẽ chính xác các đường cong Figure 11 (Runtime vs minSup), Figure 6 (Mẫu DHOP & Tỷ lệ cắt tỉa DUBO vs minSup), và Figure 13 (Bộ nhớ Peak Heap RAM vs minSup). Phía dưới là Bảng Kết quả quét chi tiết và Bảng lịch sử Memento.">
       <div class="slide-tag">CHƯƠNG 4: HIỆN THỰC HÓA GIAO DIỆN</div>
-      <h2 class="slide-title">8. Tab 3: Đa Biểu Đồ & Lịch Sử Khai Phá (Memento Pattern)</h2>
+      <h2 class="slide-title">8. Tab 3: Trực Quan Hóa Quét minSup Chuẩn Bài Báo (Figures 6, 11, 13) & Memento</h2>
       <div class="grid-3">
         <div class="card card-highlight">
-          <div class="card-title">📈 Chế Độ 1: Điểm DO & Ngưỡng</div>
-          <p>• Biểu đồ đường so sánh giá trị DO của từng item hoặc mẫu tìm được với đường ngưỡng minSup.</p>
-          <p>• Nhìn thấy ngay mục nào vượt ngưỡng, mục nào bị loại bỏ.</p>
-        </div>
-        <div class="card card-success">
-          <div class="card-title">🕒 Chế Độ 2: Xu Hướng Qua Các Lần Chạy</div>
-          <p>• Biểu đồ đường biểu diễn số mẫu DHOP, số mẫu bị cắt tỉa và thời gian thực thi (ms) qua các lượt Run #1, Run #2...</p>
-          <p>• Đánh giá trực quan ảnh hưởng khi thay đổi tham số f và &part;!</p>
+          <div class="card-title">⏱️ Figure 11: Runtime vs minSup (&part;)</div>
+          <p>• Trục X là ngưỡng minSup (&part; từ 5% &rarr; 30%), trục Y là thời gian thực thi (ms).</p>
+          <p>• Đường cong dốc xuống chứng minh thời gian giảm theo hàm mũ khi &part; tăng!</p>
         </div>
         <div class="card card-warning">
-          <div class="card-title">🍩 Chế Độ 3: Phân Bố Trạng Thái</div>
-          <p>• Biểu đồ cột biểu diễn tỷ lệ mẫu đạt DHOP vs mẫu bị DUBO cắt tỉa.</p>
-          <p>• Chứng minh tính hiệu quả của cận trên DUBO qua từng dataset.</p>
+          <div class="card-title">🎯 Figure 6: DHOP & Cắt Tỉa DUBO</div>
+          <p>• So sánh 3 đường: Số mẫu DHOP hợp lệ, Số mẫu bị DUBO cắt tỉa, và Tổng ứng viên DFS.</p>
+          <p>• Trực quan hóa tỷ lệ cắt tỉa vượt trội từ 60% đến 95%!</p>
+        </div>
+        <div class="card card-success">
+          <div class="card-title">💾 Figure 13: Heap RAM vs minSup</div>
+          <p>• Trục X là minSup (&part;), trục Y là bộ nhớ JVM Peak Heap tiêu thụ (MB).</p>
+          <p>• Minh chứng bộ nhớ RAM duy trì cực thấp và ổn định nhờ DHO-List One-Scan!</p>
         </div>
       </div>
-      <div class="card card-highlight" style="margin-top: 14px;">
-        <div class="card-title">💾 Bảng Lưu Trữ Lịch Sử Khai Phá (Mining Run Memento Table)</div>
-        <p>Bảng ghi nhận đầy đủ: <strong>Lần #, Thời gian, Engine, Dataset, f, &part;, minSup, Số giao dịch, Số DHOP, Số Pruned, Runtime (ms)</strong>. Có nút Xóa lịch sử và bấm vào dòng bất kỳ để nạp lại kết quả!</p>
+      <div class="grid-2" style="margin-top: 12px;">
+        <div class="card card-highlight">
+          <div class="card-title">🚀 Thanh Quét Tự Động (minSup Sweep Runner)</div>
+          <p>• Tùy chỉnh dải &part;: Từ &part; (5%) đến &part; (30%) với bước nhảy (5%).</p>
+          <p>• Nút <em>"🚀 Chạy Quét Từng minSup"</em> kèm thanh tiến trình ProgressBar và nút <em>"⏹ Dừng"</em>.</p>
+          <p>• Presets nhanh: Chuẩn bài báo (5% &rarr; 30%) và Độ mịn cao (2% &rarr; 20%).</p>
+        </div>
+        <div class="card card-success">
+          <div class="card-title">📋 Bảng Đo Đạc Chi Tiết & Memento Caretaker</div>
+          <p>• <strong>Bảng Quét minSup:</strong> Bảng chi tiết từng mốc &part;, số DHOPs, số Pruned, tỷ lệ cắt tỉa %, thời gian chạy ms, bộ nhớ Heap MB.</p>
+          <p>• <strong>Bảng Lịch Sử Memento:</strong> Lưu trữ snapshot các lần khai phá, click để khôi phục trạng thái!</p>
+        </div>
       </div>
     </div>
 
