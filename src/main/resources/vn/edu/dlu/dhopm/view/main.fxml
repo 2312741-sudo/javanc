@@ -227,7 +227,7 @@
                     <TableView fx:id="tableResults" VBox.vgrow="ALWAYS" styleClass="results-table">
                         <columns>
                             <TableColumn fx:id="colPattern" text="Mẫu X" prefWidth="100.0"/>
-                            <TableColumn fx:id="colSupport" text="Support" prefWidth="80.0"/>
+                            <TableColumn fx:id="colSupport" text="Support (tx / %)" prefWidth="120.0" style="-fx-alignment: CENTER-RIGHT;"/>
                             <TableColumn fx:id="colDO" text="DO(X)" prefWidth="110.0"/>
                             <TableColumn fx:id="colDUBO" text="DUBO(X)" prefWidth="110.0"/>
                             <TableColumn fx:id="colStatus" text="Trạng thái" prefWidth="120.0"/>
@@ -428,7 +428,7 @@
                                 <TableColumn fx:id="colTsonIndex" text="STT" prefWidth="55.0" style="-fx-alignment: CENTER;"/>
                                 <TableColumn fx:id="colTsonPattern" text="Mẫu mục chiếm dụng (Itemset X)" prefWidth="380.0"/>
                                 <TableColumn fx:id="colTsonDO" text="Độ đo DO(X)" prefWidth="120.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;"/>
-                                <TableColumn fx:id="colTsonSupport" text="Support (tx)" prefWidth="100.0" style="-fx-alignment: CENTER-RIGHT;"/>
+                                <TableColumn fx:id="colTsonSupport" text="Support (tx / %)" prefWidth="130.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;"/>
                                 <TableColumn fx:id="colTsonLength" text="Độ dài |X|" prefWidth="80.0" style="-fx-alignment: CENTER;"/>
                                 <TableColumn fx:id="colTsonTids" text="Danh sách giao dịch (TIDs)" prefWidth="250.0"/>
                             </columns>

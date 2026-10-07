@@ -105,7 +105,7 @@ public class MainController implements Initializable {
     @FXML private FlowPane dhoNodesPane;
     @FXML private TableView<PatternResult> tableResults;
     @FXML private TableColumn<PatternResult, String> colPattern;
-    @FXML private TableColumn<PatternResult, Number> colSupport;
+    @FXML private TableColumn<PatternResult, String> colSupport;
     @FXML private TableColumn<PatternResult, String> colDO;
     @FXML private TableColumn<PatternResult, String> colDUBO;
     @FXML private TableColumn<PatternResult, String> colStatus;
@@ -242,6 +242,27 @@ public class MainController implements Initializable {
 
     private EngineMode currentMode = EngineMode.TAM_SIMULATION;
     private Path selectedCustomDatasetPath = null;
+    private long activeTotalTransactions = 8;
+
+    private String formatSupportWithPercent(int support) {
+        long total = activeTotalTransactions > 0 ? activeTotalTransactions :
+                (tamEngine != null && !tamEngine.getAllTransactions().isEmpty() ? tamEngine.getAllTransactions().size() : 8);
+        if (total <= 0) {
+            return String.format(java.util.Locale.US, "%,d tx", support);
+        }
+        double pct = (100.0 * support) / (double) total;
+        return String.format(java.util.Locale.US, "%,d tx (%.1f%%)", support, pct);
+    }
+
+    private static int extractSupportInt(String s) {
+        if (s == null || s.isEmpty()) return 0;
+        try {
+            String cleaned = s.replaceAll("\\s*tx.*", "").replaceAll("[^0-9]", "");
+            return cleaned.isEmpty() ? 0 : Integer.parseInt(cleaned);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -410,7 +431,8 @@ public class MainController implements Initializable {
         colTsonDO.setCellValueFactory(cellData ->
                 new SimpleStringProperty(String.format("%.6f", cellData.getValue().doValue())));
         colTsonSupport.setCellValueFactory(cellData ->
-                new SimpleStringProperty(String.format("%,d tx", cellData.getValue().support())));
+                new SimpleStringProperty(formatSupportWithPercent(cellData.getValue().support())));
+        colTsonSupport.setComparator((s1, s2) -> Integer.compare(extractSupportInt(s1), extractSupportInt(s2)));
         colTsonLength.setCellValueFactory(cellData -> {
             String raw = cellData.getValue().pattern().replace("{", "").replace("}", "").trim();
             return new SimpleIntegerProperty(raw.split("[,\\s]+").length);
@@ -514,8 +536,13 @@ public class MainController implements Initializable {
 
             tblMiningHistory.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
                 if (newVal != null && !newVal.getTopPatterns().isEmpty()) {
+                    if (newVal.getTotalTransactions() > 0) {
+                        activeTotalTransactions = newVal.getTotalTransactions();
+                    }
                     tableData.setAll(newVal.getTopPatterns());
                     tsonPatternsData.setAll(newVal.getTopPatterns());
+                    if (tableResults != null) tableResults.refresh();
+                    if (tblTsonPatterns != null) tblTsonPatterns.refresh();
                     updateChartFromPatterns(newVal.getTopPatterns(), newVal.getMinSup());
                 }
             });
@@ -1036,8 +1063,11 @@ public class MainController implements Initializable {
             lblKpiTrans.setText(String.format("Tổng giao dịch: %,d", res.totalTransactions()));
 
             // Cập nhật TableView Tab 4 và TableView Tab 2
+            activeTotalTransactions = res.totalTransactions();
             tsonPatternsData.setAll(res.uiPatterns());
             tableData.setAll(res.uiPatterns());
+            if (tableResults != null) tableResults.refresh();
+            if (tblTsonPatterns != null) tblTsonPatterns.refresh();
 
             lblDhopCount.setText(res.patternCount() + " mẫu");
             lblVisitedCount.setText(res.patternCount() + " mẫu");
@@ -1419,7 +1449,9 @@ public class MainController implements Initializable {
 
     private void initTableView() {
         colPattern.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().pattern()));
-        colSupport.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().support()));
+        colSupport.setCellValueFactory(data ->
+                new SimpleStringProperty(formatSupportWithPercent(data.getValue().support())));
+        colSupport.setComparator((s1, s2) -> Integer.compare(extractSupportInt(s1), extractSupportInt(s2)));
         colDO.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getFormattedDO()));
         colDUBO.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getFormattedDUBO()));
         colStatus.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getStatus()));
@@ -1595,8 +1627,11 @@ public class MainController implements Initializable {
                 : prunedCount + " mẫu (" + String.format(java.util.Locale.US, "%.1f%%", ((double) prunedCount / results.size()) * 100) + ")";
         lblPrunedCount.setText(prunedText);
 
+        activeTotalTransactions = totalTrans;
         tableData.setAll(results);
         tsonPatternsData.setAll(results);
+        if (tableResults != null) tableResults.refresh();
+        if (tblTsonPatterns != null) tblTsonPatterns.refresh();
         updateChart(results, f, minSup);
 
         // Lưu Memento lịch sử mining
