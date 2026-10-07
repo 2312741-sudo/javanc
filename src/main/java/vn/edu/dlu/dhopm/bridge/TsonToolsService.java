@@ -121,6 +121,9 @@ public class TsonToolsService {
         List<Transaction> list = new ArrayList<>();
         long remaining = limit;
         while (source.hasNext() && (limit == 0 || remaining-- > 0)) {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new java.util.concurrent.CancellationException("Đã dừng đọc dữ liệu.");
+            }
             list.add(source.next());
         }
         return list;
@@ -280,7 +283,7 @@ public class TsonToolsService {
     }
 
     /**
-     * Thực thi lệnh "mine": Khai phá dataset FIMI với cấu hình tham số.
+     * Thực thi lệnh "mine": Khai phá dataset FIMI với cấu hình tham số (tương thích ngược).
      */
     public MineExecutionResult runMine(
             Path path,
@@ -291,6 +294,27 @@ public class TsonToolsService {
             Consumer<String> phaseLogConsumer,
             Consumer<Double> progressConsumer
     ) throws IOException {
+        return runMine(
+                path, partial, f, workers, limit,
+                phaseLogConsumer,
+                progressConsumer != null ? info -> progressConsumer.accept(info.fraction()) : null,
+                null
+        );
+    }
+
+    /**
+     * Thực thi lệnh "mine" kèm tính toán thời gian ước tính (ETA) và hỗ trợ dừng (cancel).
+     */
+    public MineExecutionResult runMine(
+            Path path,
+            double partial,
+            double f,
+            int workers,
+            long limit,
+            Consumer<String> phaseLogConsumer,
+            Consumer<MiningProgressInfo> progressInfoConsumer,
+            Consumer<MiningEngine> engineConsumer
+    ) throws IOException {
         StringBuilder log = new StringBuilder();
         List<Transaction> transactions = loadTransactions(path, limit);
 
@@ -299,6 +323,10 @@ public class TsonToolsService {
         TimingRecorder recorder = new TimingRecorder();
 
         try (MiningEngine engine = new MiningEngine(config)) {
+            if (engineConsumer != null) {
+                engineConsumer.accept(engine);
+            }
+
             engine.setPhaseListener((phase, startNs, endNs) -> {
                 recorder.onPhase(phase, startNs, endNs);
                 double ms = (endNs - startNs) / 1_000_000.0;
@@ -306,12 +334,40 @@ public class TsonToolsService {
                 if (phaseLogConsumer != null) phaseLogConsumer.accept(msg);
             });
 
-            if (progressConsumer != null) {
-                engine.setMiningProgressListener(p -> progressConsumer.accept(p.fraction()));
+            if (progressInfoConsumer != null) {
+                engine.setMiningProgressListener(p -> {
+                    double frac = p.fraction();
+                    long elapsed = p.elapsedMs();
+                    long remainingMs = 0;
+                    if (frac > 0.005) {
+                        long totalEstimateMs = (long) (elapsed / frac);
+                        remainingMs = Math.max(0, totalEstimateMs - elapsed);
+                    }
+                    MiningProgressInfo info = new MiningProgressInfo(
+                            frac, elapsed, remainingMs, p.patternsFound(),
+                            p.completedRootTasks(), p.totalRootTasks()
+                    );
+                    progressInfoConsumer.accept(info);
+                });
+            }
+
+            if (Thread.currentThread().isInterrupted()) {
+                throw new java.util.concurrent.CancellationException("Đã dừng trước khi nạp batch.");
             }
 
             engine.loadBatch(transactions);
+
+            if (Thread.currentThread().isInterrupted()) {
+                throw new java.util.concurrent.CancellationException("Đã dừng trước khi khai phá.");
+            }
+
             result = engine.mineNow();
+        } catch (Exception ex) {
+            if (Thread.currentThread().isInterrupted() || ex instanceof InterruptedException ||
+                    (ex.getMessage() != null && ex.getMessage().toLowerCase().contains("interrupted"))) {
+                throw new java.util.concurrent.CancellationException("Đã dừng khai phá theo yêu cầu.");
+            }
+            throw ex;
         }
 
         long cMs = recorder.phaseMs(Phase.CONSTRUCTION);

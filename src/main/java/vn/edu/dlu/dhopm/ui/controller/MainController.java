@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 /**
  * Controller điều khiển toàn bộ giao diện JavaFX cho DHOPM Visualizer.
@@ -53,9 +54,17 @@ public class MainController implements Initializable {
     @FXML private ComboBox<String> cbTsonLimit;
     @FXML private Button btnBrowseDataset;
     @FXML private Button btnTsonMine;
+    @FXML private Button btnTsonStop;
     @FXML private Button btnTsonInspect;
     @FXML private Button btnTsonDetail;
     @FXML private Button btnTsonGolden;
+    @FXML private Label lblMiningEta;
+    @FXML private Label lblTab4EtaStatus;
+
+    // ── Active Background Task & Engine Cancellation ──────────────────────────
+    private Task<?> activeTsonTask = null;
+    private Thread activeTsonThread = null;
+    private final java.util.concurrent.atomic.AtomicReference<dhopm.v1.engine.MiningEngine> activeMiningEngine = new java.util.concurrent.atomic.AtomicReference<>(null);
 
     // ── Controls & Sliders ───────────────────────────────────────────────────
     @FXML private Slider sliderF;
@@ -221,6 +230,9 @@ public class MainController implements Initializable {
 
         // 4. Các nút tương ứng bộ lệnh CLI của Tson
         btnTsonMine.setOnAction(e -> executeTsonMine());
+        if (btnTsonStop != null) {
+            btnTsonStop.setOnAction(e -> handleStopMining());
+        }
         btnTsonInspect.setOnAction(e -> executeTsonInspect());
         btnTsonDetail.setOnAction(e -> executeTsonDetail());
         btnTsonGolden.setOnAction(e -> executeTsonGolden());
@@ -401,6 +413,9 @@ public class MainController implements Initializable {
 
         setButtonsDisable(true);
         progressMining.setProgress(-1);
+        if (lblMiningEta != null) lblMiningEta.setText("Đang chuẩn bị...");
+        if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("⏳ Đang chuẩn bị...");
+        lblKpiTime.setText("Đang chạy...");
 
         Task<MineExecutionResult> task = new Task<>() {
             @Override
@@ -408,14 +423,27 @@ public class MainController implements Initializable {
                 return tsonService.runMine(
                         path, partial, f, 4, limit,
                         phaseMsg -> Platform.runLater(() -> lblLastPhase.setText(phaseMsg)),
-                        progress -> Platform.runLater(() -> progressMining.setProgress(progress))
+                        info -> Platform.runLater(() -> {
+                            progressMining.setProgress(info.fraction());
+                            String etaStr = info.formatEtaStatus();
+                            if (lblMiningEta != null) lblMiningEta.setText(etaStr);
+                            if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("⏳ " + etaStr);
+                            lblKpiTime.setText(etaStr);
+                        }),
+                        engine -> activeMiningEngine.set(engine)
                 );
             }
         };
 
+        activeTsonTask = task;
+
         task.setOnSucceeded(e -> {
+            activeTsonTask = null;
+            activeMiningEngine.set(null);
             setButtonsDisable(false);
             progressMining.setProgress(1.0);
+            if (lblMiningEta != null) lblMiningEta.setText("Hoàn tất 100%");
+            if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("✅ Hoàn tất");
             MineExecutionResult res = task.getValue();
 
             // Cập nhật KPI Cards
@@ -442,15 +470,41 @@ public class MainController implements Initializable {
             showTsonView(1);
         });
 
+        task.setOnCancelled(e -> {
+            activeTsonTask = null;
+            activeMiningEngine.set(null);
+            setButtonsDisable(false);
+            progressMining.setProgress(0);
+            if (lblMiningEta != null) lblMiningEta.setText("Đã dừng");
+            if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("🛑 Đã dừng");
+            lblLastPhase.setText("Đã hủy khai phá");
+            lblKpiTime.setText("Đã dừng");
+        });
+
         task.setOnFailed(e -> {
+            activeTsonTask = null;
+            activeMiningEngine.set(null);
             setButtonsDisable(false);
             progressMining.setProgress(0);
             Throwable err = task.getException();
+            if (err instanceof java.util.concurrent.CancellationException ||
+                (err.getMessage() != null && (err.getMessage().contains("dừng") || err.getMessage().contains("interrupted")))) {
+                if (lblMiningEta != null) lblMiningEta.setText("Đã dừng");
+                if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("🛑 Đã dừng");
+                lblLastPhase.setText("Đã dừng khai phá");
+                lblKpiTime.setText("Đã dừng");
+                return;
+            }
+            if (lblMiningEta != null) lblMiningEta.setText("Lỗi");
+            if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("❌ Lỗi");
             err.printStackTrace();
             new Alert(Alert.AlertType.ERROR, "Lỗi khi chạy Tson Mine: " + err.getMessage()).show();
         });
 
-        new Thread(task, "TsonMineWorker").start();
+        Thread worker = new Thread(task, "TsonMineWorker");
+        activeTsonThread = worker;
+        worker.setDaemon(true);
+        worker.start();
     }
 
     /**
@@ -463,6 +517,8 @@ public class MainController implements Initializable {
 
         mainTabPane.getSelectionModel().select(3);
         setButtonsDisable(true);
+        if (lblMiningEta != null) lblMiningEta.setText("Đang phân tích...");
+        if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("⏳ Đang phân tích...");
 
         Task<InspectReport> task = new Task<>() {
             @Override
@@ -471,8 +527,20 @@ public class MainController implements Initializable {
             }
         };
 
-        task.setOnSucceeded(e -> {
+        activeTsonTask = task;
+
+        task.setOnCancelled(e -> {
+            activeTsonTask = null;
             setButtonsDisable(false);
+            if (lblMiningEta != null) lblMiningEta.setText("Đã dừng inspect");
+            if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("🛑 Đã dừng inspect");
+        });
+
+        task.setOnSucceeded(e -> {
+            activeTsonTask = null;
+            setButtonsDisable(false);
+            if (lblMiningEta != null) lblMiningEta.setText("Hoàn tất thống kê");
+            if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("✅ Hoàn tất thống kê");
             InspectReport rep = task.getValue();
 
             // Cập nhật thẻ tổng quan Inspect
@@ -496,11 +564,20 @@ public class MainController implements Initializable {
         });
 
         task.setOnFailed(e -> {
+            activeTsonTask = null;
             setButtonsDisable(false);
-            new Alert(Alert.AlertType.ERROR, "Lỗi khi phân tích tập dữ liệu: " + task.getException().getMessage()).show();
+            Throwable err = task.getException();
+            if (err instanceof java.util.concurrent.CancellationException) {
+                if (lblMiningEta != null) lblMiningEta.setText("Đã dừng inspect");
+                return;
+            }
+            new Alert(Alert.AlertType.ERROR, "Lỗi khi phân tích tập dữ liệu: " + err.getMessage()).show();
         });
 
-        new Thread(task, "TsonInspectWorker").start();
+        Thread worker = new Thread(task, "TsonInspectWorker");
+        activeTsonThread = worker;
+        worker.setDaemon(true);
+        worker.start();
     }
 
     /**
@@ -510,6 +587,8 @@ public class MainController implements Initializable {
         mainTabPane.getSelectionModel().select(3);
         setButtonsDisable(true);
         progressMining.setProgress(-1);
+        if (lblMiningEta != null) lblMiningEta.setText("Đang chạy 8 test...");
+        if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("⏳ Đang chạy Golden TestKit...");
 
         Task<List<GoldenRow>> task = new Task<>() {
             @Override
@@ -518,20 +597,41 @@ public class MainController implements Initializable {
             }
         };
 
+        activeTsonTask = task;
+
+        task.setOnCancelled(e -> {
+            activeTsonTask = null;
+            setButtonsDisable(false);
+            progressMining.setProgress(0);
+            if (lblMiningEta != null) lblMiningEta.setText("Đã dừng TestKit");
+            if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("🛑 Đã dừng TestKit");
+        });
+
         task.setOnSucceeded(e -> {
+            activeTsonTask = null;
             setButtonsDisable(false);
             progressMining.setProgress(1.0);
+            if (lblMiningEta != null) lblMiningEta.setText("TestKit 100% hoàn tất");
+            if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("🏆 Golden TC1-8 Hoàn tất");
             goldenRowsData.setAll(task.getValue());
             showTsonView(3);
         });
 
         task.setOnFailed(e -> {
+            activeTsonTask = null;
             setButtonsDisable(false);
             progressMining.setProgress(0);
-            new Alert(Alert.AlertType.ERROR, "Lỗi khi chạy Golden TestKit: " + task.getException().getMessage()).show();
+            Throwable err = task.getException();
+            if (err instanceof java.util.concurrent.CancellationException) {
+                return;
+            }
+            new Alert(Alert.AlertType.ERROR, "Lỗi khi chạy Golden TestKit: " + err.getMessage()).show();
         });
 
-        new Thread(task, "TsonGoldenWorker").start();
+        Thread worker = new Thread(task, "TsonGoldenWorker");
+        activeTsonThread = worker;
+        worker.setDaemon(true);
+        worker.start();
     }
 
     /**
@@ -545,16 +645,37 @@ public class MainController implements Initializable {
 
         mainTabPane.getSelectionModel().select(3);
         setButtonsDisable(true);
+        if (lblMiningEta != null) lblMiningEta.setText("Đang trích xuất...");
+        if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("⏳ Đang trích xuất Top DO...");
 
         Task<MineExecutionResult> task = new Task<>() {
             @Override
             protected MineExecutionResult call() throws Exception {
-                return tsonService.runMine(path, partial, f, 4, limit, null, null);
+                return tsonService.runMine(
+                        path, partial, f, 4, limit,
+                        null,
+                        (Consumer<MiningProgressInfo>) null,
+                        engine -> activeMiningEngine.set(engine)
+                );
             }
         };
 
-        task.setOnSucceeded(e -> {
+        activeTsonTask = task;
+
+        task.setOnCancelled(e -> {
+            activeTsonTask = null;
+            activeMiningEngine.set(null);
             setButtonsDisable(false);
+            if (lblMiningEta != null) lblMiningEta.setText("Đã dừng");
+            if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("🛑 Đã dừng");
+        });
+
+        task.setOnSucceeded(e -> {
+            activeTsonTask = null;
+            activeMiningEngine.set(null);
+            setButtonsDisable(false);
+            if (lblMiningEta != null) lblMiningEta.setText("Hoàn tất");
+            if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("✅ Hoàn tất");
             MineExecutionResult res = task.getValue();
 
             // Cập nhật TableView Tab 4 và Tab 2
@@ -573,11 +694,58 @@ public class MainController implements Initializable {
         });
 
         task.setOnFailed(e -> {
+            activeTsonTask = null;
+            activeMiningEngine.set(null);
             setButtonsDisable(false);
-            new Alert(Alert.AlertType.ERROR, "Lỗi khi lọc chi tiết mẫu: " + task.getException().getMessage()).show();
+            Throwable err = task.getException();
+            if (err instanceof java.util.concurrent.CancellationException) {
+                return;
+            }
+            new Alert(Alert.AlertType.ERROR, "Lỗi khi lọc chi tiết mẫu: " + err.getMessage()).show();
         });
 
-        new Thread(task, "TsonDetailWorker").start();
+        Thread worker = new Thread(task, "TsonDetailWorker");
+        activeTsonThread = worker;
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    /**
+     * Dừng ngay lập tức tác vụ khai phá hoặc nạp dữ liệu ở chế độ Tson.
+     */
+    private void handleStopMining() {
+        if (lblMiningEta != null) lblMiningEta.setText("Đang dừng...");
+        if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("🛑 Đang dừng...");
+        lblLastPhase.setText("Yêu cầu dừng tác vụ...");
+
+        // 1. Đóng MiningEngine (đóng ThreadPool của Tson ngay lập tức)
+        dhopm.v1.engine.MiningEngine engine = activeMiningEngine.getAndSet(null);
+        if (engine != null) {
+            try {
+                engine.close();
+            } catch (Exception ignored) {}
+        }
+
+        // 2. Hủy Task JavaFX
+        if (activeTsonTask != null && activeTsonTask.isRunning()) {
+            activeTsonTask.cancel(true);
+        }
+
+        // 3. Interrupt worker thread
+        if (activeTsonThread != null && activeTsonThread.isAlive()) {
+            activeTsonThread.interrupt();
+        }
+
+        // 4. Hủy bridgeEngine nếu đang chạy
+        if (bridgeEngine != null) {
+            bridgeEngine.cancel();
+        }
+
+        setButtonsDisable(false);
+        progressMining.setProgress(0);
+        if (lblMiningEta != null) lblMiningEta.setText("Đã dừng");
+        if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("🛑 Đã dừng");
+        lblLastPhase.setText("Đã dừng bởi người dùng");
     }
 
     private void setButtonsDisable(boolean disable) {
@@ -586,6 +754,9 @@ public class MainController implements Initializable {
         btnTsonDetail.setDisable(disable);
         btnTsonGolden.setDisable(disable);
         btnStartStream.setDisable(disable);
+        if (btnTsonStop != null) {
+            btnTsonStop.setDisable(!disable);
+        }
     }
 
     // ── Switch Engine ────────────────────────────────────────────────────────
@@ -622,6 +793,13 @@ public class MainController implements Initializable {
         bridgeEngine.onMiningProgress(fraction ->
                 progressMining.setProgress(fraction)
         );
+
+        bridgeEngine.onMiningProgressInfo(info -> {
+            progressMining.setProgress(info.fraction());
+            String eta = info.formatEtaStatus();
+            if (lblMiningEta != null) lblMiningEta.setText(eta);
+            if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("⏳ " + eta);
+        });
     }
 
     private void initTamEngine() {

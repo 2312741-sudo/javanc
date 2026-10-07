@@ -71,6 +71,16 @@ public interface BridgeEngine {
     void onMiningProgress(Consumer<Double> callback);
 
     /**
+     * Gắn Observer nhận thông tin tiến độ kèm ước tính thời gian (ETA).
+     */
+    default void onMiningProgressInfo(Consumer<MiningProgressInfo> callback) {}
+
+    /**
+     * Dừng hoặc hủy bỏ tác vụ khai phá đang thực thi (nếu engine hỗ trợ).
+     */
+    default void cancel() {}
+
+    /**
      * Đặt lại trạng thái engine về trạng thái ban đầu (xóa toàn bộ DHO-List,
      * reset TID counter). Tương đương với tạo engine mới.
      */

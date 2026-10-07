@@ -50,6 +50,11 @@
                         <Label fx:id="lblLastPhase" text="—" styleClass="stat-number" style="-fx-font-size: 11px;"/>
                     </HBox>
                     <ProgressBar fx:id="progressMining" maxWidth="Infinity" progress="0.0" prefHeight="8.0"/>
+                    <HBox alignment="CENTER_LEFT" spacing="6.0" style="-fx-padding: 2 0 0 0;">
+                        <Label text="Ước tính (ETA):" styleClass="stat-label" style="-fx-font-size: 11px;"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="lblMiningEta" text="Chờ lệnh" styleClass="stat-number" style="-fx-font-size: 11px; -fx-text-fill: #ea580c; -fx-font-weight: bold;"/>
+                    </HBox>
                 </VBox>
 
                 <!-- PANEL 0.5: TSON FIMI DATASETS & TOOLS -->
@@ -83,7 +88,10 @@
                     <!-- Actions directly matching Tson's README commands -->
                     <Label text="Chạy lệnh (không cần terminal):" styleClass="field-label" style="-fx-font-weight: bold;"/>
                     
-                    <Button fx:id="btnTsonMine" text="🚀 Khai Phá Dataset (Mine)" maxWidth="Infinity" prefHeight="34.0" styleClass="btn-primary" style="-fx-background-color: #2563eb;"/>
+                    <HBox spacing="6.0">
+                        <Button fx:id="btnTsonMine" text="🚀 Khai Phá Dataset (Mine)" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="34.0" styleClass="btn-primary" style="-fx-background-color: #2563eb; -fx-font-weight: bold;"/>
+                        <Button fx:id="btnTsonStop" text="🛑 Dừng" disable="true" prefHeight="34.0" prefWidth="85.0" style="-fx-background-color: #dc2626; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 6;"/>
+                    </HBox>
                     
                     <HBox spacing="6.0">
                         <Button fx:id="btnTsonInspect" text="📊 Thống kê (Inspect)" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="btn-emerald"/>
@@ -282,6 +290,7 @@
                     <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-padding: 8 12 8 12; -fx-background-color: #f1f5f9; -fx-background-radius: 8;">
                         <Label fx:id="lblTsonViewTitle" text="📋 Danh Sách Mẫu Chi Tiết (Tson V1 Engine)" style="-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #0f172a;"/>
                         <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="lblTab4EtaStatus" text="" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #ea580c;"/>
                         <HBox spacing="6.0">
                             <Button fx:id="btnViewPatterns" text="📋 Bảng Mẫu DHOPs" styleClass="btn-outline"/>
                             <Button fx:id="btnViewInspect" text="📊 Thống Kê Items" styleClass="btn-outline"/>

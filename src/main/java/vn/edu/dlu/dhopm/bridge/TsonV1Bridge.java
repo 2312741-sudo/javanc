@@ -93,13 +93,52 @@ public class TsonV1Bridge implements BridgeEngine {
         });
     }
 
+    private Consumer<MiningProgressInfo> progressInfoCallback;
+
     @Override
     public void onMiningProgress(Consumer<Double> callback) {
         this.progressCallback = callback;
-        // Relay sang MiningProgressListener của Tson
+        updateEngineProgressListener();
+    }
+
+    @Override
+    public void onMiningProgressInfo(Consumer<MiningProgressInfo> callback) {
+        this.progressInfoCallback = callback;
+        updateEngineProgressListener();
+    }
+
+    private void updateEngineProgressListener() {
+        if (tsonEngine == null) return;
         tsonEngine.setMiningProgressListener(progress -> {
-            Platform.runLater(() -> callback.accept(progress.fraction()));
+            double frac = progress.fraction();
+            long elapsed = progress.elapsedMs();
+            long remainingMs = 0;
+            if (frac > 0.005) {
+                long totalEstimateMs = (long) (elapsed / frac);
+                remainingMs = Math.max(0, totalEstimateMs - elapsed);
+            }
+            MiningProgressInfo info = new MiningProgressInfo(
+                    frac, elapsed, remainingMs, progress.patternsFound(),
+                    progress.completedRootTasks(), progress.totalRootTasks()
+            );
+
+            if (progressCallback != null) {
+                Platform.runLater(() -> progressCallback.accept(frac));
+            }
+            if (progressInfoCallback != null) {
+                Platform.runLater(() -> progressInfoCallback.accept(info));
+            }
         });
+    }
+
+    @Override
+    public void cancel() {
+        if (tsonEngine != null) {
+            try {
+                tsonEngine.close();
+            } catch (Exception ignored) {}
+        }
+        reset();
     }
 
     @Override
@@ -127,9 +166,10 @@ public class TsonV1Bridge implements BridgeEngine {
     @Override
     public void reset() {
         initTsonEngine();
-        // Gắn lại listener nếu đã có (vì engine mới được tạo)
         if (phaseCallback != null) onPhaseUpdate(phaseCallback);
-        if (progressCallback != null) onMiningProgress(progressCallback);
+        if (progressCallback != null || progressInfoCallback != null) {
+            updateEngineProgressListener();
+        }
     }
 
     @Override
