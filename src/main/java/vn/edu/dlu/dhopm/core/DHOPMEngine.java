@@ -59,6 +59,18 @@ public class DHOPMEngine {
 
         globalList.constructOrUpdate(newBatch);
 
+        // Ghi nhật ký Pha 1
+        for (Transaction t : newBatch) {
+            vn.edu.dlu.dhopm.log.CalculationLogger.getInstance().log(
+                    "Pha 1: Construct",
+                    "T" + t.getTid(),
+                    String.format("Nạp giao dịch T%d (|T|=%d, items=%s) -> Ghi nhận các Entry <%d, %d> vào DHO-List",
+                            t.getTid(), t.getLength(), t.getItems(), t.getTid(), t.getLength()),
+                    "TL hiện tại = T" + currentTL,
+                    "📦 CẬP NHẬT"
+            );
+        }
+
         // Báo cho các observer
         for (StreamListener listener : streamListeners) {
             listener.onBatchArrived(newBatch, currentTL);
@@ -73,6 +85,23 @@ public class DHOPMEngine {
         this.currentF = f;
         this.currentTL = TL;
         globalList.reconstruct(f, TL);
+
+        for (DHONode node : globalList.getAllNodes()) {
+            double doVal = node.getDoValue();
+            double duboVal = DUBOCalculator.calculate(node.getEntries(), f, TL);
+            String doBreakdown = formatDoFormulaBreakdown(node.getEntries(), 1, f, TL);
+            String duboBreakdown = formatDuboFormulaBreakdown(node.getEntries(), f, TL, duboVal);
+            boolean isDhop = doVal >= currentMinSup - 1e-9;
+            boolean isPruned = duboVal < currentMinSup - 1e-9;
+
+            vn.edu.dlu.dhopm.log.CalculationLogger.getInstance().log(
+                    "Pha 2: Reconstruct",
+                    "Item " + node.getItemName(),
+                    doBreakdown + " | " + duboBreakdown,
+                    String.format("DO=%.4f vs minSup=%.2f", doVal, currentMinSup),
+                    isDhop ? "🟢 DHOP" : (isPruned ? "🔴 CẮT TỈA" : "⚪ ỨNG VIÊN")
+            );
+        }
     }
 
     /**
@@ -172,11 +201,52 @@ public class DHOPMEngine {
                 dhops.add(result);
             }
 
+            // Ghi nhật ký từng bước tính toán DFS
+            String doBreakdown = formatDoFormulaBreakdown(candEntries, candPattern.size(), f, TL);
+            String duboBreakdown = String.format("DUBO = %.4f", duboVal);
+            String decisionStr = isDHOP ? "🟢 DHOP" : (isPruned ? "🔴 CẮT TỈA" : "⚪ MỞ RỘNG");
+
+            vn.edu.dlu.dhopm.log.CalculationLogger.getInstance().log(
+                    "Pha 3: Mining DFS",
+                    "Mẫu {" + String.join(", ", candPattern) + "}",
+                    doBreakdown + " | " + duboBreakdown,
+                    String.format("DO=%.4f vs minSup=%.2f", doVal, minSup),
+                    decisionStr
+            );
+
             // Neu KHONG bi cat tia boi DUBO, tiep tuc mo rong bang de quy DFS
             if (!isPruned) {
                 dfsMining(candPattern, candEntries, i + 1, processingOrder, allVisited, dhops, f, TL, minSup);
             }
         }
+    }
+
+    public static String formatDoFormulaBreakdown(List<Entry> entries, int patternLength, double f, int TL) {
+        StringBuilder sb = new StringBuilder("DO = ");
+        double sum = 0.0;
+        int maxShow = Math.min(3, entries.size());
+        for (int i = 0; i < maxShow; i++) {
+            Entry e = entries.get(i);
+            double occ = (double) patternLength / e.tlen();
+            int diff = TL - e.tid();
+            double decay = Math.pow(f, diff);
+            sb.append(String.format("(%d/%d · %.2f^%d)", patternLength, e.tlen(), f, diff));
+            if (i < maxShow - 1) sb.append(" + ");
+            sum += occ * decay;
+        }
+        if (entries.size() > maxShow) {
+            sb.append(" + ...(").append(entries.size() - maxShow).append(" mục)");
+        }
+        for (int i = maxShow; i < entries.size(); i++) {
+            Entry e = entries.get(i);
+            sum += ((double) patternLength / e.tlen()) * Math.pow(f, TL - e.tid());
+        }
+        sb.append(String.format(" = %.4f", sum));
+        return sb.toString();
+    }
+
+    public static String formatDuboFormulaBreakdown(List<Entry> entries, double f, int TL, double duboVal) {
+        return String.format("DUBO = max_k { [∑ n_i · l_k / l_i] · f^(TL - T_k) } = %.4f", duboVal);
     }
 
     /**

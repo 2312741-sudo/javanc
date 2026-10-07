@@ -8,9 +8,13 @@ import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.collections.transformation.FilteredList;
+import javafx.scene.chart.BarChart;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -18,6 +22,10 @@ import vn.edu.dlu.dhopm.bridge.*;
 import vn.edu.dlu.dhopm.bridge.TsonToolsService.DatasetItem;
 import vn.edu.dlu.dhopm.bridge.TsonToolsService.MineExecutionResult;
 import vn.edu.dlu.dhopm.bridge.TsonToolsService.InspectReport;
+import vn.edu.dlu.dhopm.history.MiningHistoryManager;
+import vn.edu.dlu.dhopm.history.MiningRunMemento;
+import vn.edu.dlu.dhopm.log.CalculationLogEntry;
+import vn.edu.dlu.dhopm.log.CalculationLogger;
 import vn.edu.dlu.dhopm.core.DatasetLoader;
 import vn.edu.dlu.dhopm.core.DHOPMEngine;
 import vn.edu.dlu.dhopm.core.StreamSimulator;
@@ -70,6 +78,7 @@ public class MainController implements Initializable {
     // ── Controls & Sliders ───────────────────────────────────────────────────
     @FXML private Slider sliderF;
     @FXML private Slider sliderMinSup;
+    @FXML private TextField txtMinSupRatio;
     @FXML private Label lblFValue;
     @FXML private Label lblMinSupValue;
     @FXML private Label lblAbsoluteMinSup;
@@ -100,7 +109,27 @@ public class MainController implements Initializable {
     @FXML private TableColumn<PatternResult, String> colStatus;
     @FXML private TableColumn<PatternResult, String> colTransactions;
 
+    // ── Tab 3: Trực quan hoá chi tiết & Lịch sử Mining ───────────────────────
+    @FXML private Button btnChartModeDO;
+    @FXML private Button btnChartModeHistory;
+    @FXML private Button btnChartModeDistribution;
+    @FXML private Label lblHistoryCountBadge;
     @FXML private LineChart<String, Number> lineChartDO;
+    @FXML private LineChart<String, Number> lineChartHistory;
+    @FXML private BarChart<String, Number> barChartDistribution;
+    @FXML private Button btnClearHistory;
+    @FXML private TableView<MiningRunMemento> tblMiningHistory;
+    @FXML private TableColumn<MiningRunMemento, Number> colHistRunId;
+    @FXML private TableColumn<MiningRunMemento, String> colHistTime;
+    @FXML private TableColumn<MiningRunMemento, String> colHistEngine;
+    @FXML private TableColumn<MiningRunMemento, String> colHistDataset;
+    @FXML private TableColumn<MiningRunMemento, String> colHistF;
+    @FXML private TableColumn<MiningRunMemento, String> colHistPartial;
+    @FXML private TableColumn<MiningRunMemento, String> colHistMinSup;
+    @FXML private TableColumn<MiningRunMemento, String> colHistTx;
+    @FXML private TableColumn<MiningRunMemento, String> colHistDhops;
+    @FXML private TableColumn<MiningRunMemento, String> colHistPruned;
+    @FXML private TableColumn<MiningRunMemento, String> colHistRuntime;
 
     // ── Tab 4: Tson Results & Benchmark TableViews & KPI Cards ───────────────
     @FXML private Label lblKpiTime;
@@ -149,6 +178,21 @@ public class MainController implements Initializable {
     @FXML private TableColumn<GoldenRow, String> colGoldenActual;
     @FXML private TableColumn<GoldenRow, String> colGoldenStatus;
 
+    // ── Tab 5: Nhật ký chi tiết từng phép tính ───────────────────────────────
+    @FXML private TextField txtLogFilter;
+    @FXML private ComboBox<String> cbLogPhaseFilter;
+    @FXML private Button btnClearLog;
+    @FXML private Button btnExportLog;
+    @FXML private TableView<CalculationLogEntry> tblCalculationLog;
+    @FXML private TableColumn<CalculationLogEntry, Number> colLogId;
+    @FXML private TableColumn<CalculationLogEntry, String> colLogTime;
+    @FXML private TableColumn<CalculationLogEntry, String> colLogPhase;
+    @FXML private TableColumn<CalculationLogEntry, String> colLogTarget;
+    @FXML private TableColumn<CalculationLogEntry, String> colLogFormula;
+    @FXML private TableColumn<CalculationLogEntry, String> colLogComparison;
+    @FXML private TableColumn<CalculationLogEntry, String> colLogDecision;
+    @FXML private TextArea txtLogDetail;
+
     // ── Backend Services ─────────────────────────────────────────────────────
     private DHOPMEngine tamEngine;
     private StreamSimulator streamSimulator;
@@ -170,6 +214,8 @@ public class MainController implements Initializable {
         initTamEngine();
         initTableView();
         initTsonTableViews();
+        initMiningHistoryViews();
+        initCalculationLogView();
         initEventHandlers();
         loadInitialPaperData();
     }
@@ -404,6 +450,225 @@ public class MainController implements Initializable {
         }
     }
 
+    // ── Tab 3: Mining History & Multi-Chart Setup ─────────────────────────────
+
+    private void initMiningHistoryViews() {
+        if (colHistRunId == null) return;
+
+        colHistRunId.setCellValueFactory(cellData -> new SimpleIntegerProperty(cellData.getValue().getRunId()));
+        colHistTime.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getTimestamp()));
+        colHistEngine.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getEngineName()));
+        colHistDataset.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getDatasetName()));
+        colHistF.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%.2f", cellData.getValue().getF())));
+        colHistPartial.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%.1f%%", cellData.getValue().getPartial() * 100.0)));
+        colHistMinSup.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%.2f", cellData.getValue().getMinSup())));
+        colHistTx.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%,d", cellData.getValue().getTotalTransactions())));
+        colHistDhops.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%,d mẫu", cellData.getValue().getDhopCount())));
+        colHistPruned.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%,d (%.0f%%)",
+                cellData.getValue().getPrunedCount(), cellData.getValue().getPrunedRatio() * 100.0)));
+        colHistRuntime.setCellValueFactory(cellData -> new SimpleStringProperty(String.format(java.util.Locale.US, "%,d ms", cellData.getValue().getRuntimeMs())));
+
+        tblMiningHistory.setItems(MiningHistoryManager.getInstance().getHistory());
+
+        MiningHistoryManager.getInstance().getHistory().addListener((javafx.collections.ListChangeListener<MiningRunMemento>) c -> {
+            int count = MiningHistoryManager.getInstance().size();
+            if (lblHistoryCountBadge != null) {
+                lblHistoryCountBadge.setText(count + " lần chạy đã lưu");
+            }
+            updateHistoryCharts();
+        });
+
+        if (btnChartModeDO != null) btnChartModeDO.setOnAction(e -> showChartMode(1));
+        if (btnChartModeHistory != null) btnChartModeHistory.setOnAction(e -> showChartMode(2));
+        if (btnChartModeDistribution != null) btnChartModeDistribution.setOnAction(e -> showChartMode(3));
+        showChartMode(1);
+
+        if (btnClearHistory != null) {
+            btnClearHistory.setOnAction(e -> {
+                MiningHistoryManager.getInstance().clearHistory();
+                updateHistoryCharts();
+            });
+        }
+
+        tblMiningHistory.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null && !newVal.getTopPatterns().isEmpty()) {
+                tableData.setAll(newVal.getTopPatterns());
+                tsonPatternsData.setAll(newVal.getTopPatterns());
+                updateChartFromPatterns(newVal.getTopPatterns(), newVal.getMinSup());
+            }
+        });
+    }
+
+    private void showChartMode(int mode) {
+        if (lineChartDO != null) {
+            lineChartDO.setVisible(mode == 1);
+            lineChartDO.setManaged(mode == 1);
+        }
+        if (lineChartHistory != null) {
+            lineChartHistory.setVisible(mode == 2);
+            lineChartHistory.setManaged(mode == 2);
+        }
+        if (barChartDistribution != null) {
+            barChartDistribution.setVisible(mode == 3);
+            barChartDistribution.setManaged(mode == 3);
+        }
+
+        if (btnChartModeDO != null) btnChartModeDO.setStyle(mode == 1 ? "-fx-background-color: #2563eb; -fx-text-fill: white;" : "");
+        if (btnChartModeHistory != null) btnChartModeHistory.setStyle(mode == 2 ? "-fx-background-color: #059669; -fx-text-fill: white;" : "");
+        if (btnChartModeDistribution != null) btnChartModeDistribution.setStyle(mode == 3 ? "-fx-background-color: #7c3aed; -fx-text-fill: white;" : "");
+    }
+
+    private void updateHistoryCharts() {
+        var runs = MiningHistoryManager.getInstance().getHistory();
+        if (runs.isEmpty()) {
+            if (lineChartHistory != null) lineChartHistory.getData().clear();
+            if (barChartDistribution != null) barChartDistribution.getData().clear();
+            return;
+        }
+
+        // 1. LineChart History
+        if (lineChartHistory != null) {
+            lineChartHistory.getData().clear();
+            XYChart.Series<String, Number> dhopSeries = new XYChart.Series<>();
+            dhopSeries.setName("Số mẫu DHOP");
+
+            XYChart.Series<String, Number> prunedSeries = new XYChart.Series<>();
+            prunedSeries.setName("Số mẫu Bị cắt tỉa");
+
+            XYChart.Series<String, Number> timeSeries = new XYChart.Series<>();
+            timeSeries.setName("Thời gian chạy (ms)");
+
+            for (MiningRunMemento r : runs) {
+                String label = "#" + r.getRunId() + " (" + r.getDatasetName() + ")";
+                dhopSeries.getData().add(new XYChart.Data<>(label, r.getDhopCount()));
+                prunedSeries.getData().add(new XYChart.Data<>(label, r.getPrunedCount()));
+                timeSeries.getData().add(new XYChart.Data<>(label, r.getRuntimeMs()));
+            }
+            lineChartHistory.getData().addAll(dhopSeries, prunedSeries, timeSeries);
+        }
+
+        // 2. BarChart Distribution
+        if (barChartDistribution != null) {
+            barChartDistribution.getData().clear();
+            XYChart.Series<String, Number> barDhopSeries = new XYChart.Series<>();
+            barDhopSeries.setName("🟢 Mẫu DHOP hợp lệ");
+
+            XYChart.Series<String, Number> barPrunedSeries = new XYChart.Series<>();
+            barPrunedSeries.setName("🔴 Mẫu Bị Cắt Tỉa (DUBO)");
+
+            for (MiningRunMemento r : runs) {
+                String label = "#" + r.getRunId();
+                barDhopSeries.getData().add(new XYChart.Data<>(label, r.getDhopCount()));
+                barPrunedSeries.getData().add(new XYChart.Data<>(label, r.getPrunedCount()));
+            }
+            barChartDistribution.getData().addAll(barDhopSeries, barPrunedSeries);
+        }
+    }
+
+    // ── Tab 5: Calculation Log Setup ──────────────────────────────────────────
+
+    private void initCalculationLogView() {
+        if (tblCalculationLog == null) return;
+
+        colLogId.setCellValueFactory(cellData -> new SimpleIntegerProperty(cellData.getValue().id()));
+        colLogTime.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().timestamp()));
+        colLogPhase.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().phase()));
+        colLogTarget.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().target()));
+        colLogFormula.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().formula()));
+        colLogComparison.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().comparison()));
+        colLogDecision.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().decision()));
+
+        colLogDecision.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    if (item.contains("DHOP")) {
+                        setStyle("-fx-text-fill: #16a34a; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    } else if (item.contains("CẮT TỈA")) {
+                        setStyle("-fx-text-fill: #dc2626; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    } else if (item.contains("MỞ RỘNG")) {
+                        setStyle("-fx-text-fill: #2563eb; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    } else {
+                        setStyle("-fx-text-fill: #7c3aed; -fx-font-weight: bold; -fx-alignment: CENTER;");
+                    }
+                }
+            }
+        });
+
+        cbLogPhaseFilter.setItems(FXCollections.observableArrayList(
+                "Tất cả các pha",
+                "Pha 1: Construct",
+                "Pha 2: Reconstruct",
+                "Pha 3: Mining DFS",
+                "Tson V1"
+        ));
+        cbLogPhaseFilter.setValue("Tất cả các pha");
+
+        FilteredList<CalculationLogEntry> filteredLogs = new FilteredList<>(CalculationLogger.getInstance().getLogs(), p -> true);
+
+        Runnable applyFilter = () -> {
+            String text = txtLogFilter.getText() != null ? txtLogFilter.getText().trim().toLowerCase() : "";
+            String phase = cbLogPhaseFilter.getValue();
+
+            filteredLogs.setPredicate(entry -> {
+                boolean matchesPhase = phase == null || phase.equals("Tất cả các pha") || entry.phase().contains(phase);
+                if (!matchesPhase) return false;
+
+                if (text.isEmpty()) return true;
+                return entry.target().toLowerCase().contains(text)
+                        || entry.formula().toLowerCase().contains(text)
+                        || entry.decision().toLowerCase().contains(text);
+            });
+        };
+
+        txtLogFilter.textProperty().addListener((obs, oldVal, newVal) -> applyFilter.run());
+        cbLogPhaseFilter.setOnAction(e -> applyFilter.run());
+
+        tblCalculationLog.setItems(filteredLogs);
+
+        tblCalculationLog.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null && txtLogDetail != null) {
+                txtLogDetail.setText(String.format(
+                        "Bước #%d [%s] - %s%n" +
+                        "• Đối tượng: %s%n" +
+                        "• Công thức tính toán chi tiết:%n  %s%n" +
+                        "• So sánh với ngưỡng: %s%n" +
+                        "• Quyết định thuật toán: %s",
+                        newVal.id(), newVal.timestamp(), newVal.phase(),
+                        newVal.target(), newVal.formula(), newVal.comparison(), newVal.decision()
+                ));
+            } else if (txtLogDetail != null) {
+                txtLogDetail.clear();
+            }
+        });
+
+        if (btnClearLog != null) {
+            btnClearLog.setOnAction(e -> {
+                CalculationLogger.getInstance().clear();
+                if (txtLogDetail != null) txtLogDetail.clear();
+            });
+        }
+
+        if (btnExportLog != null) {
+            btnExportLog.setOnAction(e -> {
+                String fullLog = CalculationLogger.getInstance().exportToString();
+                Clipboard clipboard = Clipboard.getSystemClipboard();
+                ClipboardContent content = new ClipboardContent();
+                content.putString(fullLog);
+                clipboard.setContent(content);
+
+                new Alert(Alert.AlertType.INFORMATION,
+                        "Đã sao chép " + CalculationLogger.getInstance().getLogs().size() +
+                        " dòng nhật ký tính toán vào Clipboard máy tính!").show();
+            });
+        }
+    }
+
     // ── Tson Actions (Lệnh CLI biến thành Nút Bấm Đồ Họa) ─────────────────────
 
     private boolean checkDenseRiskConfirmation(Path path, long limit) {
@@ -506,6 +771,16 @@ public class MainController implements Initializable {
             lblTL.setText("T" + res.rawResult().lastTid());
 
             updateChartFromPatterns(res.uiPatterns(), res.rawResult().minSup());
+
+            // Lưu Memento lịch sử khai phá
+            MiningHistoryManager.getInstance().recordRun(
+                    "Tson V1 Standard",
+                    path.getFileName().toString() + (limit > 0 ? " (" + limit + " tx)" : ""),
+                    f, partial, res.rawResult().minSup(), (int) res.totalTransactions(),
+                    res.patternCount(), 0, res.patternCount(),
+                    res.totalMs(), res.peakHeapMb(), res.uiPatterns()
+            );
+
             showTsonView(1);
         });
 
@@ -740,6 +1015,15 @@ public class MainController implements Initializable {
             lblKpiPatterns.setText(String.format("%,d mẫu", res.patternCount()));
             lblKpiMinSup.setText(String.format("minSup = %.2f", res.rawResult().minSup()));
 
+            // Lưu Memento
+            MiningHistoryManager.getInstance().recordRun(
+                    "Tson Top DO",
+                    path.getFileName().toString() + (limit > 0 ? " (" + limit + " tx)" : ""),
+                    f, partial, res.rawResult().minSup(), (int) res.totalTransactions(),
+                    res.patternCount(), 0, res.patternCount(),
+                    res.totalMs(), res.peakHeapMb(), res.uiPatterns()
+            );
+
             showTsonView(1);
         });
 
@@ -894,15 +1178,29 @@ public class MainController implements Initializable {
     private void initEventHandlers() {
         sliderF.valueProperty().addListener((obs, oldVal, newVal) -> {
             double f = Math.round(newVal.doubleValue() * 100.0) / 100.0;
-            lblFValue.setText(String.format("%.2f", f));
+            lblFValue.setText(String.format(java.util.Locale.US, "%.2f", f));
             recalculateAndRender();
         });
 
         sliderMinSup.valueProperty().addListener((obs, oldVal, newVal) -> {
-            double ratio = Math.round(newVal.doubleValue() * 100.0) / 100.0;
-            lblMinSupValue.setText(String.format("%.0f%%", ratio * 100));
+            double ratio = Math.round(newVal.doubleValue() * 1000.0) / 1000.0;
+            if (txtMinSupRatio != null && !txtMinSupRatio.isFocused()) {
+                txtMinSupRatio.setText(String.format(java.util.Locale.US, "%.1f%%", ratio * 100.0));
+            }
+            if (lblMinSupValue != null) {
+                lblMinSupValue.setText(String.format(java.util.Locale.US, "%.1f%%", ratio * 100.0));
+            }
             recalculateAndRender();
         });
+
+        if (txtMinSupRatio != null) {
+            txtMinSupRatio.setOnAction(e -> handleMinSupTextCommit());
+            txtMinSupRatio.focusedProperty().addListener((obs, oldVal, newVal) -> {
+                if (!newVal) {
+                    handleMinSupTextCommit();
+                }
+            });
+        }
 
         btnStartStream.setOnAction(e -> {
             streamSimulator.start(1500);
@@ -935,6 +1233,35 @@ public class MainController implements Initializable {
         });
     }
 
+    private void handleMinSupTextCommit() {
+        if (txtMinSupRatio == null) return;
+        String text = txtMinSupRatio.getText();
+        if (text == null || text.isBlank()) return;
+        String clean = text.trim().replace("%", "").replace(",", ".").trim();
+        try {
+            double parsed = Double.parseDouble(clean);
+            double ratio;
+            if (parsed > 1.0) {
+                ratio = parsed / 100.0;
+            } else {
+                ratio = parsed;
+            }
+            ratio = Math.max(0.0001, Math.min(1.0, ratio));
+
+            if (ratio > sliderMinSup.getMax()) {
+                sliderMinSup.setMax(Math.ceil(ratio * 10.0) / 10.0);
+            }
+            if (ratio < sliderMinSup.getMin()) {
+                sliderMinSup.setMin(0.0);
+            }
+            sliderMinSup.setValue(ratio);
+            txtMinSupRatio.setText(String.format(java.util.Locale.US, "%.1f%%", ratio * 100.0));
+            recalculateAndRender();
+        } catch (NumberFormatException ignored) {
+            txtMinSupRatio.setText(String.format(java.util.Locale.US, "%.1f%%", sliderMinSup.getValue() * 100.0));
+        }
+    }
+
     private void loadInitialPaperData() {
         streamSimulator.stop();
         btnPauseStream.setDisable(true);
@@ -954,6 +1281,7 @@ public class MainController implements Initializable {
 
         sliderF.setValue(0.90);
         sliderMinSup.setValue(0.15);
+        if (txtMinSupRatio != null) txtMinSupRatio.setText("15.0%");
         progressMining.setProgress(0);
         lblLastPhase.setText("—");
         lblEngineName.setText("⚡ " + (bridgeEngine != null ? bridgeEngine.engineName() : "Tâm-Simulation"));
@@ -967,7 +1295,7 @@ public class MainController implements Initializable {
         int totalTrans = tamEngine.getAllTransactions().size();
         double minSup = totalTrans * ratio;
 
-        lblAbsoluteMinSup.setText(String.format("%.2f", minSup));
+        lblAbsoluteMinSup.setText(String.format(java.util.Locale.US, "%.2f", minSup));
 
         List<PatternResult> results;
         if (currentMode == EngineMode.TAM_SIMULATION || bridgeEngine == null) {
@@ -990,12 +1318,22 @@ public class MainController implements Initializable {
 
         long prunedCount = results.stream().filter(PatternResult::isPruned).count();
         String prunedText = results.isEmpty() ? "0 mẫu"
-                : prunedCount + " mẫu (" + String.format("%.1f%%", ((double) prunedCount / results.size()) * 100) + ")";
+                : prunedCount + " mẫu (" + String.format(java.util.Locale.US, "%.1f%%", ((double) prunedCount / results.size()) * 100) + ")";
         lblPrunedCount.setText(prunedText);
 
         tableData.setAll(results);
         tsonPatternsData.setAll(results);
         updateChart(results, f, minSup);
+
+        // Lưu Memento lịch sử mining
+        long simulatedTimeMs = Math.max(1, (long) (results.size() * 0.15));
+        MiningHistoryManager.getInstance().recordRun(
+                currentMode.getDisplayName(),
+                "default.dat (Stream " + totalTrans + " tx)",
+                f, ratio, minSup, totalTrans,
+                dhops.size(), (int) prunedCount, results.size(),
+                simulatedTimeMs, 14.5, results
+        );
     }
 
     private void updateDHONodes(double f, int TL, double minSup) {

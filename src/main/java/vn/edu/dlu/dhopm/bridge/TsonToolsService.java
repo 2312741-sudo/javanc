@@ -419,6 +419,28 @@ public class TsonToolsService {
         // Sắp xếp DO giảm dần
         uiPatterns.sort((a, b) -> Double.compare(b.doValue(), a.doValue()));
 
+        // Ghi nhật ký vào CalculationLogger
+        vn.edu.dlu.dhopm.log.CalculationLogger.getInstance().log(
+                "Tson V1 Mine",
+                path.getFileName().toString(),
+                String.format("Khai phá dataset %s: N=%,d tx, f=%.2f, ∂=%.2f%%, minSup=%.2f (Constr: %dms, Reconst: %dms, Mine: %dms, Heap: %.1fMB)",
+                        path.getFileName(), result.totalTransactions(), f, partial * 100.0, result.minSup(), cMs, rMs, mMs, peakHeapMb),
+                String.format("Tổng thời gian: %d ms", totalMs),
+                "⚡ HOÀN TẤT"
+        );
+        for (int i = 0; i < Math.min(15, uiPatterns.size()); i++) {
+            PatternResult pr = uiPatterns.get(i);
+            vn.edu.dlu.dhopm.log.CalculationLogger.getInstance().log(
+                    "Tson Mẫu DHOP",
+                    pr.pattern(),
+                    String.format("DO=%.6f, Support=%,d tx, Độ dài=%d, TIDs: %s",
+                            pr.doValue(), pr.support(), pr.pattern().split("[,\\s]+").length,
+                            pr.transactionIds().stream().limit(5).map(tid -> "T" + tid).reduce((a, b) -> a + ", " + b).orElse("")),
+                    String.format("DO=%.4f >= minSup=%.2f", pr.doValue(), result.minSup()),
+                    "🟢 DHOP"
+            );
+        }
+
         return new MineExecutionResult(
             uiPatterns,
             result,

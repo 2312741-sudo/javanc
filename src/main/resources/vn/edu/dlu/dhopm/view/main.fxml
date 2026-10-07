@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.BarChart?>
 <?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.chart.LineChart?>
 <?import javafx.scene.chart.NumberAxis?>
@@ -117,15 +118,17 @@
                         <Label text="f nhỏ = ưu tiên dữ liệu mới; f=1.0 = không suy giảm" styleClass="help-text"/>
                     </VBox>
 
-                    <!-- Slider minSup ratio -->
+                    <!-- Slider minSup ratio & Keyboard input -->
                     <VBox spacing="4.0">
-                        <HBox alignment="CENTER_LEFT">
+                        <HBox alignment="CENTER_LEFT" spacing="6.0">
                             <Label text="Tỷ lệ ngưỡng tối thiểu (∂):" styleClass="field-label"/>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <Label fx:id="lblMinSupValue" text="15%" styleClass="field-value-highlight"/>
+                            <TextField fx:id="txtMinSupRatio" prefWidth="65.0" prefHeight="26.0" text="15%"
+                                       promptText="15%" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-font-size: 11px; -fx-background-color: #eff6ff; -fx-border-color: #93c5fd; -fx-border-radius: 4; -fx-background-radius: 4;"/>
+                            <Label fx:id="lblMinSupValue" visible="false" managed="false"/>
                         </HBox>
-                        <Slider fx:id="sliderMinSup" min="0.05" max="0.30" value="0.15" blockIncrement="0.05"
-                                showTickLabels="true" showTickMarks="true" majorTickUnit="0.05" minorTickCount="1"/>
+                        <Slider fx:id="sliderMinSup" min="0.001" max="0.50" value="0.15" blockIncrement="0.05"
+                                showTickLabels="true" showTickMarks="true" majorTickUnit="0.10" minorTickCount="1"/>
                         <HBox alignment="CENTER_LEFT">
                             <Label text="minSup tuyệt đối:" styleClass="field-label-sub"/>
                             <Region HBox.hgrow="ALWAYS"/>
@@ -237,21 +240,73 @@
                 </VBox>
             </Tab>
 
-            <!-- TAB 3: LINE CHART -->
-            <Tab text="📈 Biểu Đồ Điểm Số DO &amp; Ngưỡng">
-                <VBox spacing="12.0">
+            <!-- TAB 3: TRỰC QUAN HOÁ & LỊCH SỬ MINING -->
+            <Tab text="📈 Trực Quan Hoá &amp; Lịch Sử">
+                <VBox spacing="10.0">
                     <padding>
-                        <Insets top="14.0" right="16.0" bottom="14.0" left="16.0"/>
+                        <Insets top="10.0" right="16.0" bottom="10.0" left="16.0"/>
                     </padding>
 
-                    <LineChart fx:id="lineChartDO" VBox.vgrow="ALWAYS" styleClass="trend-chart" title="So sánh Damped Occupancy (DO) của các Item đơn lẻ với Ngưỡng minSup">
-                        <xAxis>
-                            <CategoryAxis label="Các mục (Items) theo thứ tự Support"/>
-                        </xAxis>
-                        <yAxis>
-                            <NumberAxis label="Giá trị DO"/>
-                        </yAxis>
-                    </LineChart>
+                    <!-- VIEW SWITCHER CHO TAB 3 -->
+                    <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-padding: 6 12 6 12; -fx-background-color: #f8fafc; -fx-background-radius: 8; -fx-border-color: #e2e8f0; -fx-border-radius: 8;">
+                        <Label text="📊 Chế Độ Biểu Đồ:" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #1e293b;"/>
+                        <HBox spacing="6.0">
+                            <Button fx:id="btnChartModeDO" text="📈 Điểm DO &amp; Ngưỡng" styleClass="btn-outline" style="-fx-font-size: 11px;"/>
+                            <Button fx:id="btnChartModeHistory" text="🕒 Lịch Sử Các Lần Khai Phá" styleClass="btn-outline" style="-fx-font-size: 11px;"/>
+                            <Button fx:id="btnChartModeDistribution" text="🍩 Phân Bố Trạng Thái" styleClass="btn-outline" style="-fx-font-size: 11px;"/>
+                        </HBox>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="lblHistoryCountBadge" text="0 lần chạy đã lưu" styleClass="badge-version"/>
+                    </HBox>
+
+                    <!-- KHU VỰC BIỂU ĐỒ (STACKPANE) -->
+                    <StackPane VBox.vgrow="ALWAYS" prefHeight="310.0">
+                        <!-- Biểu đồ 1: LineChart DO vs minSup -->
+                        <LineChart fx:id="lineChartDO" styleClass="trend-chart" title="So sánh Damped Occupancy (DO) của các Mục với Ngưỡng minSup">
+                            <xAxis><CategoryAxis label="Mục / Mẫu theo thứ tự Support"/></xAxis>
+                            <yAxis><NumberAxis label="Giá trị DO"/></yAxis>
+                        </LineChart>
+
+                        <!-- Biểu đồ 2: LineChart Lịch sử các lần mining -->
+                        <LineChart fx:id="lineChartHistory" styleClass="trend-chart" title="Biểu Đồ Xu Hướng Qua Các Lần Khai Phá (DHOPs, Cắt Tỉa, Runtime)" visible="false">
+                            <xAxis><CategoryAxis label="Lượt chạy (Mining Runs)"/></xAxis>
+                            <yAxis><NumberAxis label="Số lượng mẫu / ms"/></yAxis>
+                        </LineChart>
+
+                        <!-- Biểu đồ 3: BarChart Phân bố kết quả -->
+                        <BarChart fx:id="barChartDistribution" styleClass="trend-chart" title="Tỷ Lệ Mẫu Đạt DHOP vs Bị Cắt Tỉa Bởi DUBO Qua Các Lần Chạy" visible="false">
+                            <xAxis><CategoryAxis label="Lượt chạy"/></xAxis>
+                            <yAxis><NumberAxis label="Số lượng mẫu"/></yAxis>
+                        </BarChart>
+                    </StackPane>
+
+                    <!-- KHU VỰC BẢNG LỊCH SỬ LƯU TRỮ -->
+                    <VBox spacing="6.0" prefHeight="220.0">
+                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <Label text="💾 BẢNG LƯU TRỮ LỊCH SỬ CÁC LẦN KHAI PHÁ (MEMENTO PATTERN)" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #334155;"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="btnClearHistory" text="🗑️ Xóa Lịch Sử" style="-fx-font-size: 11px;" styleClass="btn-outline"/>
+                        </HBox>
+
+                        <TableView fx:id="tblMiningHistory" VBox.vgrow="ALWAYS" styleClass="results-table">
+                            <columns>
+                                <TableColumn fx:id="colHistRunId" text="Lần #" prefWidth="55.0" style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colHistTime" text="Thời gian" prefWidth="85.0" style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colHistEngine" text="Engine" prefWidth="120.0"/>
+                                <TableColumn fx:id="colHistDataset" text="Dataset" prefWidth="130.0"/>
+                                <TableColumn fx:id="colHistF" text="f" prefWidth="55.0" style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colHistPartial" text="∂ (%)" prefWidth="65.0" style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colHistMinSup" text="minSup" prefWidth="75.0" style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colHistTx" text="Giao dịch" prefWidth="85.0" style="-fx-alignment: CENTER-RIGHT;"/>
+                                <TableColumn fx:id="colHistDhops" text="Số DHOPs" prefWidth="85.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-text-fill: #16a34a;"/>
+                                <TableColumn fx:id="colHistPruned" text="Cắt tỉa" prefWidth="85.0" style="-fx-alignment: CENTER-RIGHT; -fx-text-fill: #dc2626;"/>
+                                <TableColumn fx:id="colHistRuntime" text="Runtime (ms)" prefWidth="100.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold;"/>
+                            </columns>
+                            <columnResizePolicy>
+                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                            </columnResizePolicy>
+                        </TableView>
+                    </VBox>
                 </VBox>
             </Tab>
 
@@ -363,6 +418,52 @@
                             </columnResizePolicy>
                         </TableView>
                     </StackPane>
+                </VBox>
+            </Tab>
+
+            <!-- TAB 5: NHẬT KÝ CHI TIẾT TỪNG BƯỚC TÍNH TOÁN -->
+            <Tab text="📜 Nhật Ký &amp; Phép Tính">
+                <VBox spacing="10.0">
+                    <padding>
+                        <Insets top="10.0" right="16.0" bottom="10.0" left="16.0"/>
+                    </padding>
+
+                    <!-- TOOLBAR CHO TAB 5 -->
+                    <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-padding: 8 12 8 12; -fx-background-color: #f8fafc; -fx-background-radius: 8; -fx-border-color: #cbd5e1; -fx-border-radius: 8;">
+                        <Label text="📜 NHẬT KÝ CHI TIẾT PHÉP TÍNH (CALCULATION LOG)" style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #0f172a;"/>
+                        <Separator orientation="VERTICAL"/>
+                        <TextField fx:id="txtLogFilter" promptText="🔍 Lọc theo Item/Mẫu (VD: AE, F)..." prefWidth="220.0" prefHeight="28.0" style="-fx-font-size: 11px;"/>
+                        <ComboBox fx:id="cbLogPhaseFilter" prefWidth="150.0" prefHeight="28.0" promptText="Lọc theo Pha"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="btnClearLog" text="🗑️ Xóa Log" styleClass="btn-outline" style="-fx-font-size: 11px;"/>
+                        <Button fx:id="btnExportLog" text="📋 Sao Chép Log" styleClass="btn-outline" style="-fx-font-size: 11px;"/>
+                    </HBox>
+
+                    <!-- SPLIT PANE: BẢNG NHẬT KÝ + CHI TIẾT CÔNG THỨC -->
+                    <SplitPane orientation="VERTICAL" dividerPositions="0.68" VBox.vgrow="ALWAYS">
+                        <!-- TOP: TABLEVIEW LOGS -->
+                        <TableView fx:id="tblCalculationLog" styleClass="results-table">
+                            <columns>
+                                <TableColumn fx:id="colLogId" text="STT" prefWidth="55.0" style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colLogTime" text="Thời gian" prefWidth="95.0" style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colLogPhase" text="Pha thuật toán" prefWidth="130.0"/>
+                                <TableColumn fx:id="colLogTarget" text="Đối tượng" prefWidth="90.0" style="-fx-alignment: CENTER; -fx-font-weight: bold;"/>
+                                <TableColumn fx:id="colLogFormula" text="Công thức &amp; Khai triển số học chi tiết" prefWidth="420.0"/>
+                                <TableColumn fx:id="colLogComparison" text="So sánh minSup" prefWidth="160.0" style="-fx-alignment: CENTER;"/>
+                                <TableColumn fx:id="colLogDecision" text="Quyết định" prefWidth="120.0" style="-fx-alignment: CENTER; -fx-font-weight: bold;"/>
+                            </columns>
+                            <columnResizePolicy>
+                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                            </columnResizePolicy>
+                        </TableView>
+
+                        <!-- BOTTOM: FORMULA INSPECTOR DETAIL -->
+                        <VBox spacing="4.0" style="-fx-padding: 6 10 6 10; -fx-background-color: #f1f5f9;">
+                            <Label text="🔍 Chi tiết công thức toán học và diễn giải bước tính đã chọn:" style="-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #1e293b;"/>
+                            <TextArea fx:id="txtLogDetail" editable="false" wrapText="true" VBox.vgrow="ALWAYS"
+                                      prefHeight="85.0" style="-fx-font-family: 'Menlo', 'Monaco', 'Courier New', monospace; -fx-font-size: 11px; -fx-text-fill: #0f172a;"/>
+                        </VBox>
+                    </SplitPane>
                 </VBox>
             </Tab>
         </TabPane>
