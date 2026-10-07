@@ -31,6 +31,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
@@ -308,6 +309,17 @@ public class MainController implements Initializable {
         // ── 2. View 1: tblTsonPatterns (Mẫu DHOPs)
         colTsonIndex.setCellValueFactory(cellData ->
                 new SimpleIntegerProperty(1 + tblTsonPatterns.getItems().indexOf(cellData.getValue())));
+        colTsonIndex.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(Number item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getIndex() < 0) {
+                    setText(null);
+                } else {
+                    setText(String.valueOf(getIndex() + 1));
+                }
+            }
+        });
         colTsonPattern.setCellValueFactory(cellData -> {
             String raw = cellData.getValue().pattern();
             String[] parts = raw.split("[,\\s]+");
@@ -394,6 +406,29 @@ public class MainController implements Initializable {
 
     // ── Tson Actions (Lệnh CLI biến thành Nút Bấm Đồ Họa) ─────────────────────
 
+    private boolean checkDenseRiskConfirmation(Path path, long limit) {
+        if (limit <= 0 || limit > 100) return true;
+        String name = path.getFileName().toString().toLowerCase();
+        boolean isDense = name.contains("connect") || name.contains("chess") || name.contains("pumsb");
+        if (!isDense) return true;
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Cảnh báo tập dữ liệu dày đặc (Dense Dataset)");
+        alert.setHeaderText("Nguy cơ bùng nổ tổ hợp với giới hạn " + limit + " giao dịch!");
+        alert.setContentText(
+                "Tập dữ liệu '" + path.getFileName() + "' rất dày đặc (37 - 74 items / giao dịch).\n" +
+                "Khi đặt giới hạn quá nhỏ (" + limit + " giao dịch), các items xuất hiện trùng lặp trong toàn bộ các dòng, " +
+                "dẫn đến hơn 274 TỶ TỔ HỢP (2^38 mẫu) khiến thuật toán duyệt nhánh rất lâu!\n\n" +
+                "👉 Khuyến nghị:\n" +
+                "• Dùng nút '📊 Thống kê (Inspect)' để xem nhanh phân tích đặc trưng.\n" +
+                "• Hoặc thử nghiệm với tập chuẩn 'default.dat (8 tx)' hoặc tập thưa 'retail.dat'.\n" +
+                "• Hoặc chọn 'Toàn bộ (0)' để áp dụng đúng ngưỡng minSup chuẩn của FIMI.\n\n" +
+                "Bấm OK để tiếp tục chạy, hoặc Cancel để chọn lại cấu hình."
+        );
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
+    }
+
     /**
      * Nút "🚀 Khai Phá (Mine)": Chạy mining bằng engine Tson trên dataset đã chọn.
      */
@@ -402,6 +437,10 @@ public class MainController implements Initializable {
         double partial = sliderMinSup.getValue();
         double f = sliderF.getValue();
         long limit = resolveLimit();
+
+        if (!checkDenseRiskConfirmation(path, limit)) {
+            return;
+        }
 
         if (cbEngineMode.getValue() != EngineMode.TSON_V1_STANDARD) {
             cbEngineMode.setValue(EngineMode.TSON_V1_STANDARD);
@@ -643,18 +682,29 @@ public class MainController implements Initializable {
         double f = sliderF.getValue();
         long limit = resolveLimit();
 
+        if (!checkDenseRiskConfirmation(path, limit)) {
+            return;
+        }
+
         mainTabPane.getSelectionModel().select(3);
         setButtonsDisable(true);
-        if (lblMiningEta != null) lblMiningEta.setText("Đang trích xuất...");
+        if (lblMiningEta != null) lblMiningEta.setText("Đang chuẩn bị...");
         if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("⏳ Đang trích xuất Top DO...");
+        lblKpiTime.setText("Đang chạy...");
 
         Task<MineExecutionResult> task = new Task<>() {
             @Override
             protected MineExecutionResult call() throws Exception {
                 return tsonService.runMine(
                         path, partial, f, 4, limit,
-                        null,
-                        (Consumer<MiningProgressInfo>) null,
+                        phaseMsg -> Platform.runLater(() -> lblLastPhase.setText(phaseMsg)),
+                        info -> Platform.runLater(() -> {
+                            progressMining.setProgress(info.fraction());
+                            String etaStr = info.formatEtaStatus();
+                            if (lblMiningEta != null) lblMiningEta.setText(etaStr);
+                            if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("⏳ " + etaStr);
+                            lblKpiTime.setText(etaStr);
+                        }),
                         engine -> activeMiningEngine.set(engine)
                 );
             }
