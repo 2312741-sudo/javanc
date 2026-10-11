@@ -22,7 +22,10 @@ public enum EngineMode {
     TAM_SIMULATION("Tâm Simulation Engine (Step-by-Step / Animation)"),
 
     /** Engine V1 Standard của Tson – hiệu năng cao, đa luồng, dữ liệu FIMI. */
-    TSON_V1_STANDARD("Tson V1 Standard Engine (High Performance / FIMI Datasets)");
+    TSON_V1_STANDARD("Tson V1 Standard Engine (High Performance / FIMI Datasets)"),
+
+    /** Engine kết nối Backend độc lập qua TCP Socket 7079 theo Hợp đồng Protocol 1 (CONTRACT.md). */
+    TSON_TCP_BACKEND("Tson TCP Backend (Protocol 1 / Port 7079 JSONL)");
 
     private final String displayName;
 

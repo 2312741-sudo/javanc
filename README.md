@@ -383,7 +383,40 @@ dhopm-visualizer/
 
 ---
 
+## 🤝 8. Hợp Đồng Kết Nối Frontend ↔ Backend (FE Contract Protocol 1)
+
+Dự án tuân thủ nghiêm ngặt **Hợp đồng giao thức chuẩn** giữa Frontend (`javanc`) và Backend (`Tson-dev/JVNC` - [`CONTRACT.md`](https://github.com/Tson-dev/JVNC/blob/main/CONTRACT.md)):
+
+| Mục | Đặc tả chuẩn |
+|---|---|
+| **Contract Version** | `protocol 1` (mọi request ghi `"v": 1`) |
+| **Transport** | TCP Socket `localhost:7079` (kết nối đa nền tảng) + stdio JSONL (test/CI) |
+| **Wire Format** | JSON Lines (1 request / dòng, 1 phản hồi / dòng khớp theo `id`) |
+| **Kiến trúc** | FE và BE khởi động độc lập, FE **không** import jar BE (R1, R2) |
+| **Lớp triển khai** | `DhopmContractTcpClient.java`, `TsonTcpContractBridge.java` |
+
+### Quy trình kết nối 3 bước (Handshake & Discovery):
+1. **Kết nối:** Mở socket TCP tới `127.0.0.1:7079` (hỗ trợ tự động quét mạng LAN nếu chạy khác máy).
+2. **Bắt tay:** Gửi `{"id":0,"v":1,"cmd":"hello"}`.
+3. **Xác thực:** Backend phản hồi `{"id":0,"v":1,"ok":true,"protocol":1,"manager":"dhopm-cli", ...}` $\to$ Lưu địa chỉ, chính thức kết nối.
+
+### Ví dụ lệnh Khai phá (`mine`) qua TCP JSON Lines:
+```jsonc
+// Request: FE -> BE
+{"id":2,"v":1,"cmd":"mine","dataset":"retail.dat","format":"fimi","partial":0.06,"f":0.9,"minOcc":1e-6,"limit":0,"versions":["v1"],"export":true}
+
+// Response: BE -> FE
+{"id":2,"v":1,"ok":true,"totalTransactions":88162,"minSup":9.18,"maxDO":10.0,"patterns":[{"items":["A","E"],"key":"A,E","do":1.2601,"support":3,"tids":[2,4,7]}],"saved":{"fileID":"26-10-11_001","path":"/mine/mine_26-10-11_001.txt"}}
+```
+
+- **Ràng buộc R14 (D48):** Khi `export=true` hoặc `isLog=true`, Backend ghi file `mine_<yy-MM-dd>_<NNN>.txt` và Frontend tự động mirror một bản sao cục bộ vào thư mục `mine/` để đảm bảo độc lập dữ liệu.
+- **Cơ chế Fallback thông minh:** Khi Backend chưa chạy trên cổng 7079, `TsonTcpContractBridge` tự động chuyển tiếp an toàn sang In-process Engine, đảm bảo ứng dụng không bao giờ bị gián đoạn.
+
+---
+
 ## 🔗 Liên Kết Tham Khảo
+- **Hợp đồng FE ↔ BE (CONTRACT.md):** [https://github.com/Tson-dev/JVNC/blob/main/CONTRACT.md](https://github.com/Tson-dev/JVNC/blob/main/CONTRACT.md)
 - **Repo của Tson (Core Engine):** [https://github.com/Tson-dev/JVNC](https://github.com/Tson-dev/JVNC)
-- **Repo của Tâm (UI Visualizer):** [https://github.com/2312441-sudo/javanc](https://github.com/2312441-sudo/javanc)
+- **Repo của Tâm (UI Visualizer):** [https://github.com/2312741-sudo/javanc](https://github.com/2312741-sudo/javanc)
 - **Bài báo gốc (EAAI 2026):** DOI [10.1016/j.engappai.2026.114511](https://doi.org/10.1016/j.engappai.2026.114511)
+

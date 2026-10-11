@@ -42,6 +42,7 @@ public final class EngineFactory {
         return switch (mode) {
             case TAM_SIMULATION   -> new TamSimulationBridge(minSupRatio, decayFactor);
             case TSON_V1_STANDARD -> new TsonV1Bridge(minSupRatio, decayFactor);
+            case TSON_TCP_BACKEND -> new TsonTcpContractBridge(minSupRatio, decayFactor);
         };
     }
 

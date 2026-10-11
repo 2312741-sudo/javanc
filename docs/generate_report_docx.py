@@ -8,6 +8,7 @@ following exact guidelines:
 - Body: 13pt, 1.3 lines spacing, Justified, 6pt after
 - Headings: 16pt / 14pt / 13pt bold
 - Tables: Header styled, centered, padded
+- Full alignment with CONTRACT.md (Protocol 1, TCP 7079, JSONL, Mirroring)
 """
 
 import os
@@ -185,7 +186,7 @@ def build_report():
 
     add_p("Giảng viên hướng dẫn:  ThS. Đoàn Minh Khuê", bold=True, size=13, align=WD_ALIGN_PARAGRAPH.LEFT, space_after=6)
     add_p("Sinh viên thực hiện:      2312741 – Nguyễn Thanh Tâm (CTK47-PM / CTK45)", size=13, align=WD_ALIGN_PARAGRAPH.LEFT, space_after=4)
-    add_p("Thành viên phối hợp:    Nguyễn Hữu Trung Sơn (Phụ trách Core Engine)", size=13, align=WD_ALIGN_PARAGRAPH.LEFT, space_after=60)
+    add_p("Thành viên phối hợp:    Nguyễn Hữu Trung Sơn (Phụ trách Core Engine & FE Contract)", size=13, align=WD_ALIGN_PARAGRAPH.LEFT, space_after=60)
 
     add_p("Đà Lạt, tháng 10 năm 2026", bold=True, size=13, align=WD_ALIGN_PARAGRAPH.CENTER, space_after=0)
 
@@ -195,19 +196,8 @@ def build_report():
     # 2. NHẬN XÉT CỦA GIÁO VIÊN HƯỚNG DẪN
     # =========================================================================
     add_h1("NHẬN XÉT CỦA GIÁO VIÊN HƯỚNG DẪN")
-    add_p("...................................................................................................................................................................", space_before=15, space_after=12)
-    add_p("...................................................................................................................................................................", space_after=12)
-    add_p("...................................................................................................................................................................", space_after=12)
-    add_p("...................................................................................................................................................................", space_after=12)
-    add_p("...................................................................................................................................................................", space_after=12)
-    add_p("...................................................................................................................................................................", space_after=12)
-    add_p("...................................................................................................................................................................", space_after=12)
-    add_p("...................................................................................................................................................................", space_after=12)
-    add_p("...................................................................................................................................................................", space_after=12)
-    add_p("...................................................................................................................................................................", space_after=12)
-    add_p("...................................................................................................................................................................", space_after=12)
-    add_p("...................................................................................................................................................................", space_after=12)
-    add_p("...................................................................................................................................................................", space_after=12)
+    for _ in range(13):
+        add_p("...................................................................................................................................................................", space_after=12)
 
     add_p("Đà Lạt, ngày … tháng … năm 2026", italic=True, align=WD_ALIGN_PARAGRAPH.RIGHT, space_before=30, space_after=6)
     add_p("Giáo viên hướng dẫn", bold=True, align=WD_ALIGN_PARAGRAPH.RIGHT, space_after=4)
@@ -237,30 +227,31 @@ def build_report():
     add_p("Giảng viên hướng dẫn: ThS. Đoàn Minh Khuê", bold=True, space_before=10, space_after=10)
 
     add_h2("1. Mục tiêu đề tài")
-    add_p("- Nghiên cứu lý thuyết học thuật: Làm chủ bài toán Khai phá mẫu độ chiếm dụng cao (HOPM) trên luồng dữ liệu thời gian thực theo bài báo khoa học quốc tế EAAI 2026. Nắm vững mô hình suy giảm Damped Window (0 < f <= 1), cận trên DUBO cắt tỉa an toàn và cấu trúc nén Global DHO-List một lần quét.")
-    add_p("- Xây dựng ứng dụng phần mềm trực quan hóa: Phát triển hoàn chỉnh phần mềm DHOPM Stream Visualizer bằng Java 21 và JavaFX, gồm 6 Tab chức năng trực quan hóa cấu trúc cây DHO-Tree, bảng kết quả với Support (tx / %), bộ khảo sát đa ngưỡng Benchmark Sweep dựng biểu đồ bài báo (Fig 6, 11, 13), tích hợp Tson/SPMF Engine với tiến trình ngầm, nút dừng an toàn và ước tính ETA, quản lý lịch sử khai phá (Memento) và nhật ký tính toán chi tiết (Calculation Logger).")
-    add_p("- Áp dụng kiến trúc chuẩn công nghiệp: Triển khai thành công 9 Mẫu thiết kế phần mềm GoF, phân tầng MVC sạch, đảm bảo 100% ca kiểm thử tự động (Unit Test) vượt qua kiểm thử.")
+    add_p("- Nghiên cứu lý thuyết học thuật: Làm chủ bài toán Khai phá mẫu độ chiếm dụng cao (HOPM) trên luồng dữ liệu theo bài báo khoa học quốc tế EAAI 2026. Nắm vững mô hình Damped Window, cận trên DUBO cắt tỉa an toàn, cấu trúc nén Global DHO-List một lần quét.")
+    add_p("- Xây dựng ứng dụng phần mềm trực quan hóa: Phát triển hoàn chỉnh phần mềm DHOPM Stream Visualizer bằng Java 21 và JavaFX, gồm 6 Tab chức năng trực quan hóa cấu trúc cây DHO-Tree, bảng kết quả với Support (tx / %), bộ khảo sát đa ngưỡng Benchmark Sweep dựng biểu đồ bài báo (Fig 6, 11, 13), tích hợp Tson/SPMF Engine với tiến trình ngầm, nút dừng an toàn và ước tính ETA, quản lý lịch sử (Memento) và nhật ký tính toán (Calculation Logger).")
+    add_p("- Áp dụng Hợp đồng giao thức chuẩn Frontend ↔ Backend (FE Contract Protocol 1): Kết nối độc lập qua TCP Socket 7079 với định dạng JSON Lines, tự động bắt tay handshake 'hello', hỗ trợ bộ lệnh 'mine', 'window', 'inspect', 'golden', 'fetch', và tự động mirror file kết quả cục bộ (R14 / D48).")
+    add_p("- Áp dụng kiến trúc chuẩn công nghiệp: Triển khai 9 Mẫu thiết kế phần mềm GoF, phân tầng Clean MVC, kiểm thử tự động đạt 100% (51/51 test cases PASS).")
 
     add_h2("2. Nội dung đề tài")
     add_p("Chương 1: Tổng quan về đề tài")
     add_p("Chương 2: Cơ sở lý thuyết và công nghệ")
-    add_p("Chương 3: Phân tích và thiết kế hệ thống")
+    add_p("Chương 3: Phân tích và thiết kế hệ thống (kèm Đặc tả Hợp đồng FE ↔ BE)")
     add_p("Chương 4: Xây dựng hệ thống và hiện thực hóa ứng dụng")
     add_p("Chương 5: Kết quả thực nghiệm và đối soát bài báo gốc")
     add_p("Kết luận và hướng phát triển")
 
     add_h2("3. Phần mềm và công cụ sử dụng")
-    add_p("- Công nghệ sử dụng: Java 21 LTS (OpenJDK), JavaFX 21, Apache Maven 3.9, Thư viện SPMF Data Mining, JUnit 5.")
-    add_p("- Công cụ phát triển: IntelliJ IDEA, Git, GitHub (kho mã nguồn https://github.com/2312741-sudo/javanc.git), macOS / Linux.")
+    add_p("- Công nghệ: Java 21 LTS, JavaFX 21, Apache Maven 3.9, SPMF Data Mining, JUnit 5, TCP Sockets & JSON Lines.")
+    add_p("- Công cụ: IntelliJ IDEA, Git, GitHub (kho mã nguồn https://github.com/2312741-sudo/javanc.git), macOS / Linux.")
 
     add_h2("4. Dự kiến kết quả đạt được")
     add_p("- Hoàn thành ứng dụng phần mềm JavaFX trực quan, thẩm mỹ, mượt mà và đầy đủ tính năng.")
-    add_p("- Đạt 100% ca kiểm thử tự động (48/48 test cases PASS), khớp tuyệt đối với số liệu công trình khoa học gốc EAAI 2026.")
-    add_p("- Nâng cao kỹ năng phân tích thiết kế, làm việc nhóm, áp dụng mẫu thiết kế hướng đối tượng và viết tài liệu học thuật.")
+    add_p("- Kết nối linh hoạt cả In-process Engine và Remote TCP Backend qua Socket 7079 theo đúng CONTRACT.md.")
+    add_p("- Vượt qua 100% bộ 51 ca kiểm thử tự động (Unit & Integration Tests), khớp tuyệt đối với số liệu bài báo gốc.")
 
     add_h2("5. Tài liệu tham khảo chính")
     add_p("[1] M. Cho, H. Kim, P. Fournier-Viger, and U. Yun, 'Damped window based high occupancy pattern mining with one scanning of data streams', Engineering Applications of Artificial Intelligence (EAAI), vol. 174, p. 114511, 2026.")
-    add_p("[2] E. Gamma, R. Helm, R. Johnson, and J. Vlissides, 'Design Patterns: Elements of Reusable Object-Oriented Software', Addison-Wesley, 1994.")
+    add_p("[2] Hợp đồng kết nối FE ↔ BE (CONTRACT.md), Tson-dev/JVNC, 2026.")
 
     # Bảng chữ ký
     add_p("\n", space_after=10)
@@ -271,7 +262,6 @@ def build_report():
             set_cell_background(c, "FFFFFF")
             set_cell_margins(c, top=80, bottom=80, left=100, right=100)
     
-    # Cell 0,0: GVHD
     p = sig_table.rows[0].cells[0].paragraphs[0]
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r = p.add_run("Giáo viên hướng dẫn\n\n\n\n\nThS. Đoàn Minh Khuê")
@@ -279,15 +269,13 @@ def build_report():
     r.font.name = 'Times New Roman'
     r.font.size = Pt(12)
 
-    # Cell 0,1: SV
     p = sig_table.rows[0].cells[1].paragraphs[0]
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = p.add_run("Đà Lạt, ngày 08 tháng 10 năm 2026\nSinh viên thực hiện\n\n\n\nNguyễn Thanh Tâm\nNguyễn Hữu Trung Sơn")
+    r = p.add_run("Đà Lạt, ngày 11 tháng 10 năm 2026\nSinh viên thực hiện\n\n\n\nNguyễn Thanh Tâm\nNguyễn Hữu Trung Sơn")
     r.bold = True
     r.font.name = 'Times New Roman'
     r.font.size = Pt(12)
 
-    # Cell 1,0: BCN Khoa
     p = sig_table.rows[1].cells[0].paragraphs[0]
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r = p.add_run("\nBCN Khoa\n(Ký tên)")
@@ -295,7 +283,6 @@ def build_report():
     r.font.name = 'Times New Roman'
     r.font.size = Pt(12)
 
-    # Cell 1,1: Bộ môn
     p = sig_table.rows[1].cells[1].paragraphs[0]
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r = p.add_run("\nTổ trưởng Bộ môn\n(Ký tên)")
@@ -356,28 +343,33 @@ def build_report():
         ("    3.2. Thiết kế hệ thống", "28"),
         ("        3.2.1. Kiến trúc phân tầng MVC và 9 Mẫu thiết kế GoF", "28"),
         ("        3.2.2. Sơ đồ Use Case của hệ thống", "32"),
-        ("        3.2.3. Các bảng đặc tả Use Case chi tiết", "34"),
+        ("        3.2.3. Các bảng đặc tả Use Case chi tiết (Bảng 3 - 21)", "34"),
         ("        3.2.4. Thiết kế cấu trúc dữ liệu Model", "48"),
-        ("CHƯƠNG 4. XÂY DỰNG HỆ THỐNG VÀ HIỆN THỰC HÓA", "52"),
-        ("    4.1. Cấu trúc thư mục và tổ chức mã nguồn", "52"),
-        ("    4.2. Hiện thực hóa các phân hệ lõi nghiệp vụ", "54"),
-        ("    4.3. Xây dựng giao diện trực quan hóa JavaFX", "57"),
-        ("        4.3.1. Tab 1 & Tab 2: Khai phá Stream & Cây DHO-Tree", "57"),
-        ("        4.3.2. Tab 3: Khảo sát Benchmark Sweep đa ngưỡng minSup", "59"),
-        ("        4.3.3. Tab 4: Phân hệ khai phá Big Data Tson / SPMF", "61"),
-        ("        4.3.4. Tab 5: Lịch sử khai phá và đa biểu đồ xu hướng", "63"),
-        ("        4.3.5. Tab 6: Nhật ký tính toán chi tiết từng bước", "65"),
-        ("    4.4. Xử lý đa luồng bất đồng bộ và kiểm soát an toàn bộ nhớ", "67"),
-        ("CHƯƠNG 5. KẾT QUẢ THỰC NGHIỆM VÀ ĐỐI SOÁT BÀI BÁO GỐC", "69"),
-        ("    5.1. Bộ dữ liệu thực nghiệm", "69"),
-        ("    5.2. Kết quả kiểm thử tự động toàn diện (48 Test Cases)", "70"),
-        ("    5.3. Đối soát tính đúng đắn với công trình gốc (Golden Tests)", "71"),
-        ("    5.4. Đánh giá hiệu năng và hiệu quả cắt tỉa", "73"),
-        ("KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN", "75"),
-        ("    1. Kết quả đạt được", "75"),
-        ("    2. Hướng phát triển", "76"),
-        ("TÀI LIỆU THAM KHẢO", "77"),
-        ("PHỤ LỤC", "79")
+        ("        3.2.5. Hợp đồng giao thức kết nối Frontend ↔ Backend (Protocol 1)", "52"),
+        ("CHƯƠNG 4. XÂY DỰNG HỆ THỐNG VÀ HIỆN THỰC HÓA", "55"),
+        ("    4.1. Cấu trúc thư mục và tổ chức mã nguồn", "55"),
+        ("    4.2. Hiện thực hóa các phân hệ lõi nghiệp vụ", "57"),
+        ("        4.2.1. Thuật toán lõi DHOPMEngine (Template Method)", "57"),
+        ("        4.2.2. Dịch vụ Benchmark Sweep đa ngưỡng minSup", "58"),
+        ("        4.2.3. Quản lý lịch sử bằng Memento Pattern", "59"),
+        ("        4.2.4. Phân hệ kết nối TCP Socket (DhopmContractTcpClient)", "60"),
+        ("    4.3. Xây dựng giao diện trực quan hóa JavaFX", "61"),
+        ("        4.3.1. Tab 1 & Tab 2: Khai phá Stream & Cây DHO-Tree", "61"),
+        ("        4.3.2. Tab 3: Khảo sát Benchmark Sweep đa ngưỡng minSup", "63"),
+        ("        4.3.3. Tab 4: Phân hệ khai phá Big Data Tson / SPMF", "65"),
+        ("        4.3.4. Tab 5: Lịch sử khai phá và đa biểu đồ xu hướng", "67"),
+        ("        4.3.5. Tab 6: Nhật ký tính toán chi tiết từng bước", "69"),
+        ("    4.4. Xử lý đa luồng bất đồng bộ và kiểm soát an toàn bộ nhớ", "71"),
+        ("CHƯƠNG 5. KẾT QUẢ THỰC NGHIỆM VÀ ĐỐI SOÁT BÀI BÁO GỐC", "73"),
+        ("    5.1. Bộ dữ liệu thực nghiệm", "73"),
+        ("    5.2. Kết quả kiểm thử tự động toàn diện (51 Test Cases)", "74"),
+        ("    5.3. Đối soát tính đúng đắn với công trình gốc (Golden Tests)", "75"),
+        ("    5.4. Đánh giá hiệu năng và hiệu quả cắt tỉa", "77"),
+        ("KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN", "79"),
+        ("    1. Kết quả đạt được", "79"),
+        ("    2. Hướng phát triển", "80"),
+        ("TÀI LIỆU THAM KHẢO", "81"),
+        ("PHỤ LỤC", "83")
     ]
     for item, page in toc_data:
         p = doc.add_paragraph()
@@ -389,7 +381,6 @@ def build_report():
         if not item.startswith("    "):
             r1.bold = True
         
-        # Leader dots
         p.paragraph_format.tab_stops.add_tab_stop(Cm(16.0))
         r2 = p.add_run(f"\t{page}")
         r2.font.name = 'Times New Roman'
@@ -415,14 +406,14 @@ def build_report():
         ("Hình 9. Sơ đồ Use Case chi tiết cho tác nhân Nhà nghiên cứu / Giảng viên", "33"),
         ("Hình 10. Sơ đồ Use Case chi tiết cho tác nhân Kỹ sư dữ liệu / Phân tích viên", "34"),
         ("Hình 11. Sơ đồ lớp tổng thể của hệ thống (Class Diagram)", "31"),
-        ("Hình 12. Cấu trúc tổ chức mã nguồn dự án theo chuẩn Apache Maven", "53"),
-        ("Hình 13. Giao diện Tab 1 & Tab 2: Khai phá luồng, Cây DHO-Tree và Bảng kết quả (Support tx/%)", "58"),
-        ("Hình 14. Giao diện Tab 3: Khảo sát Benchmark Sweep đa ngưỡng và Biểu đồ bài báo (Fig 6, 11, 13)", "60"),
-        ("Hình 15. Giao diện Tab 4: Trung tâm khai phá Big Data Tson/SPMF với tiến trình thời gian thực và ETA", "62"),
-        ("Hình 16. Giao diện Tab 5: Lịch sử khai phá (Memento) và đa biểu đồ so sánh xu hướng", "64"),
-        ("Hình 17. Giao diện Tab 6: Nhật ký tính toán chi tiết từng bước (Calculation Logger Inspector)", "66"),
-        ("Hình 18. Hộp thoại cảnh báo an toàn bùng nổ tổ hợp đối với tập dữ liệu dày đặc", "68"),
-        ("Hình 19. Kết quả thực thi kiểm thử tự động 48/48 test cases thành công trên Maven Surefire", "70")
+        ("Hình 12. Cấu trúc tổ chức mã nguồn dự án theo chuẩn Apache Maven", "56"),
+        ("Hình 13. Giao diện Tab 1 & Tab 2: Khai phá luồng, Cây DHO-Tree và Bảng kết quả (Support tx/%)", "62"),
+        ("Hình 14. Giao diện Tab 3: Khảo sát Benchmark Sweep đa ngưỡng và Biểu đồ bài báo (Fig 6, 11, 13)", "64"),
+        ("Hình 15. Giao diện Tab 4: Trung tâm khai phá Big Data Tson/SPMF với tiến trình thời gian thực và ETA", "66"),
+        ("Hình 16. Giao diện Tab 5: Lịch sử khai phá (Memento) và đa biểu đồ so sánh xu hướng", "68"),
+        ("Hình 17. Giao diện Tab 6: Nhật ký tính toán chi tiết từng bước (Calculation Logger Inspector)", "70"),
+        ("Hình 18. Hộp thoại cảnh báo an toàn bùng nổ tổ hợp đối với tập dữ liệu dày đặc", "72"),
+        ("Hình 19. Kết quả thực thi kiểm thử tự động 51/51 test cases thành công trên Maven Surefire", "74")
     ]
     for fig_text, page in figs:
         p = doc.add_paragraph()
@@ -463,15 +454,16 @@ def build_report():
         ("Bảng 18. Bảng đặc tả Use case Ghi vết chi tiết từng bước tính toán (Calculation Log)", "46"),
         ("Bảng 19. Bảng đặc tả Use case Lọc và tra cứu nhật ký tính toán", "47"),
         ("Bảng 20. Bảng đặc tả Use case Trích xuất và sao chép công thức toán học", "47"),
-        ("Bảng 21. Cấu trúc dữ liệu thực thể PatternResult", "48"),
-        ("Bảng 22. Cấu trúc dữ liệu thực thể DHOEntry", "49"),
-        ("Bảng 23. Cấu trúc dữ liệu thực thể MiningRunMemento", "49"),
-        ("Bảng 24. Cấu trúc dữ liệu thực thể MinSupSweepResult", "50"),
-        ("Bảng 25. Cấu trúc dữ liệu thực thể CalculationLogEntry", "51"),
-        ("Bảng 26. Cấu trúc dữ liệu thực thể Transaction", "51"),
-        ("Bảng 27. Tổng hợp các bộ dữ liệu thực nghiệm chuẩn bài báo", "69"),
-        ("Bảng 28. Ma trận đối soát kiểm thử Golden Test Cases (TC1 – TC8)", "72"),
-        ("Bảng 29. Bảng phân công trách nhiệm và khối lượng công việc", "79")
+        ("Bảng 21. Bảng đặc tả Use case Kết nối Backend qua TCP Socket 7079 theo Contract Protocol 1", "48"),
+        ("Bảng 22. Cấu trúc dữ liệu thực thể PatternResult", "49"),
+        ("Bảng 23. Cấu trúc dữ liệu thực thể DHOEntry", "50"),
+        ("Bảng 24. Cấu trúc dữ liệu thực thể MiningRunMemento", "50"),
+        ("Bảng 25. Cấu trúc dữ liệu thực thể MinSupSweepResult", "51"),
+        ("Bảng 26. Cấu trúc dữ liệu thực thể CalculationLogEntry", "52"),
+        ("Bảng 27. Cấu trúc dữ liệu thực thể Transaction", "52"),
+        ("Bảng 28. Tổng hợp các bộ dữ liệu thực nghiệm chuẩn bài báo", "73"),
+        ("Bảng 29. Ma trận đối soát kiểm thử Golden Test Cases (TC1 – TC8)", "76"),
+        ("Bảng 30. Bảng phân công trách nhiệm và khối lượng công việc", "83")
     ]
     for tbl_text, page in tbls:
         p = doc.add_paragraph()
@@ -495,7 +487,7 @@ def build_report():
     add_p("Phương pháp Khai phá tập mục phổ biến (Frequent Itemset Mining - FIM) truyền thống vốn chỉ căn cứ trên tần số xuất hiện nhị phân (0 hoặc 1) mà bỏ qua hoàn toàn quy mô của từng giỏ hàng. Điều này dẫn tới hai nghịch lý lớn: hoặc bỏ sót các tổ hợp mục có ý nghĩa chiếm tỷ trọng áp đảo trong các giỏ hàng nhỏ gọn, hoặc sinh ra hàng triệu mẫu 'loãng' ngẫu nhiên từ các hóa đơn quá dài. Để giải quyết nghịch lý này, bài toán Khai phá mẫu độ chiếm dụng cao (High Occupancy Pattern Mining - HOPM) đã ra đời, đo lường chính xác tỷ lệ số lượng món hàng trên kích thước từng giao dịch.")
     add_p("Tuy nhiên, khi đối mặt với luồng dữ liệu, HOPM gặp phải 3 thách thức kỹ thuật cốt lõi: dữ liệu chỉ được phép đọc một lần duy nhất (One-scan constraint) do giới hạn bộ nhớ RAM; dữ liệu quá khứ giảm dần giá trị theo thời gian (hiện tượng Trôi dạt khái niệm - Concept Drift); và đặc tính phi đơn điệu của độ đo Occupancy khiến không thể áp dụng các cơ chế cắt tỉa nhánh cổ điển.")
     add_p("Nhằm giải quyết trọn vẹn bài toán hóc búa trên, bài báo khoa học quốc tế 'Damped window based high occupancy pattern mining with one scanning of data streams' được công bố trên tạp chí Engineering Applications of Artificial Intelligence (EAAI, Volume 174, 2026) đã đề xuất thuật toán đột phá DHOPM. Thuật toán tích hợp mô hình suy giảm Damped Window với cận trên toán học an toàn DUBO và cấu trúc danh sách Global DHO-List một lần quét.")
-    add_p("Xuất phát từ ý nghĩa học thuật tiên phong và giá trị ứng dụng thực tiễn to lớn đó, nhóm sinh viên chúng em thực hiện đề tài: 'Nghiên cứu thuật toán DHOPM và xây dựng ứng dụng trực quan hóa khai phá mẫu độ chiếm dụng cao trên luồng dữ liệu'. Đồ án không chỉ dừng lại ở việc chứng minh và làm chủ các công thức toán học, mà còn tập trung xây dựng phần mềm DHOPM Stream Visualizer hoàn chỉnh trên Java 21 và JavaFX, áp dụng 9 mẫu thiết kế phần mềm GoF chuẩn công nghiệp, mang lại một công cụ trực quan hóa sống động phục vụ nghiên cứu và giảng dạy đại học.")
+    add_p("Xuất phát từ ý nghĩa học thuật tiên phong và giá trị ứng dụng thực tiễn to lớn đó, nhóm sinh viên chúng em thực hiện đề tài: 'Nghiên cứu thuật toán DHOPM và xây dựng ứng dụng trực quan hóa khai phá mẫu độ chiếm dụng cao trên luồng dữ liệu'. Đồ án không chỉ dừng lại ở việc chứng minh và làm chủ các công thức toán học, mà còn tập trung xây dựng phần mềm DHOPM Stream Visualizer hoàn chỉnh trên Java 21 và JavaFX, áp dụng chuẩn mực Hợp đồng giao thức kết nối Frontend ↔ Backend (FE Contract Protocol 1) qua TCP Socket 7079 JSON Lines, kết hợp 9 mẫu thiết kế phần mềm GoF, mang lại một công cụ trực quan hóa sống động phục vụ nghiên cứu và giảng dạy đại học.")
 
     doc.add_page_break()
 
@@ -517,7 +509,7 @@ def build_report():
     add_h2("1.3. Mục tiêu đề tài")
     add_p("- Mục tiêu học thuật: Chứng minh tính đúng đắn của độ đo Damped Occupancy (DO), tính đơn điệu suy giảm của cận trên DUBO và nguyên lý bảo toàn không bỏ sót mẫu kết quả.")
     add_p("- Mục tiêu sản phẩm: Xây dựng ứng dụng JavaFX 6 Tab trực quan hóa toàn diện: Cây DHO-Tree, Bảng kết quả (Support tx / %), Khảo sát Benchmark Sweep đa ngưỡng dựng đồ thị bài báo (Fig 6, 11, 13), Tson/SPMF Engine hỗ trợ Big Data với nút Dừng và ETA, Memento Pattern lưu lịch sử, và Nhật ký tính toán chi tiết (Calculation Logger).")
-    add_p("- Mục tiêu kỹ thuật: Áp dụng 9 Mẫu thiết kế phần mềm GoF, phân tầng Clean MVC, kiểm thử tự động đạt 100% (48/48 unit tests PASS).")
+    add_p("- Mục tiêu giao thức & kiến trúc: Áp dụng Hợp đồng kết nối FE ↔ BE chuẩn Protocol 1 qua TCP Socket 7079 JSON Lines (CONTRACT.md), 9 Mẫu thiết kế phần mềm GoF, phân tầng Clean MVC, kiểm thử tự động đạt 100% (51/51 unit tests PASS).")
 
     add_h2("1.4. Phạm vi nghiên cứu")
     add_p("- Lý thuyết: Mô hình cửa sổ suy giảm theo hàm mũ f^(TL - Td) với 0 < f <= 1 trên luồng giao dịch nhị phân.")
@@ -582,7 +574,7 @@ def build_report():
     add_h1("CHƯƠNG 3. PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG")
 
     add_h2("3.1. Phân tích yêu cầu")
-    add_p("3.1.1. Yêu cầu chức năng: Cấu hình tham số f và minSup (hỗ trợ nhập bàn phím hai chiều); nạp luồng giao dịch; mô phỏng khai phá 3 pha; trực quan hóa DHO-List; hiển thị bảng mẫu có Support (tx / %); quét Benchmark Sweep đa ngưỡng minSup; khai phá Big Data Tson/SPMF với nút Dừng và ETA; cảnh báo dữ liệu dày; lưu trữ lịch sử bằng Memento; và ghi nhật ký tính toán chi tiết.")
+    add_p("3.1.1. Yêu cầu chức năng: Cấu hình tham số f và minSup (hỗ trợ nhập bàn phím hai chiều); nạp luồng giao dịch; mô phỏng khai phá 3 pha; trực quan hóa DHO-List; hiển thị bảng mẫu có Support (tx / %); quét Benchmark Sweep đa ngưỡng minSup; khai phá Big Data Tson/SPMF với nút Dừng và ETA; cảnh báo dữ liệu dày; lưu trữ lịch sử bằng Memento; ghi nhật ký tính toán chi tiết; và kết nối Backend qua Socket TCP 7079 theo FE Contract Protocol 1.")
     add_p("3.1.2. Yêu cầu phi chức năng: Tốc độ phản hồi UI < 100ms; không gây đơ giật UI nhờ đa luồng ngầm; bảo vệ an toàn bộ nhớ OOM; độ chính xác toán học 100% khớp bài báo; giao diện hiện đại và tính module hóa cao.")
 
     add_h2("3.2. Thiết kế hệ thống")
@@ -595,7 +587,7 @@ def build_report():
         ["STT", "Tên Mẫu Thiết Kế", "Phân Loại", "Lớp Triển Khai", "Mục Đích Kỹ Thuật"],
         [
             ["1", "Bridge Pattern", "Structural", "BridgeEngine", "Tách trừu tượng điều khiển UI khỏi động cơ khai phá."],
-            ["2", "Adapter Pattern", "Structural", "TamSimulationBridge, TsonV1Bridge", "Chuyển đổi giao diện các động cơ về chuẩn BridgeEngine."],
+            ["2", "Adapter Pattern", "Structural", "TamSimulationBridge, TsonV1Bridge, TsonTcpContractBridge", "Chuyển đổi giao diện các động cơ về chuẩn BridgeEngine."],
             ["3", "Strategy Pattern", "Behavioral", "EngineMode", "Đóng gói các chiến lược khai phá có thể hoán đổi tại runtime."],
             ["4", "Factory Method", "Creational", "EngineFactory", "Khởi tạo động cơ phù hợp theo chế độ và tham số f, ∂."],
             ["5", "Observer Pattern", "Behavioral", "MiningListener, PhaseListener", "Phát và nhận sự kiện bất đồng bộ giữa Core Engine và UI."],
@@ -736,7 +728,14 @@ def build_report():
          "Sao chép chi tiết phép tính toán học từ nhật ký vào Clipboard để phục vụ báo cáo.",
          "Nhà nghiên cứu, Giảng viên",
          "1) Chọn dòng log cần trích xuất.\n2) Nhấn nút 'Sao Chép Log' hoặc xem vùng Formula Inspector.\n3) Chuỗi công thức được sao chép vào bộ nhớ tạm hệ điều hành.",
-         "Chưa chọn dòng nào -> Nhắc người dùng chọn một dòng.")
+         "Chưa chọn dòng nào -> Nhắc người dùng chọn một dòng."),
+
+        ("Bảng 21. Bảng đặc tả Use case Kết nối Backend qua TCP Socket 7079 theo Contract Protocol 1",
+         "Kết nối Backend qua TCP Socket 7079 theo Contract Protocol 1",
+         "Frontend thiết lập kết nối TCP Socket tới Backend dhopm-cli trên cổng 7079, gửi Handshake hello, nhận danh sách lệnh và thực thi khai phá không phụ thuộc class Java.",
+         "Kỹ sư dữ liệu, Nhà nghiên cứu",
+         "1) Hệ thống thử mở Socket tới 127.0.0.1:7079 (quét LAN nếu cần).\n2) Gửi handshake: {'id':0,'v':1,'cmd':'hello'}.\n3) Nhận phản hồi {'protocol':1, 'ok':true} -> xác nhận kết nối.\n4) Gửi các lệnh 'mine', 'window', 'inspect' bằng JSON Lines và nhận kết quả.\n5) Tự động mirror bản sao kết quả về thư mục mine/ cục bộ (R14).",
+         "Không tìm thấy Backend TCP -> Tự động chuyển tiếp sang chế độ In-process Fallback an toàn.")
     ]
 
     for title, uc_name, desc, actor, main_flow, alt_flow in use_cases:
@@ -754,8 +753,7 @@ def build_report():
         )
 
     add_h3("3.2.4. Thiết kế cấu trúc dữ liệu Model")
-    # Bảng 21 - 26
-    add_p("Bảng 21. Cấu trúc dữ liệu thực thể PatternResult", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    add_p("Bảng 22. Cấu trúc dữ liệu thực thể PatternResult", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     create_table(
         ["Trường", "Kiểu dữ liệu", "Mô tả ý nghĩa"],
         [
@@ -770,7 +768,7 @@ def build_report():
         [3.0, 3.0, 9.5]
     )
 
-    add_p("Bảng 22. Cấu trúc dữ liệu thực thể DHOEntry", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    add_p("Bảng 23. Cấu trúc dữ liệu thực thể DHOEntry", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     create_table(
         ["Trường", "Kiểu dữ liệu", "Mô tả ý nghĩa"],
         [
@@ -780,7 +778,7 @@ def build_report():
         [3.0, 3.0, 9.5]
     )
 
-    add_p("Bảng 23. Cấu trúc dữ liệu thực thể MiningRunMemento", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    add_p("Bảng 24. Cấu trúc dữ liệu thực thể MiningRunMemento", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     create_table(
         ["Trường", "Kiểu dữ liệu", "Mô tả ý nghĩa"],
         [
@@ -800,7 +798,7 @@ def build_report():
         [3.5, 3.2, 8.8]
     )
 
-    add_p("Bảng 24. Cấu trúc dữ liệu thực thể MinSupSweepResult (Java Record)", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    add_p("Bảng 25. Cấu trúc dữ liệu thực thể MinSupSweepResult (Java Record)", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     create_table(
         ["Trường", "Kiểu dữ liệu", "Mô tả ý nghĩa"],
         [
@@ -815,7 +813,7 @@ def build_report():
         [3.5, 3.0, 9.0]
     )
 
-    add_p("Bảng 25. Cấu trúc dữ liệu thực thể CalculationLogEntry (Java Record)", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    add_p("Bảng 26. Cấu trúc dữ liệu thực thể CalculationLogEntry (Java Record)", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     create_table(
         ["Trường", "Kiểu dữ liệu", "Mô tả ý nghĩa"],
         [
@@ -829,7 +827,7 @@ def build_report():
         [3.0, 3.0, 9.5]
     )
 
-    add_p("Bảng 26. Cấu trúc dữ liệu thực thể Transaction", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    add_p("Bảng 27. Cấu trúc dữ liệu thực thể Transaction", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     create_table(
         ["Trường", "Kiểu dữ liệu", "Mô tả ý nghĩa"],
         [
@@ -839,21 +837,28 @@ def build_report():
         [3.0, 3.0, 9.5]
     )
 
+    add_h3("3.2.5. Hợp đồng giao thức kết nối Frontend ↔ Backend (FE Contract Protocol 1)")
+    add_p("Nhằm đảm bảo sự độc lập hoàn toàn giữa nhóm phát triển Frontend (Tâm - repo javanc) và Backend (Sơn - repo JVNC), hệ thống thiết lập Hợp đồng giao thức kết nối FE ↔ BE (CONTRACT.md / 08-FE-CONTRACT.md):")
+    add_p("- Ranh giới độc lập (R1, R2): Frontend không import bất kỳ class Java nào từ backend (dhopm.*), không phụ thuộc jar backend. Giao tiếp duy nhất thông qua Manager CLI/API (dhopm-cli) qua mạng Socket TCP hoặc stdio JSONL.")
+    add_p("- Giao thức Protocol 1: Định dạng dữ liệu là JSON Lines (1 request / 1 dòng, 1 response / 1 dòng), mỗi gói tin đều mang thuộc tính 'v': 1. Khung phong bì phản hồi chuẩn: {'id':..., 'v':1, 'ok':true/false, ...}.")
+    add_p("- Cổng kết nối TCP: Mặc định localhost:7079. Backend chủ động mở cổng (serve) chờ kết nối; Frontend chủ động dò tìm từ 127.0.0.1 sang mạng LAN nội bộ.")
+    add_p("- Quy trình bắt tay 3 bước: 1) Mở socket TCP 7079 -> 2) Gửi {'id':0,'v':1,'cmd':'hello'} -> 3) Backend xác nhận 'protocol': 1, trả về danh sách phiên bản v1, v2, v3 sẵn sàng và danh sách lệnh hỗ trợ.")
+    add_p("- Bộ lệnh hoàn chỉnh: 'window' (tra cứu cửa sổ suy giảm), 'mine' (khai phá tập dữ liệu), 'detail' (top mẫu DO), 'stream' (mô phỏng từng bước), 'inspect' (thống kê dataset), 'golden' (bộ testcase TC1-8), 'fetch' (tải file kết quả).")
+    add_p("- Ràng buộc lưu trữ cục bộ (R14 / D48): Khi request có 'export': true hoặc 'isLog': true, Backend lưu kết quả vào file 'mine_<yy-MM-dd>_<NNN>.txt' và Frontend tự động mirror một bản sao cục bộ vào thư mục 'mine/' để tránh phụ thuộc Backend.")
+
     # =========================================================================
     # 12. CHƯƠNG 4: XÂY DỰNG HỆ THỐNG VÀ HIỆN THỰC HÓA
     # =========================================================================
     add_h1("CHƯƠNG 4. XÂY DỰNG HỆ THỐNG VÀ HIỆN THỰC HÓA")
 
     add_h2("4.1. Cấu trúc thư mục và tổ chức mã nguồn")
-    add_p("Mã nguồn tuân thủ Clean Architecture của Maven, phân tầng rõ rệt: vn.edu.dlu.dhopm.core (thuật toán lõi), .bridge (mẫu Adapter & Bridge), .history (mẫu Memento & Singleton), .log (mẫu Observer & Singleton), .ui.controller (bộ điều khiển JavaFX), và .view (tệp main.fxml cùng style.css).")
+    add_p("Mã nguồn tuân thủ Clean Architecture của Maven, phân tầng rõ rệt: vn.edu.dlu.dhopm.core (thuật toán lõi), .bridge (mẫu Adapter, Bridge, DhopmContractTcpClient), .history (mẫu Memento & Singleton), .log (mẫu Observer & Singleton), .ui.controller (bộ điều khiển JavaFX), và .view (tệp main.fxml cùng style.css).")
 
     add_h2("4.2. Hiện thực hóa các phân hệ lõi nghiệp vụ")
-    add_p("Thuật toán lõi DHOPMEngine cài đặt theo mẫu Template Method, tuân thủ 3 pha bất biến:")
-    add_p("    - Pha 1 (Construct): Đọc luồng dữ liệu 1 lần, ghi nhận cặp <TID, |Td|> vào DHO-List.")
-    add_p("    - Pha 2 (Reconstruct): Sắp xếp thứ tự các mục theo Support tăng dần, tính DO và DUBO.")
-    add_p("    - Pha 3 (DFS Mining): Duyệt cây đệ quy theo chiều sâu, cắt tỉa bằng cận trên DUBO và thu thập các mẫu DHOP.")
-    add_p("Lớp MinSupSweepService tự động chạy dải ngưỡng ∂ từ 0.05 đến 0.50, đo lường thời gian chạy (System.nanoTime()) và bộ nhớ Heap RAM đã sử dụng.")
-    add_p("Lớp MiningHistoryManager (Singleton & Caretaker) lưu trữ snapshot các lần chạy bằng MiningRunMemento, hỗ trợ phục hồi bảng kết quả kèm tính toán tỷ lệ % Support chuẩn xác.")
+    add_p("4.2.1. Thuật toán lõi DHOPMEngine cài đặt theo mẫu Template Method, tuân thủ 3 pha bất biến: Construct -> Reconstruct -> DFS Mining.")
+    add_p("4.2.2. Dịch vụ MinSupSweepService tự động chạy dải ngưỡng ∂ từ 0.05 đến 0.50, đo lường thời gian chạy và bộ nhớ Heap RAM đã sử dụng.")
+    add_p("4.2.3. Lớp MiningHistoryManager (Singleton & Caretaker) lưu trữ snapshot các lần chạy bằng MiningRunMemento, hỗ trợ phục hồi bảng kết quả kèm tính toán tỷ lệ % Support chuẩn xác.")
+    add_p("4.2.4. Phân hệ kết nối Backend qua TCP Socket (DhopmContractTcpClient & TsonTcpContractBridge): Cài đặt bộ client TCP Socket thuần túy trong Java (Zero-dependency JSON parser/builder), thực hiện handshake hello, gửi lệnh mine, window, fetch theo đúng Contract Protocol 1. Đồng thời trang bị cơ chế tự động fallback sang In-process Engine khi Backend offline, đảm bảo trải nghiệm người dùng luôn thông suốt.")
 
     add_h2("4.3. Xây dựng giao diện trực quan hóa JavaFX")
     add_p("4.3.1. Tab 1 & Tab 2: Hiển thị thẻ card DHONodeCard động đổi màu theo trạng thái; Bảng kết quả hiển thị Support định dạng 'X tx (Y.Y%)' với bộ so sánh tự nhiên Comparator.comparingInt(...).")
@@ -871,7 +876,7 @@ def build_report():
     add_h1("CHƯƠNG 5. KẾT QUẢ THỰC NGHIỆM VÀ ĐỐI SOÁT BÀI BÁO GỐC")
 
     add_h2("5.1. Bộ dữ liệu thực nghiệm")
-    add_p("Bảng 27. Tổng hợp các bộ dữ liệu thực nghiệm chuẩn bài báo", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    add_p("Bảng 28. Tổng hợp các bộ dữ liệu thực nghiệm chuẩn bài báo", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     create_table(
         ["Tên bộ dữ liệu", "Số giao dịch (|DB|)", "Số lượng mục", "Độ dài TB", "Đặc tính phân bố"],
         [
@@ -884,11 +889,12 @@ def build_report():
         [3.0, 3.0, 2.5, 2.5, 4.5]
     )
 
-    add_h2("5.2. Kết quả kiểm thử tự động toàn diện (48 Test Cases)")
-    add_p("Bộ kiểm thử tự động toàn diện trên nền tảng JUnit 5 đạt kết quả tuyệt đối 48/48 ca kiểm thử thành công (100% BUILD SUCCESS):")
+    add_h2("5.2. Kết quả kiểm thử tự động toàn diện (51 Test Cases)")
+    add_p("Bộ kiểm thử tự động toàn diện trên nền tảng JUnit 5 đạt kết quả tuyệt đối 51/51 ca kiểm thử thành công (100% BUILD SUCCESS):")
     add_p("- Lab1VerificationTest (8 tests): Khớp kết quả tính tay Lab 1 (sai số < 10^-4).")
     add_p("- DHOPMEngineTest (10 tests): Kiểm thử 3 pha và thuật toán DFS.")
     add_p("- MinSupSweepServiceTest (2 tests): Kiểm thử quét benchmark đa ngưỡng.")
+    add_p("- DhopmContractTcpClientTest (3 tests): Kiểm thử giao thức FE Contract Protocol 1, JSON Lines wire builder và parser.")
     add_p("- TsonBridgeIntegrationTest (6 tests): Đối soát 2 động cơ trên dữ liệu chuẩn.")
     add_p("- BridgeEngineTest (10 tests): Kiểm thử hợp đồng Bridge và chuyển đổi động cơ.")
     add_p("- MiningProgressInfoTest (3 tests): Kiểm thử định dạng tiến trình và ETA.")
@@ -897,7 +903,7 @@ def build_report():
     add_p("- CalculationLoggerTest (2 tests): Kiểm thử ghi nhật ký và trích xuất công thức.")
 
     add_h2("5.3. Đối soát tính đúng đắn với công trình gốc (Golden Tests)")
-    add_p("Bảng 28. Ma trận đối soát kiểm thử Golden Test Cases (TC1 – TC8)", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    add_p("Bảng 29. Ma trận đối soát kiểm thử Golden Test Cases (TC1 – TC8)", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     create_table(
         ["Mã TC", "Hệ số f", "Ngưỡng ∂", "Ngưỡng minSup", "Kỳ vọng bài báo", "Kết quả phần mềm", "Đánh giá"],
         [
@@ -926,8 +932,9 @@ def build_report():
     add_h2("1. Kết quả đạt được")
     add_p("1. Làm chủ lý thuyết học thuật: Chứng minh và cài đặt hoàn chỉnh thuật toán DHOPM từ bài báo EAAI 2026 với mô hình Damped Window, độ đo DO, cận trên DUBO và cấu trúc nén DHO-List một lần quét.")
     add_p("2. Kiến trúc chuẩn mực: Ứng dụng thành công 9 Mẫu thiết kế phần mềm GoF, phân tầng Clean MVC và nguyên lý SOLID.")
-    add_p("3. Ứng dụng Visualizer toàn diện: Xây dựng thành công phần mềm DHOPM Stream Visualizer bằng JavaFX 21 gồm 6 Tab chức năng, hỗ trợ Support (tx / %), quét Benchmark Sweep tái hiện biểu đồ bài báo, nút Dừng an toàn, ước tính ETA, quản lý lịch sử (Memento) và nhật ký tính toán chi tiết.")
-    add_p("4. Kiểm thử chất lượng cao: Vượt qua 100% bộ 48 ca kiểm thử tự động JUnit 5, đối soát khớp hoàn toàn với số liệu bài báo gốc.")
+    add_p("3. Hiện thực hóa Hợp đồng FE ↔ BE (CONTRACT.md Protocol 1): Kết nối độc lập qua TCP Socket 7079 JSON Lines, handshake hello, bộ lệnh mine/window/fetch và tự động mirror file kết quả cục bộ.")
+    add_p("4. Ứng dụng Visualizer toàn diện: Xây dựng thành công phần mềm DHOPM Stream Visualizer bằng JavaFX 21 gồm 6 Tab chức năng, hỗ trợ Support (tx / %), quét Benchmark Sweep tái hiện biểu đồ bài báo, nút Dừng an toàn, ước tính ETA, quản lý lịch sử (Memento) và nhật ký tính toán chi tiết.")
+    add_p("5. Kiểm thử chất lượng cao: Vượt qua 100% bộ 51 ca kiểm thử tự động JUnit 5, đối soát khớp hoàn toàn với số liệu bài báo gốc.")
 
     add_h2("2. Hướng phát triển")
     add_p("1. Nâng cấp BitSet DFS Engine: Tối ưu hóa biểu diễn bằng mảng bit và phép toán bitwise AND cấp phần cứng để tăng tốc độ khai phá lên 5 - 10 lần.")
@@ -946,20 +953,21 @@ def build_report():
     add_p("[6] OpenJFX Documentation, 'JavaFX 21: Client Application Platform', https://openjfx.io, 2024.")
     add_p("[7] P. Fournier-Viger et al., 'The SPMF Open-Source Data Mining Library', Journal of Machine Learning Research (JMLR), vol. 17, no. 1, pp. 1-5, 2016.")
     add_p("[8] FIMI Repository, 'Frequent Itemset Mining Implementations Repository', http://fimi.uantwerpen.be/data/, 2004.")
+    add_p("[9] Tson-dev, 'DHOPM Frontend ↔ Backend Contract Specification (CONTRACT.md / Protocol 1)', GitHub Repository https://github.com/Tson-dev/JVNC, 2026.")
 
     # =========================================================================
     # 16. PHỤ LỤC
     # =========================================================================
     add_h1("PHỤ LỤC")
     add_h2("Bảng phân công trách nhiệm và khối lượng công việc")
-    add_p("Bảng 29. Bảng phân công trách nhiệm và khối lượng công việc", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+    add_p("Bảng 30. Bảng phân công trách nhiệm và khối lượng công việc", italic=True, align=WD_ALIGN_PARAGRAPH.CENTER)
     create_table(
         ["Họ và Tên", "Vai trò", "Nội dung công việc đảm nhiệm", "Mức độ hoàn thành"],
         [
-            ["Nguyễn Thanh Tâm\n(MSSV: 2312741)", "Trưởng nhóm",
-             "- Phân tích kiến trúc hệ thống MVC và áp dụng 9 Mẫu thiết kế GoF.\n- Thiết kế và lập trình toàn bộ giao diện JavaFX 6 Tab (main.fxml, style.css, MainController.java).\n- Cài đặt phân hệ Benchmark Sweep đa ngưỡng và dựng hệ thống đồ thị đối sánh (Fig 6, 11, 13).\n- Hiện thực Memento Pattern và Observer Pattern cho nhật ký tính toán.\n- Xây dựng bộ 48 ca kiểm thử JUnit 5 và viết báo cáo học thuật hoàn chỉnh.", "100%"],
-            ["Nguyễn Hữu Trung Sơn", "Thành viên",
-             "- Nghiên cứu cơ sở toán học thuật toán DHOPM và cấu trúc Global DHO-List một lần quét.\n- Hiện thực hóa thuật toán lõi DHOPMEngine và cơ chế cắt tỉa an toàn bằng cận trên DUBO.\n- Đóng gói và tích hợp động cơ Tson / SPMF Engine xử lý dữ liệu lớn.\n- Thực hiện các ca kiểm thử Golden Test Cases (TC1 – TC8).", "100%"]
+            ["Nguyễn Thanh Tâm\n(MSSV: 2312741)", "Trưởng nhóm (Frontend)",
+             "- Phân tích kiến trúc hệ thống MVC và áp dụng 9 Mẫu thiết kế GoF.\n- Thiết kế và lập trình toàn bộ giao diện JavaFX 6 Tab (main.fxml, style.css, MainController.java).\n- Hiện thực hóa Client TCP Socket DhopmContractTcpClient kết nối BE theo Protocol 1 (CONTRACT.md).\n- Cài đặt phân hệ Benchmark Sweep đa ngưỡng và dựng hệ thống đồ thị đối sánh (Fig 6, 11, 13).\n- Hiện thực Memento Pattern và Observer Pattern cho nhật ký tính toán.\n- Xây dựng bộ 51 ca kiểm thử JUnit 5 và viết báo cáo học thuật hoàn chỉnh.", "100%"],
+            ["Nguyễn Hữu Trung Sơn", "Thành viên (Backend)",
+             "- Nghiên cứu cơ sở toán học thuật toán DHOPM và cấu trúc Global DHO-List một lần quét.\n- Soạn thảo và chuẩn hóa đặc tả Hợp đồng FE ↔ BE (CONTRACT.md / 08-FE-CONTRACT.md).\n- Hiện thực hóa thuật toán lõi DHOPMEngine, server TCP Socket 7079 và các engine V1-V3.\n- Đóng gói và tích hợp động cơ Tson / SPMF Engine xử lý dữ liệu lớn.\n- Thực hiện các ca kiểm thử Golden Test Cases (TC1 – TC8).", "100%"]
         ],
         [3.5, 2.5, 8.5, 2.5]
     )
@@ -968,7 +976,7 @@ def build_report():
     add_p("1. Yêu cầu môi trường: Cài đặt JDK 17+ (khuyến nghị JDK 21 LTS) và Apache Maven 3.8+.")
     add_p("2. Biên dịch và kiểm thử tự động:")
     add_p("    mvn clean test")
-    add_p("   Hệ thống thực thi 48 ca kiểm thử đơn vị với kết quả 100% BUILD SUCCESS.")
+    add_p("   Hệ thống thực thi 51 ca kiểm thử đơn vị với kết quả 100% BUILD SUCCESS.")
     add_p("3. Khởi chạy ứng dụng đồ họa JavaFX:")
     add_p("    ./run.sh    hoặc    mvn javafx:run")
     add_p("   Cửa sổ ứng dụng DHOPM Stream Visualizer sẽ hiển thị với đầy đủ 6 Tab trực quan hóa.")

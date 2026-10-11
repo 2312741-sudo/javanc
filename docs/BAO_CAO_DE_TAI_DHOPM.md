@@ -830,9 +830,19 @@ graph LR
 | **Luồng chính** | 1) Người dùng chọn dòng log cần trích xuất.<br/>2) Nhấn nút "📋 Sao Chép Log" hoặc xem vùng Formula Inspector.<br/>3) Toàn bộ chuỗi công thức số học được sao chép vào bộ nhớ tạm hệ điều hành. |
 | **Luồng ngoại lệ** | Không có dòng log nào được chọn $\to$ Hệ thống nhắc người dùng chọn một dòng. |
 
+*Bảng 21. Bảng đặc tả Use case Kết nối Backend qua TCP Socket 7079 theo Contract Protocol 1*
+
+| Thuộc tính | Chi tiết đặc tả |
+|:---|:---|
+| **Tên Use case** | **Kết nối Backend qua TCP Socket 7079 theo Contract Protocol 1** |
+| **Mô tả** | Frontend thiết lập kết nối TCP Socket tới Backend dhopm-cli trên cổng 7079, gửi Handshake hello, nhận danh sách lệnh và thực thi khai phá không phụ thuộc class Java. |
+| **Tác nhân chính** | Kỹ sư dữ liệu, Nhà nghiên cứu |
+| **Luồng chính** | 1) Hệ thống thử mở Socket tới 127.0.0.1:7079 (tự động quét mạng LAN nếu cần).<br/>2) Gửi handshake: `{"id":0,"v":1,"cmd":"hello"}`.<br/>3) Nhận phản hồi `{"protocol":1, "ok":true}` -> xác nhận kết nối.<br/>4) Gửi các lệnh `mine`, `window`, `inspect`, `golden` bằng JSON Lines và nhận kết quả.<br/>5) Tự động mirror bản sao kết quả về thư mục `mine/` cục bộ theo quy định R14 / D48. |
+| **Luồng ngoại lệ** | Không tìm thấy Backend TCP -> Tự động chuyển tiếp sang chế độ In-process Fallback an toàn mà không làm gián đoạn người dùng. |
+
 ### 3.2.4. Thiết kế cấu trúc dữ liệu Model
 
-*Bảng 21. Cấu trúc dữ liệu thực thể `PatternResult`*
+*Bảng 22. Cấu trúc dữ liệu thực thể `PatternResult`*
 
 | Trường | Kiểu dữ liệu | Mô tả ý nghĩa |
 |:---|:---|:---|
@@ -891,12 +901,32 @@ graph LR
 | `comparison` | `String` | Biểu thức so sánh với ngưỡng $minSup$. |
 | `decision` | `String` | Quyết định của thuật toán (🟢 DHOP, 🔴 CẮT TỈA, ⚪ MỞ RỘNG). |
 
-*Bảng 26. Cấu trúc dữ liệu thực thể `Transaction`*
+*Bảng 27. Cấu trúc dữ liệu thực thể `Transaction`*
 
 | Trường | Kiểu dữ liệu | Mô tả ý nghĩa |
 |:---|:---|:---|
 | `tid` | `int` | Định danh thứ tự của giao dịch trong luồng. |
 | `items` | `List<String>` | Tập hợp các mục sản phẩm chứa trong giao dịch. |
+
+### 3.2.5. Hợp đồng giao thức kết nối Frontend ↔ Backend (FE Contract Protocol 1)
+Nhằm đảm bảo sự phân tách tuyệt đối giữa nhóm phát triển Frontend (Tâm - repo `javanc`) và Backend (Sơn - repo `JVNC`), hai bên đã thống nhất và chuẩn hóa bản đặc tả **Hợp đồng giao thức kết nối FE ↔ BE (CONTRACT.md / 08-FE-CONTRACT.md)**:
+
+- **Nguyên tắc ranh giới độc lập (R1, R2):** Frontend **tuyệt đối không** import bất kỳ class hay package nào từ backend (`dhopm.*`), không thêm Maven dependency vào jar của Backend. Điểm giao tiếp duy nhất là Manager CLI/API (`dhopm-cli`) thông qua mạng TCP Socket hoặc luồng xuất nhập chuẩn stdio JSON Lines.
+- **Phiên bản giao thức (Protocol Version):** `protocol 1`, mọi bản tin yêu cầu và phản hồi đều có thuộc tính `"v": 1`. Định dạng trên dây (Wire format) là JSON Lines (1 request / 1 dòng, 1 response / 1 dòng, kết nối đa luồng phân biệt theo `id`).
+- **Cổng kết nối vận hành:** TCP Socket `localhost:7079` (Backend chủ động chạy lệnh `serve` mở cổng; Frontend chủ động kết nối từ `127.0.0.1:7079` và hỗ trợ tự động quét mạng LAN nội bộ nếu triển khai trên 2 máy tính khác nhau).
+- **Quy trình bắt tay 3 bước (Handshake & Discovery):**
+  1. *Bước 1:* Mở kết nối TCP tới `127.0.0.1:7079`.
+  2. *Bước 2:* Gửi thông điệp handshake: `{"id":0,"v":1,"cmd":"hello"}`.
+  3. *Bước 3:* Nhận phản hồi xác nhận: `{"id":0,"v":1,"ok":true,"protocol":1,"manager":"dhopm-cli", ...}` $\to$ Lưu địa chỉ, chính thức thiết lập phiên làm việc.
+- **Bộ lệnh giao tiếp cốt lõi:**
+  - `window`: Tra cứu kích thước cửa sổ suy giảm $W(f, minOcc)$, trần lý thuyết $maxDO$, không cần nạp dataset.
+  - `mine`: Khai phá tập dữ liệu với đầy đủ các tham số bắt buộc (`partial`, `f`, `minOcc`, `limit`, `versions`, `export`).
+  - `detail`: Trả về chi tiết top mẫu theo DO với độ chính xác cao.
+  - `stream`: Mô phỏng luồng giao dịch đến theo từng bước (`--step`).
+  - `sweep`: Khảo sát đa ngưỡng minSup tự động.
+  - `inspect` & `golden`: Thống kê đặc trưng bộ dữ liệu và chạy bộ kiểm thử chuẩn TC1–TC8.
+  - `fetch <fileID>`: Tải nội dung tệp tin kết quả khai phá mà Backend đã lưu.
+- **Ràng buộc lưu trữ kết quả và Mirroring cục bộ (R14 / D48):** Khi tham số `export = true` hoặc `isLog = true`, Backend lưu kết quả vào tệp tin có định dạng chuẩn `mine_<yy-MM-dd>_<NNN>.txt` (với `NNN` là số thứ tự tự tăng trong ngày). Frontend có trách nhiệm tự động lưu bản sao (Mirror) cục bộ vào thư mục `mine/` để đảm bảo tính độc lập dữ liệu.
 
 ---
 
@@ -923,12 +953,14 @@ dhopm-visualizer/
 │   │   │   │       ├── DHOEntry.java
 │   │   │   │       ├── Transaction.java
 │   │   │   │       └── MinSupSweepResult.java
-│   │   │   ├── bridge/                       # Các lớp Adapter & Bridge Pattern
+│   │   │   ├── bridge/                       # Các lớp Adapter & Bridge Pattern & TCP Client
 │   │   │   │   ├── BridgeEngine.java         # Giao diện trừu tượng Bridge
 │   │   │   │   ├── EngineFactory.java        # Factory Method khởi tạo động cơ
-│   │   │   │   ├── EngineMode.java           # Strategy Pattern (Tam vs Tson)
+│   │   │   │   ├── EngineMode.java           # Strategy Pattern (Tam vs Tson vs TCP)
 │   │   │   │   ├── TamSimulationBridge.java  # Adapter cho DHOPMEngine
-│   │   │   │   ├── TsonV1Bridge.java         # Adapter cho SPMF/Tson Engine
+│   │   │   │   ├── TsonV1Bridge.java         # Adapter cho SPMF/Tson In-process Engine
+│   │   │   │   ├── TsonTcpContractBridge.java# Adapter kết nối Socket TCP 7079 theo Contract
+│   │   │   │   ├── DhopmContractTcpClient.java# Client TCP JSONL thuần túy theo Protocol 1
 │   │   │   │   ├── TsonToolsService.java     # Tiện ích chuyển đổi dữ liệu Tson
 │   │   │   │   └── MiningProgressInfo.java   # Mô hình tiến trình & dự báo ETA
 │   │   │   ├── history/                      # Quản lý lịch sử (Memento & Singleton)
@@ -945,7 +977,7 @@ dhopm-visualizer/
 │   │   └── resources/vn/edu/dlu/dhopm/
 │   │       ├── view/main.fxml                # Bố cục giao diện 6 Tab JavaFX
 │   │       └── css/style.css                 # Bảng định dạng giao diện hiện đại
-│   └── test/java/vn/edu/dlu/dhopm/           # Bộ kiểm thử tự động 48 test cases
+│   └── test/java/vn/edu/dlu/dhopm/           # Bộ kiểm thử tự động 51 test cases (JUnit 5)
 └── docs/                                     # Toàn bộ tài liệu báo cáo học thuật & slide
 ```
 *Hình 12. Cấu trúc tổ chức mã nguồn dự án theo chuẩn Apache Maven*
@@ -1042,8 +1074,8 @@ Hệ thống được thử nghiệm và đánh giá toàn diện trên các t�
 | **chess.dat** | 3,196 | 75 | 37.00 | Dữ liệu nước cờ vua, mật độ rất dày |
 | **connect.dat** | 67,557 | 129 | 43.00 | Dữ liệu trò chơi Connect-4, cực kỳ dày đặc |
 
-## 5.2. Kết quả kiểm thử tự động toàn diện (48 Test Cases)
-Hệ thống xây dựng bộ kiểm thử tự động toàn diện gồm 48 ca kiểm thử đơn vị và tích hợp sử dụng JUnit 5. Kết quả thực thi thực tế trên Maven Surefire:
+## 5.2. Kết quả kiểm thử tự động toàn diện (51 Test Cases)
+Hệ thống xây dựng bộ kiểm thử tự động toàn diện gồm 51 ca kiểm thử đơn vị và tích hợp sử dụng JUnit 5. Kết quả thực thi thực tế trên Maven Surefire:
 
 ```
 [INFO] -------------------------------------------------------
@@ -1052,6 +1084,7 @@ Hệ thống xây dựng bộ kiểm thử tự động toàn diện gồm 48 ca
 [INFO] Running vn.edu.dlu.dhopm.core.Lab1VerificationTest (8 tests)    -> PASS [0.137 s]
 [INFO] Running vn.edu.dlu.dhopm.core.DHOPMEngineTest (10 tests)        -> PASS [0.016 s]
 [INFO] Running vn.edu.dlu.dhopm.core.MinSupSweepServiceTest (2 tests)  -> PASS [0.014 s]
+[INFO] Running vn.edu.dlu.dhopm.bridge.DhopmContractTcpClientTest (3)  -> PASS [0.005 s]
 [INFO] Running vn.edu.dlu.dhopm.bridge.TsonBridgeIntegrationTest (6)  -> PASS [0.024 s]
 [INFO] Running vn.edu.dlu.dhopm.bridge.BridgeEngineTest (10 tests)     -> PASS [0.008 s]
 [INFO] Running vn.edu.dlu.dhopm.bridge.MiningProgressInfoTest (3 tests)-> PASS [0.004 s]
@@ -1060,12 +1093,12 @@ Hệ thống xây dựng bộ kiểm thử tự động toàn diện gồm 48 ca
 [INFO] Running vn.edu.dlu.dhopm.log.CalculationLoggerTest (2 tests)    -> PASS [0.001 s]
 [INFO] 
 [INFO] Results:
-[INFO] Tests run: 48, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 51, Failures: 0, Errors: 0, Skipped: 0
 [INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS (Total time: 1.825 s)
+[INFO] BUILD SUCCESS (Total time: 2.017 s)
 [INFO] ------------------------------------------------------------------------
 ```
-*Tỷ lệ thành công:* **48/48 ca kiểm thử đạt 100% Green**, minh chứng cho độ tin cậy và sự ổn định vượt trội của mã nguồn.
+*Tỷ lệ thành công:* **51/51 ca kiểm thử đạt 100% Green**, minh chứng cho độ tin cậy và sự ổn định vượt trội của mã nguồn.
 
 ## 5.3. Đối soát tính đúng đắn với công trình gốc (Golden Tests)
 Nhóm tiến hành đối soát chéo kết quả xuất ra của hệ thống phần mềm với kết quả tính toán lý thuyết và bảng kiểm thử vàng (Golden Test Cases) của bài báo EAAI 2026 trên tập `default.dat`:
