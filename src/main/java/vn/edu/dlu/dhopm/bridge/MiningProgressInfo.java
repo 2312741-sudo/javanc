@@ -20,6 +20,10 @@ public record MiningProgressInfo(
         long completedRootTasks,
         long totalRootTasks
 ) {
+    public MiningProgressInfo(double fraction, long elapsedMs, long estimatedRemainingMs) {
+        this(fraction, elapsedMs, estimatedRemainingMs, 0, 0, 0);
+    }
+
     /**
      * Định dạng khoảng thời gian milliseconds thành chuỗi trực quan (VD: "12s", "1m 30s").
      */

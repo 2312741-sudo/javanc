@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,11 +22,11 @@ import java.util.regex.Pattern;
  * <p>Đặc tả chuẩn:</p>
  * <ul>
  *   <li>Protocol version: 1 ("v": 1)</li>
- *   <li>Wire format: JSON Lines (1 request / 1 dòng, 1 response / 1 dòng)</li>
+ *   <li>Wire format: JSON Lines (JSONL - 1 request / 1 dòng, multi-line stream events, 1 response envelope)</li>
  *   <li>Cổng mặc định: TCP 7079</li>
  *   <li>Handshake: {"id":0,"v":1,"cmd":"hello"}</li>
- *   <li>Phản hồi: {"id":..., "v":1, "ok":true/false, ...}</li>
- *   <li>Ràng buộc R14: Tự động lưu bản sao kết quả (mirror local) khi có saved fileID</li>
+ *   <li>Streaming: {"id":...,"v":1,"cmd":"stream",...} tiếp nhận các sự kiện progress/window/pattern và kết thúc bằng response envelope</li>
+ *   <li>Ràng buộc R14: Tự động lưu bản sao kết quả (mirror local) qua lệnh fetch khi có saved fileID</li>
  * </ul>
  *
  * @author Nguyễn Thanh Tâm (2312741) - Bridge & Protocol Layer
@@ -43,6 +44,11 @@ public class DhopmContractTcpClient {
     private String serverManager = "";
     private List<String> serverCommands = new ArrayList<>();
 
+    // Persistent Socket connection
+    private Socket socket;
+    private BufferedReader socketReader;
+    private BufferedWriter socketWriter;
+
     public DhopmContractTcpClient() {
         this(DEFAULT_HOST, DEFAULT_PORT);
     }
@@ -50,6 +56,41 @@ public class DhopmContractTcpClient {
     public DhopmContractTcpClient(String host, int port) {
         this.host = host;
         this.port = port;
+    }
+
+    /**
+     * Đảm bảo Socket được kết nối và duy trì (Persistent TCP Socket).
+     */
+    private synchronized void ensureConnected() throws IOException {
+        if (socket != null && socket.isConnected() && !socket.isClosed() && !socket.isInputShutdown() && !socket.isOutputShutdown()) {
+            return;
+        }
+        close();
+        socket = new Socket();
+        socket.connect(new InetSocketAddress(host, port), 2500); // 2.5s connect timeout
+        socket.setSoTimeout(60000); // 60s read timeout
+        socketReader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+        socketWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
+        connected = true;
+    }
+
+    /**
+     * Đóng socket hiện tại một cách an toàn.
+     */
+    public synchronized void close() {
+        connected = false;
+        if (socketReader != null) {
+            try { socketReader.close(); } catch (Exception ignored) {}
+            socketReader = null;
+        }
+        if (socketWriter != null) {
+            try { socketWriter.close(); } catch (Exception ignored) {}
+            socketWriter = null;
+        }
+        if (socket != null) {
+            try { socket.close(); } catch (Exception ignored) {}
+            socket = null;
+        }
     }
 
     /**
@@ -76,7 +117,7 @@ public class DhopmContractTcpClient {
                 return true;
             }
         } catch (Exception e) {
-            connected = false;
+            close();
         }
         return false;
     }
@@ -101,9 +142,52 @@ public class DhopmContractTcpClient {
     }
 
     /**
-     * Gửi yêu cầu khai phá (cmd = "mine") qua Backend.
+     * Gửi yêu cầu khai phá dạng luồng sự kiện (cmd = "stream") qua Backend.
+     * Tiếp nhận các dòng sự kiện trung gian (progress, window, pattern...)
+     * và chỉ hoàn tất khi nhận được dòng phản hồi kết thúc (final response envelope).
      */
-    public ContractMineResponse mine(String dataset, double partial, double f, double minOcc, int limit, List<String> versions, boolean export) throws IOException {
+    public ContractMineResponse stream(String dataset, double partial, double f, double minOcc, int limit,
+                                       List<String> versions, boolean export,
+                                       Consumer<String> eventConsumer) throws IOException {
+        int reqId = requestIdSeq.getAndIncrement();
+        Map<String, Object> req = new LinkedHashMap<>();
+        req.put("id", reqId);
+        req.put("v", PROTOCOL_VERSION);
+        req.put("cmd", "stream");
+        req.put("dataset", dataset);
+        req.put("format", "fimi");
+        req.put("partial", partial);
+        req.put("f", f);
+        req.put("minOcc", minOcc);
+        req.put("limit", limit);
+        if (versions != null && !versions.isEmpty()) {
+            req.put("versions", versions);
+        } else {
+            req.put("versions", List.of("v1"));
+        }
+        req.put("export", export);
+
+        String jsonReq = buildJsonString(req);
+        ContractMineResponse response = sendStreamingRequest(jsonReq, eventConsumer);
+
+        // R14: Mirror kết quả cục bộ nếu BE trả về saved fileID
+        if (export && response.savedFileId != null && !response.savedFileId.isEmpty()) {
+            try {
+                String fetchedContent = fetchFile(response.savedFileId);
+                mirrorLocalResult(response.savedFileId, (fetchedContent != null && !fetchedContent.isEmpty()) ? fetchedContent : jsonReq);
+            } catch (Exception ex) {
+                mirrorLocalResult(response.savedFileId, "{\"response\":" + jsonReq + "}");
+            }
+        }
+
+        return response;
+    }
+
+    /**
+     * Gửi yêu cầu khai phá đồng bộ (cmd = "mine") qua Backend.
+     */
+    public ContractMineResponse mine(String dataset, double partial, double f, double minOcc, int limit,
+                                     List<String> versions, boolean export) throws IOException {
         int reqId = requestIdSeq.getAndIncrement();
         Map<String, Object> req = new LinkedHashMap<>();
         req.put("id", reqId);
@@ -130,9 +214,14 @@ public class DhopmContractTcpClient {
 
         ContractMineResponse response = parseMineResponse(jsonResp);
 
-        // R14: Mirror kết quả cục bộ nếu BE có trả về saved fileID
+        // R14: Mirror kết quả cục bộ nếu BE trả về saved fileID
         if (export && response.savedFileId != null && !response.savedFileId.isEmpty()) {
-            mirrorLocalResult(response.savedFileId, jsonResp);
+            try {
+                String fetchedContent = fetchFile(response.savedFileId);
+                mirrorLocalResult(response.savedFileId, (fetchedContent != null && !fetchedContent.isEmpty()) ? fetchedContent : jsonResp);
+            } catch (Exception ex) {
+                mirrorLocalResult(response.savedFileId, jsonResp);
+            }
         }
 
         return response;
@@ -168,36 +257,79 @@ public class DhopmContractTcpClient {
     }
 
     /**
-     * Gửi 1 dòng JSONL và nhận lại 1 dòng phản hồi từ TCP Socket.
+     * Gửi 1 dòng JSONL và nhận lại 1 dòng phản hồi từ persistent TCP Socket.
      */
-    public String sendRawRequest(String jsonLine) throws IOException {
-        try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(host, port), 2500); // 2.5s connect timeout
-            socket.setSoTimeout(60000); // 60s read timeout
+    public synchronized String sendRawRequest(String jsonLine) throws IOException {
+        try {
+            ensureConnected();
+            socketWriter.write(jsonLine.trim());
+            socketWriter.newLine();
+            socketWriter.flush();
 
-            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
-                 BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
-
-                writer.write(jsonLine.trim());
-                writer.newLine();
-                writer.flush();
-
-                return reader.readLine();
+            String line = socketReader.readLine();
+            if (line == null) {
+                close();
+                throw new IOException("Backend đã đóng kết nối TCP");
             }
+            return line;
+        } catch (IOException e) {
+            close();
+            throw e;
+        }
+    }
+
+    /**
+     * Gửi 1 dòng JSONL và đọc nhiều dòng event cho tới khi nhận final response envelope.
+     */
+    public synchronized ContractMineResponse sendStreamingRequest(String jsonReq, Consumer<String> eventConsumer) throws IOException {
+        try {
+            ensureConnected();
+            socketWriter.write(jsonReq.trim());
+            socketWriter.newLine();
+            socketWriter.flush();
+
+            String line;
+            while ((line = socketReader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+
+                // 1. Dòng sự kiện (event: progress, window, pattern, step...)
+                if (line.contains("\"event\"")) {
+                    if (eventConsumer != null) {
+                        eventConsumer.accept(line);
+                    }
+                    continue;
+                }
+
+                // 2. Final response envelope có chứa "ok": true/false
+                if (line.contains("\"ok\"") || (line.contains("\"id\"") && !line.contains("\"event\""))) {
+                    return parseMineResponse(line);
+                }
+
+                // Dự phòng: đẩy cho eventConsumer nếu không nhận dạng được
+                if (eventConsumer != null) {
+                    eventConsumer.accept(line);
+                }
+            }
+            close();
+            throw new IOException("Backend đã đóng luồng trước khi gửi response envelope kết thúc");
+        } catch (IOException e) {
+            close();
+            throw e;
         }
     }
 
     /**
      * Lưu bản sao kết quả cục bộ (Mirroring) để tuân thủ ràng buộc R14 (D48).
      */
-    private void mirrorLocalResult(String fileId, String content) {
+    public void mirrorLocalResult(String fileId, String content) {
         try {
             Path dir = Paths.get("mine");
             if (!Files.exists(dir)) {
                 Files.createDirectories(dir);
             }
             Path localFile = dir.resolve("mine_" + fileId + ".txt");
-            Files.writeString(localFile, content, StandardCharsets.UTF_8);
+            Files.writeString(localFile, content != null ? content : "", StandardCharsets.UTF_8);
         } catch (Exception ignored) {
         }
     }
@@ -251,6 +383,12 @@ public class DhopmContractTcpClient {
         return m.find() ? Integer.parseInt(m.group(1)) : null;
     }
 
+    public static Long parseLong(String json, String key) {
+        Pattern p = Pattern.compile("\"" + key + "\"\\s*:\\s*(\\d+)");
+        Matcher m = p.matcher(json);
+        return m.find() ? Long.parseLong(m.group(1)) : null;
+    }
+
     public static Double parseDouble(String json, String key) {
         Pattern p = Pattern.compile("\"" + key + "\"\\s*:\\s*([-+]?\\d*\\.?\\d+(?:[eE][-+]?\\d+)?)");
         Matcher m = p.matcher(json);
@@ -271,6 +409,15 @@ public class DhopmContractTcpClient {
         int totalTx = parseInteger(json, "totalTransactions") != null ? parseInteger(json, "totalTransactions") : 0;
         double minSup = parseDouble(json, "minSup") != null ? parseDouble(json, "minSup") : 0.0;
         String savedFileId = parseString(json, "fileID");
+
+        Long elapsed = parseLong(json, "elapsedMs");
+        Double mem = parseDouble(json, "peakMemoryMb");
+        if (mem == null) mem = parseDouble(json, "memoryMb");
+        Integer cand = parseInteger(json, "candidates");
+        Integer prun = parseInteger(json, "pruned");
+
+        long elapsedMs = elapsed != null ? elapsed : 0L;
+        double peakMemoryMb = mem != null ? mem : 0.0;
 
         List<PatternResult> patterns = new ArrayList<>();
         // Trích xuất các pattern trong mảng "patterns": [{...}]
@@ -297,7 +444,11 @@ public class DhopmContractTcpClient {
             }
         }
 
-        return new ContractMineResponse(ok, errCode, message, totalTx, minSup, patterns, savedFileId);
+        int candidates = cand != null ? cand : patterns.size();
+        int pruned = prun != null ? prun : 0;
+
+        return new ContractMineResponse(ok, errCode, message, totalTx, minSup, patterns, savedFileId,
+                elapsedMs, peakMemoryMb, candidates, pruned);
     }
 
     /**
@@ -310,6 +461,16 @@ public class DhopmContractTcpClient {
             int totalTransactions,
             double minSup,
             List<PatternResult> patterns,
-            String savedFileId
-    ) {}
+            String savedFileId,
+            long elapsedMs,
+            double peakMemoryMb,
+            int candidates,
+            int pruned
+    ) {
+        public ContractMineResponse(boolean ok, String errorCode, String message, int totalTransactions,
+                                    double minSup, List<PatternResult> patterns, String savedFileId) {
+            this(ok, errorCode, message, totalTransactions, minSup, patterns, savedFileId, 0L, 0.0,
+                    patterns != null ? patterns.size() : 0, 0);
+        }
+    }
 }

@@ -102,51 +102,69 @@
                     <Button fx:id="btnTsonGolden" text="🏆 Chạy TestKit Vàng (Golden TC1-8)" maxWidth="Infinity" styleClass="btn-purple"/>
                 </VBox>
 
-                <!-- PANEL 1: THAM SO THUAT TOAN -->
-                <VBox spacing="12.0" styleClass="panel-card">
-                    <Label text="⚙️ THAM SỐ THUẬT TOÁN" styleClass="panel-title"/>
+                <!-- PANEL 1: THAM SO THUAT TOAN (TEXT INPUTS ONLY - NO SLIDERS) -->
+                <VBox spacing="10.0" styleClass="panel-card">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="⚙️ THAM SỐ THUẬT TOÁN" styleClass="panel-title"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="lblDataSourceBadge" text="🟢 BE (TCP 7079)" styleClass="status-badge"
+                               style="-fx-background-color: #dcfce7; -fx-text-fill: #15803d; -fx-font-weight: bold;"/>
+                    </HBox>
 
-                    <!-- Slider f -->
-                    <VBox spacing="4.0">
+                    <!-- f input -->
+                    <VBox spacing="3.0">
                         <HBox alignment="CENTER_LEFT">
                             <Label text="Hệ số suy giảm (f):" styleClass="field-label"/>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <Label fx:id="lblFValue" text="0.90" styleClass="field-value-highlight"/>
+                            <Label text="f ∈ (0, 1]" styleClass="help-text" style="-fx-font-size: 10px;"/>
                         </HBox>
-                        <Slider fx:id="sliderF" min="0.5" max="1.0" value="0.9" blockIncrement="0.05"
-                                showTickLabels="true" showTickMarks="true" majorTickUnit="0.1" minorTickCount="1"/>
+                        <TextField fx:id="txtDecayFactor" text="0.90" promptText="0.90" prefHeight="28.0"
+                                   style="-fx-font-weight: bold; -fx-font-size: 11px; -fx-background-color: #eff6ff; -fx-border-color: #93c5fd; -fx-border-radius: 4; -fx-background-radius: 4;"/>
                         <Label text="f nhỏ = ưu tiên dữ liệu mới; f=1.0 = không suy giảm" styleClass="help-text"/>
                     </VBox>
 
-                    <!-- Slider minSup ratio & Keyboard input -->
-                    <VBox spacing="4.0">
-                        <HBox alignment="CENTER_LEFT" spacing="6.0">
-                            <Label text="Tỷ lệ ngưỡng tối thiểu (∂):" styleClass="field-label"/>
-                            <Region HBox.hgrow="ALWAYS"/>
-                            <TextField fx:id="txtMinSupRatio" prefWidth="65.0" prefHeight="26.0" text="15%"
-                                       promptText="15%" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-font-size: 11px; -fx-background-color: #eff6ff; -fx-border-color: #93c5fd; -fx-border-radius: 4; -fx-background-radius: 4;"/>
-                            <Label fx:id="lblMinSupValue" visible="false" managed="false"/>
-                        </HBox>
-                        <Slider fx:id="sliderMinSup" min="0.001" max="0.50" value="0.15" blockIncrement="0.05"
-                                showTickLabels="true" showTickMarks="true" majorTickUnit="0.10" minorTickCount="1"/>
+                    <!-- ∂ input -->
+                    <VBox spacing="3.0">
                         <HBox alignment="CENTER_LEFT">
-                            <Label text="minSup tuyệt đối:" styleClass="field-label-sub"/>
+                            <Label text="Ngưỡng tối thiểu (∂):" styleClass="field-label"/>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <Label fx:id="lblAbsoluteMinSup" text="1.20" styleClass="field-value-sub"/>
+                            <Label text="∂ ∈ (0, 1]" styleClass="help-text" style="-fx-font-size: 10px;"/>
                         </HBox>
+                        <TextField fx:id="txtMinSupRatio" text="15%" promptText="0.15 hoặc 15%" prefHeight="28.0"
+                                   style="-fx-font-weight: bold; -fx-font-size: 11px; -fx-background-color: #eff6ff; -fx-border-color: #93c5fd; -fx-border-radius: 4; -fx-background-radius: 4;"/>
                     </VBox>
+
+                    <!-- minOcc and limit inputs -->
+                    <HBox spacing="8.0">
+                        <VBox spacing="3.0" HBox.hgrow="ALWAYS">
+                            <Label text="minOcc (v1=0):" styleClass="field-label"/>
+                            <TextField fx:id="txtMinOcc" text="0.0" promptText="0.0" prefHeight="26.0"
+                                       style="-fx-font-size: 11px;"/>
+                        </VBox>
+                        <VBox spacing="3.0" HBox.hgrow="ALWAYS">
+                            <Label text="Giới hạn (limit):" styleClass="field-label"/>
+                            <TextField fx:id="txtLimit" text="1000" promptText="1000" prefHeight="26.0"
+                                       style="-fx-font-size: 11px;"/>
+                        </VBox>
+                    </HBox>
+
+                    <HBox alignment="CENTER_LEFT" style="-fx-padding: 2 0 0 0;">
+                        <Label text="minSup tuyệt đối:" styleClass="field-label-sub"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="lblAbsoluteMinSup" text="1.20" styleClass="field-value-sub" style="-fx-font-weight: bold; -fx-text-fill: #2563eb;"/>
+                    </HBox>
                 </VBox>
 
-                <!-- PANEL 2: DIEU KHIEN STREAM -->
+                <!-- PANEL 2: DIEU KHIEN STREAM DEMO -->
                 <VBox spacing="12.0" styleClass="panel-card">
                     <HBox alignment="CENTER_LEFT">
-                        <Label text="📡 LUỒNG DỮ LIỆU (STREAM)" styleClass="panel-title"/>
+                        <Label text="📡 LUỒNG DỮ LIỆU [DEMO TÂM]" styleClass="panel-title"/>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <Label fx:id="lblStreamStatus" text="Sẵn sàng" styleClass="status-badge"/>
+                        <Label fx:id="lblStreamStatus" text="Sẵn sàng (8 tx)" styleClass="status-badge"/>
                     </HBox>
 
                     <HBox spacing="8.0">
-                        <Button fx:id="btnStartStream" text="▶ Bắt đầu" HBox.hgrow="ALWAYS" maxWidth="Infinity" styleClass="btn-primary"/>
+                        <Button fx:id="btnStartStream" text="▶ Bắt đầu Demo" HBox.hgrow="ALWAYS" maxWidth="Infinity" styleClass="btn-primary"/>
                         <Button fx:id="btnPauseStream" text="⏸ Tạm dừng" disable="true" HBox.hgrow="ALWAYS" maxWidth="Infinity" styleClass="btn-warning"/>
                     </HBox>
 

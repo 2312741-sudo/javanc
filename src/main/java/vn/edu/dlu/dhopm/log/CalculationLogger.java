@@ -98,17 +98,17 @@ public class CalculationLogger {
     }
 
     /**
-     * Xuất toàn bộ nhật ký thành chuỗi văn bản thuần túy có thể copy hoặc lưu file.
+     * Xuất toàn bộ nhật ký thành chuỗi văn bản gọn nhẹ (STT, Thời gian, Pha, Đối tượng, So sánh, Quyết định).
      */
     public String exportToString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("%-5s | %-12s | %-18s | %-8s | %-65s | %-25s | %-15s%n",
-                "STT", "Thời gian", "Pha", "Đối tượng", "Công thức & Diễn giải chi tiết", "So sánh minSup", "Quyết định"));
-        sb.append("=".repeat(160)).append("\n");
+        sb.append(String.format("%-5s | %-12s | %-24s | %-10s | %-20s | %-15s%n",
+                "STT", "Thời gian", "Pha", "Đối tượng", "So sánh minSup", "Quyết định"));
+        sb.append("=".repeat(95)).append("\n");
 
         for (CalculationLogEntry e : logs) {
-            sb.append(String.format("%-5d | %-12s | %-18s | %-8s | %-65s | %-25s | %-15s%n",
-                    e.id(), e.timestamp(), e.phase(), e.target(), e.formula(), e.comparison(), e.decision()));
+            sb.append(String.format("%-5d | %-12s | %-24s | %-10s | %-20s | %-15s%n",
+                    e.id(), e.timestamp(), e.phase(), e.target(), e.comparison(), e.decision()));
         }
         return sb.toString();
     }

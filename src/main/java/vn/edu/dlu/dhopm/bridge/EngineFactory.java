@@ -38,11 +38,19 @@ public final class EngineFactory {
      * @throws IllegalArgumentException nếu minSupRatio hoặc decayFactor nằm ngoài miền hợp lệ
      */
     public static BridgeEngine create(EngineMode mode, double minSupRatio, double decayFactor) {
+        return create(mode, minSupRatio, decayFactor, "retail.dat", 0.0, 1000, java.util.List.of("v1"));
+    }
+
+    /**
+     * Tạo một {@link BridgeEngine} với cấu hình dataset và tham số chi tiết.
+     */
+    public static BridgeEngine create(EngineMode mode, double minSupRatio, double decayFactor,
+                                      String dataset, double minOcc, int limit, java.util.List<String> versions) {
         validateConfig(minSupRatio, decayFactor);
         return switch (mode) {
             case TAM_SIMULATION   -> new TamSimulationBridge(minSupRatio, decayFactor);
             case TSON_V1_STANDARD -> new TsonV1Bridge(minSupRatio, decayFactor);
-            case TSON_TCP_BACKEND -> new TsonTcpContractBridge(minSupRatio, decayFactor);
+            case TSON_TCP_BACKEND -> new TsonTcpContractBridge(minSupRatio, decayFactor, dataset, minOcc, limit, versions);
         };
     }
 

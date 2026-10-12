@@ -37,10 +37,12 @@ import vn.edu.dlu.dhopm.model.Transaction;
 import vn.edu.dlu.dhopm.ui.component.DHONodeCard;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
@@ -77,10 +79,12 @@ public class MainController implements Initializable {
     private Thread activeTsonThread = null;
     private final java.util.concurrent.atomic.AtomicReference<dhopm.v1.engine.MiningEngine> activeMiningEngine = new java.util.concurrent.atomic.AtomicReference<>(null);
 
-    // ── Controls & Sliders ───────────────────────────────────────────────────
-    @FXML private Slider sliderF;
-    @FXML private Slider sliderMinSup;
+    // ── Controls & Text Inputs (Replacing sliders to avoid involuntary mining) ──
+    @FXML private TextField txtDecayFactor;
     @FXML private TextField txtMinSupRatio;
+    @FXML private TextField txtMinOcc;
+    @FXML private TextField txtLimit;
+    @FXML private Label lblDataSourceBadge;
     @FXML private Label lblFValue;
     @FXML private Label lblMinSupValue;
     @FXML private Label lblAbsoluteMinSup;
@@ -311,7 +315,10 @@ public class MainController implements Initializable {
         cbTsonDataset.setOnAction(e -> {
             DatasetItem item = cbTsonDataset.getValue();
             if (item != null) {
-                sliderMinSup.setValue(item.defaultPartial());
+                if (txtMinSupRatio != null) {
+                    txtMinSupRatio.setText(String.format(java.util.Locale.US, "%.1f%%", item.defaultPartial() * 100.0));
+                }
+                updateAbsoluteMinSupDisplay();
             }
         });
 
@@ -379,13 +386,62 @@ public class MainController implements Initializable {
         return Paths.get(filename);
     }
 
+    private double getDecayFactor() {
+        if (txtDecayFactor == null) return 0.90;
+        try {
+            String text = txtDecayFactor.getText().trim();
+            double val = Double.parseDouble(text);
+            if (val <= 0.0) val = 0.01;
+            if (val > 1.0) val = 1.0;
+            return val;
+        } catch (Exception e) {
+            return 0.90;
+        }
+    }
+
+    private double getMinSupRatio() {
+        if (txtMinSupRatio == null) return 0.15;
+        return parseRatioText(txtMinSupRatio.getText(), 0.15);
+    }
+
+    private double getMinOcc() {
+        if (txtMinOcc == null) return 0.0;
+        try {
+            String text = txtMinOcc.getText().trim();
+            return Double.parseDouble(text);
+        } catch (Exception e) {
+            return 0.0;
+        }
+    }
+
+    private void updateAbsoluteMinSupDisplay() {
+        double ratio = getMinSupRatio();
+        int totalTrans = tamEngine != null && !tamEngine.getAllTransactions().isEmpty()
+                ? tamEngine.getAllTransactions().size() : 8;
+        double minSupAbs = totalTrans * ratio;
+        if (lblAbsoluteMinSup != null) {
+            lblAbsoluteMinSup.setText(String.format(java.util.Locale.US, "%.2f", minSupAbs));
+        }
+        if (lblFValue != null) {
+            lblFValue.setText(String.format(java.util.Locale.US, "%.2f", getDecayFactor()));
+        }
+    }
+
     private long resolveLimit() {
+        if (txtLimit != null && txtLimit.getText() != null && !txtLimit.getText().isBlank()) {
+            String cleaned = txtLimit.getText().trim().replaceAll("[^0-9]", "");
+            if (!cleaned.isEmpty()) {
+                try {
+                    return Math.max(0, Long.parseLong(cleaned));
+                } catch (NumberFormatException ignored) {}
+            }
+        }
         String val = null;
-        if (cbTsonLimit.getEditor() != null && cbTsonLimit.getEditor().getText() != null) {
+        if (cbTsonLimit != null && cbTsonLimit.getEditor() != null && cbTsonLimit.getEditor().getText() != null) {
             val = cbTsonLimit.getEditor().getText().trim();
         }
         if (val == null || val.isBlank()) {
-            val = cbTsonLimit.getValue();
+            val = cbTsonLimit != null ? cbTsonLimit.getValue() : null;
         }
         if (val == null || val.isBlank() || val.startsWith("Toàn bộ") || val.equalsIgnoreCase("all") || val.equals("0")) {
             return 0;
@@ -563,10 +619,10 @@ public class MainController implements Initializable {
 
             tblSweepResults.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
                 if (newVal != null) {
-                    sliderMinSup.setValue(newVal.partial());
                     if (txtMinSupRatio != null) {
                         txtMinSupRatio.setText(newVal.getPartialPercentFormatted());
                     }
+                    updateAbsoluteMinSupDisplay();
                 }
             });
         }
@@ -612,7 +668,7 @@ public class MainController implements Initializable {
 
         // ── 7. Khởi tạo sẵn dữ liệu Quét Mặc Định theo Bài Báo (default.dat 8 tx)
         try {
-            List<MinSupSweepPoint> initialPoints = sweepService.generateInitialPaperBenchmarkPoints(tamEngine, sliderF.getValue());
+            List<MinSupSweepPoint> initialPoints = sweepService.generateInitialPaperBenchmarkPoints(tamEngine, getDecayFactor());
             if (!initialPoints.isEmpty()) {
                 sweepData.setAll(initialPoints);
                 updateSweepCharts(initialPoints);
@@ -724,10 +780,15 @@ public class MainController implements Initializable {
         double step = parseRatioText(txtSweepStep != null ? txtSweepStep.getText() : "5%", 0.05);
 
         List<Double> steps = MinSupSweepService.generatePartialSteps(start, end, step);
-        double f = sliderF.getValue();
+        double f = getDecayFactor();
         EngineMode mode = cbEngineMode.getValue();
         Path path = resolveDatasetPath();
         long limit = resolveLimit();
+
+        if (mode != EngineMode.TAM_SIMULATION && path == null) {
+            new Alert(Alert.AlertType.WARNING, "Vui lòng chọn tập dữ liệu (dataset) để quét benchmark!").show();
+            return;
+        }
 
         if (btnRunSweep != null) btnRunSweep.setDisable(true);
         if (btnCancelSweep != null) btnCancelSweep.setDisable(false);
@@ -1000,16 +1061,12 @@ public class MainController implements Initializable {
      */
     private void executeTsonMine() {
         Path path = resolveDatasetPath();
-        double partial = sliderMinSup.getValue();
-        double f = sliderF.getValue();
+        double partial = getMinSupRatio();
+        double f = getDecayFactor();
         long limit = resolveLimit();
 
         if (!checkDenseRiskConfirmation(path, limit)) {
             return;
-        }
-
-        if (cbEngineMode.getValue() != EngineMode.TSON_V1_STANDARD) {
-            cbEngineMode.setValue(EngineMode.TSON_V1_STANDARD);
         }
 
         // Mở Tab 4 và kích hoạt View 1 (Bảng mẫu)
@@ -1022,23 +1079,74 @@ public class MainController implements Initializable {
         if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("⏳ Đang chuẩn bị...");
         lblKpiTime.setText("Đang chạy...");
 
-        Task<MineExecutionResult> task = new Task<>() {
-            @Override
-            protected MineExecutionResult call() throws Exception {
-                return tsonService.runMine(
-                        path, partial, f, 4, limit,
-                        phaseMsg -> Platform.runLater(() -> lblLastPhase.setText(phaseMsg)),
-                        info -> Platform.runLater(() -> {
-                            progressMining.setProgress(info.fraction());
-                            String etaStr = info.formatEtaStatus();
-                            if (lblMiningEta != null) lblMiningEta.setText(etaStr);
-                            if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("⏳ " + etaStr);
-                            lblKpiTime.setText(etaStr);
-                        }),
-                        engine -> activeMiningEngine.set(engine)
-                );
-            }
-        };
+        Task<MineExecutionResult> task;
+        if (cbEngineMode.getValue() == EngineMode.TSON_TCP_BACKEND) {
+            task = new Task<>() {
+                @Override
+                protected MineExecutionResult call() throws Exception {
+                    vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient tcpClient = new vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient();
+                    boolean hasConn = tcpClient.handshake();
+                    if (!hasConn) {
+                        throw new IOException("Không kết nối được Backend TCP trên 127.0.0.1:7079. Vui lòng bật backend dhopm-cli hoặc đổi Engine.");
+                    }
+                    Platform.runLater(() -> {
+                        lblLastPhase.setText("TCP: Bắt tay Backend " + tcpClient.getServerManager());
+                    });
+
+                    String datasetName = path != null ? path.getFileName().toString() : "retail.dat";
+                    var resp = tcpClient.stream(
+                            datasetName, partial, f, getMinOcc(), (int) limit, List.of("v1"), true,
+                            eventJson -> Platform.runLater(() -> {
+                                String evType = vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient.parseString(eventJson, "event");
+                                if ("progress".equalsIgnoreCase(evType)) {
+                                    Double frac = vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient.parseDouble(eventJson, "fraction");
+                                    Long el = vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient.parseLong(eventJson, "elapsedMs");
+                                    Long eta = vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient.parseLong(eventJson, "etaMs");
+                                    if (frac != null) progressMining.setProgress(frac);
+                                    String etaStr = (frac != null ? String.format(Locale.US, "%.1f%%", frac * 100) : "")
+                                            + (el != null ? " (" + el + " ms" : "")
+                                            + (eta != null && eta > 0 ? " | ETA: " + eta + " ms)" : ")");
+                                    if (lblMiningEta != null) lblMiningEta.setText(etaStr);
+                                    if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("⏳ " + etaStr);
+                                    lblKpiTime.setText(el != null ? el + " ms" : "Đang chạy...");
+                                } else if ("window".equalsIgnoreCase(evType)) {
+                                    Integer curTL = vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient.parseInteger(eventJson, "TL");
+                                    if (curTL != null) lblTL.setText("T" + curTL);
+                                }
+                            })
+                    );
+
+                    if (!resp.ok()) {
+                        throw new IOException("Backend TCP báo lỗi: " + resp.message());
+                    }
+
+                    return new MineExecutionResult(
+                            resp.patterns(), null,
+                            0, 0, resp.elapsedMs(), resp.elapsedMs(),
+                            resp.peakMemoryMb(), resp.totalTransactions(), resp.patterns().size(),
+                            "TCP Stream thành công (" + resp.patterns().size() + " mẫu)"
+                    );
+                }
+            };
+        } else {
+            task = new Task<>() {
+                @Override
+                protected MineExecutionResult call() throws Exception {
+                    return tsonService.runMine(
+                            path, partial, f, 4, limit,
+                            phaseMsg -> Platform.runLater(() -> lblLastPhase.setText(phaseMsg)),
+                            info -> Platform.runLater(() -> {
+                                progressMining.setProgress(info.fraction());
+                                String etaStr = info.formatEtaStatus();
+                                if (lblMiningEta != null) lblMiningEta.setText(etaStr);
+                                if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("⏳ " + etaStr);
+                                lblKpiTime.setText(etaStr);
+                            }),
+                            engine -> activeMiningEngine.set(engine)
+                    );
+                }
+            };
+        }
 
         activeTsonTask = task;
 
@@ -1051,13 +1159,16 @@ public class MainController implements Initializable {
             if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("✅ Hoàn tất");
             MineExecutionResult res = task.getValue();
 
+            double minSupVal = res.rawResult() != null ? res.rawResult().minSup() : partial * res.totalTransactions();
+            int lastTidVal = res.rawResult() != null ? res.rawResult().lastTid() : (int) res.totalTransactions();
+
             // Cập nhật KPI Cards
             lblKpiTime.setText(String.format("%,d ms", res.totalMs()));
             lblKpiPhases.setText(String.format("Constr: %dms | Reconst: %dms | Mine: %dms",
                     res.constrMs(), res.reconstMs(), res.miningMs()));
             lblKpiHeap.setText(String.format("%.1f MB", res.peakHeapMb()));
             lblKpiPatterns.setText(String.format("%,d mẫu", res.patternCount()));
-            lblKpiMinSup.setText(String.format("minSup = %.2f", res.rawResult().minSup()));
+            lblKpiMinSup.setText(String.format("minSup = %.2f", minSupVal));
             double throughput = res.totalMs() > 0 ? (res.totalTransactions() * 1000.0) / res.totalMs() : 0;
             lblKpiThroughput.setText(String.format("%,.0f tx/s", throughput));
             lblKpiTrans.setText(String.format("Tổng giao dịch: %,d", res.totalTransactions()));
@@ -1072,15 +1183,17 @@ public class MainController implements Initializable {
             lblDhopCount.setText(res.patternCount() + " mẫu");
             lblVisitedCount.setText(res.patternCount() + " mẫu");
             lblTransCount.setText(String.valueOf(res.totalTransactions()));
-            lblTL.setText("T" + res.rawResult().lastTid());
+            lblTL.setText("T" + lastTidVal);
 
-            updateChartFromPatterns(res.uiPatterns(), res.rawResult().minSup());
+            updateChartFromPatterns(res.uiPatterns(), minSupVal);
 
-            // Lưu Memento lịch sử khai phá
+            // Lưu Memento lịch sử khai phá (phân biệt BE TCP và Tson V1)
+            String engineLabel = (cbEngineMode.getValue() == EngineMode.TSON_TCP_BACKEND)
+                    ? "Backend TCP 7079" : "Tson V1 Standard";
             MiningHistoryManager.getInstance().recordRun(
-                    "Tson V1 Standard",
-                    path.getFileName().toString() + (limit > 0 ? " (" + limit + " tx)" : ""),
-                    f, partial, res.rawResult().minSup(), (int) res.totalTransactions(),
+                    engineLabel,
+                    (path != null ? path.getFileName().toString() : "retail.dat") + (limit > 0 ? " (" + limit + " tx)" : ""),
+                    f, partial, minSupVal, (int) res.totalTransactions(),
                     res.patternCount(), 0, res.patternCount(),
                     res.totalMs(), res.peakHeapMb(), res.uiPatterns()
             );
@@ -1130,7 +1243,7 @@ public class MainController implements Initializable {
      */
     private void executeTsonInspect() {
         Path path = resolveDatasetPath();
-        double partial = sliderMinSup.getValue();
+        double partial = getMinSupRatio();
         long limit = resolveLimit();
 
         mainTabPane.getSelectionModel().select(3);
@@ -1257,8 +1370,8 @@ public class MainController implements Initializable {
      */
     private void executeTsonDetail() {
         Path path = resolveDatasetPath();
-        double partial = sliderMinSup.getValue();
-        double f = sliderF.getValue();
+        double partial = getMinSupRatio();
+        double f = getDecayFactor();
         long limit = resolveLimit();
 
         if (!checkDenseRiskConfirmation(path, limit)) {
@@ -1417,12 +1530,34 @@ public class MainController implements Initializable {
         btnStartStream.setDisable(!isTam);
         btnStepStream.setDisable(!isTam);
         lblSortOrder.setVisible(isTam);
+
+        if (lblDataSourceBadge != null) {
+            switch (mode) {
+                case TSON_TCP_BACKEND -> {
+                    lblDataSourceBadge.setText("🟢 BE (TCP 7079)");
+                    lblDataSourceBadge.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #15803d; -fx-font-weight: bold;");
+                }
+                case TSON_V1_STANDARD -> {
+                    lblDataSourceBadge.setText("🔵 Tson V1 (In-Process)");
+                    lblDataSourceBadge.setStyle("-fx-background-color: #dbeafe; -fx-text-fill: #1d4ed8; -fx-font-weight: bold;");
+                }
+                case TAM_SIMULATION -> {
+                    lblDataSourceBadge.setText("🟡 DEMO (Tâm 8 tx)");
+                    lblDataSourceBadge.setStyle("-fx-background-color: #fef9c3; -fx-text-fill: #a16207; -fx-font-weight: bold;");
+                }
+            }
+        }
     }
 
     private void buildBridgeEngine() {
-        double f = sliderF != null ? sliderF.getValue() : 0.9;
-        double ratio = sliderMinSup != null ? sliderMinSup.getValue() : 0.15;
-        bridgeEngine = EngineFactory.create(currentMode, ratio, f);
+        double f = getDecayFactor();
+        double ratio = getMinSupRatio();
+        double minOcc = getMinOcc();
+        long limit = resolveLimit();
+        Path path = resolveDatasetPath();
+        String dsName = path != null ? path.getFileName().toString() : "retail.dat";
+
+        bridgeEngine = EngineFactory.create(currentMode, ratio, f, dsName, minOcc, (int) limit, List.of("v1"));
 
         bridgeEngine.onPhaseUpdate((phase, ms) ->
                 lblLastPhase.setText(phase + " (" + String.format("%.2f", ms) + " ms)")
@@ -1482,30 +1617,26 @@ public class MainController implements Initializable {
     }
 
     private void initEventHandlers() {
-        sliderF.valueProperty().addListener((obs, oldVal, newVal) -> {
-            double f = Math.round(newVal.doubleValue() * 100.0) / 100.0;
-            lblFValue.setText(String.format(java.util.Locale.US, "%.2f", f));
-            recalculateAndRender();
-        });
-
-        sliderMinSup.valueProperty().addListener((obs, oldVal, newVal) -> {
-            double ratio = Math.round(newVal.doubleValue() * 1000.0) / 1000.0;
-            if (txtMinSupRatio != null && !txtMinSupRatio.isFocused()) {
-                txtMinSupRatio.setText(String.format(java.util.Locale.US, "%.1f%%", ratio * 100.0));
-            }
-            if (lblMinSupValue != null) {
-                lblMinSupValue.setText(String.format(java.util.Locale.US, "%.1f%%", ratio * 100.0));
-            }
-            recalculateAndRender();
-        });
+        if (txtDecayFactor != null) {
+            txtDecayFactor.setOnAction(e -> updateAbsoluteMinSupDisplay());
+            txtDecayFactor.focusedProperty().addListener((obs, oldVal, newVal) -> {
+                if (!newVal) updateAbsoluteMinSupDisplay();
+            });
+        }
 
         if (txtMinSupRatio != null) {
             txtMinSupRatio.setOnAction(e -> handleMinSupTextCommit());
             txtMinSupRatio.focusedProperty().addListener((obs, oldVal, newVal) -> {
-                if (!newVal) {
-                    handleMinSupTextCommit();
-                }
+                if (!newVal) handleMinSupTextCommit();
             });
+        }
+
+        if (txtMinOcc != null) {
+            txtMinOcc.setOnAction(e -> updateAbsoluteMinSupDisplay());
+        }
+
+        if (txtLimit != null) {
+            txtLimit.setOnAction(e -> updateAbsoluteMinSupDisplay());
         }
 
         btnStartStream.setOnAction(e -> {
@@ -1553,18 +1684,11 @@ public class MainController implements Initializable {
                 ratio = parsed;
             }
             ratio = Math.max(0.0001, Math.min(1.0, ratio));
-
-            if (ratio > sliderMinSup.getMax()) {
-                sliderMinSup.setMax(Math.ceil(ratio * 10.0) / 10.0);
-            }
-            if (ratio < sliderMinSup.getMin()) {
-                sliderMinSup.setMin(0.0);
-            }
-            sliderMinSup.setValue(ratio);
             txtMinSupRatio.setText(String.format(java.util.Locale.US, "%.1f%%", ratio * 100.0));
-            recalculateAndRender();
+            updateAbsoluteMinSupDisplay();
+            // Không tự động gọi recalculateAndRender() để tránh re-mining khi chỉ gõ tham số
         } catch (NumberFormatException ignored) {
-            txtMinSupRatio.setText(String.format(java.util.Locale.US, "%.1f%%", sliderMinSup.getValue() * 100.0));
+            txtMinSupRatio.setText(String.format(java.util.Locale.US, "%.1f%%", getMinSupRatio() * 100.0));
         }
     }
 
@@ -1585,9 +1709,9 @@ public class MainController implements Initializable {
             bridgeEngine.feedTransactions(paperData);
         }
 
-        sliderF.setValue(0.90);
-        sliderMinSup.setValue(0.15);
+        if (txtDecayFactor != null) txtDecayFactor.setText("0.90");
         if (txtMinSupRatio != null) txtMinSupRatio.setText("15.0%");
+        updateAbsoluteMinSupDisplay();
         progressMining.setProgress(0);
         lblLastPhase.setText("—");
         lblEngineName.setText("⚡ " + (bridgeEngine != null ? bridgeEngine.engineName() : "Tâm-Simulation"));
@@ -1596,8 +1720,8 @@ public class MainController implements Initializable {
     }
 
     private void recalculateAndRender() {
-        double f = sliderF.getValue();
-        double ratio = sliderMinSup.getValue();
+        double f = getDecayFactor();
+        double ratio = getMinSupRatio();
         int totalTrans = tamEngine.getAllTransactions().size();
         double minSup = totalTrans * ratio;
 

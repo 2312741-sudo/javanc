@@ -90,11 +90,59 @@ public class MinSupSweepService {
             double partial = partialList.get(i);
             MinSupSweepPoint point;
 
-            boolean useTamEngine = (engineMode == EngineMode.TAM_SIMULATION)
-                    || (datasetPath == null)
-                    || (datasetPath.getFileName().toString().toLowerCase().contains("default"));
+            if (engineMode == EngineMode.TSON_TCP_BACKEND) {
+                // Đọc trực tiếp từ Backend TCP 7079 theo chuẩn hợp đồng
+                vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient tcpClient = new vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient();
+                String dsName = datasetPath != null ? datasetPath.getFileName().toString() : "retail.dat";
+                var resp = tcpClient.mine(dsName, partial, f, 0.0, (int) limit, List.of("v1"), false);
+                if (!resp.ok()) {
+                    throw new java.io.IOException("Lỗi Backend TCP: " + resp.message());
+                }
 
-            if (useTamEngine) {
+                double minSupAbs = resp.minSup();
+                int dhopCount = resp.patterns().size();
+                long elapsedMs = Math.max(1, resp.elapsedMs());
+                double peakMb = resp.peakMemoryMb();
+                int totalCand = resp.candidates() > 0 ? resp.candidates() : dhopCount;
+                int prunedCount = resp.pruned() > 0 ? resp.pruned() : 0;
+
+                point = new MinSupSweepPoint(partial, minSupAbs, dhopCount, prunedCount, totalCand, elapsedMs, peakMb);
+
+                MiningHistoryManager.getInstance().recordRun(
+                        "Backend-TCP (Sweep)",
+                        dsName,
+                        f, partial, minSupAbs, resp.totalTransactions(),
+                        dhopCount, prunedCount, totalCand, elapsedMs, peakMb, resp.patterns()
+                );
+            } else if (engineMode == EngineMode.TSON_V1_STANDARD) {
+                if (datasetPath == null) {
+                    throw new IllegalArgumentException("Vui lòng chọn tập dữ liệu (dataset) để chạy quét trên Tson V1");
+                }
+                // Tson V1 Engine In-Process
+                var mineRes = tsonService.runMine(
+                        datasetPath, partial, f, 4, limit,
+                        null, null, null
+                );
+
+                double minSupAbs = partial * mineRes.totalTransactions();
+                int dhopCount = mineRes.patternCount();
+                long elapsedMs = Math.max(1, mineRes.totalMs());
+                double peakMb = mineRes.peakHeapMb();
+
+                // Loại bỏ hoàn toàn công thức ước lượng giả: chỉ dùng số liệu thật
+                int totalCand = dhopCount;
+                int prunedCount = 0;
+
+                point = new MinSupSweepPoint(partial, minSupAbs, dhopCount, prunedCount, totalCand, elapsedMs, peakMb);
+
+                MiningHistoryManager.getInstance().recordRun(
+                        "Tson-V1 (Sweep)",
+                        datasetPath.getFileName().toString(),
+                        f, partial, minSupAbs, (int) mineRes.totalTransactions(),
+                        dhopCount, prunedCount, totalCand, elapsedMs, peakMb, mineRes.uiPatterns()
+                );
+            } else {
+                // TAM_SIMULATION: Demo mô phỏng nội bộ của Tâm (8 giao dịch)
                 // Đảm bảo tamEngine có dữ liệu 8 giao dịch
                 if (tamEngine.getAllTransactions().isEmpty()) {
                     tamEngine.phase1_constructOrUpdate(DatasetLoader.getPaperDataset());
@@ -115,38 +163,7 @@ public class MinSupSweepService {
                 double peakMb = (rt.totalMemory() - rt.freeMemory()) / (1024.0 * 1024.0);
 
                 point = new MinSupSweepPoint(partial, minSupAbs, dhopCount, prunedCount, totalCand, elapsedMs, peakMb);
-
-                // Ghi nhận Memento vào Caretaker
-                MiningHistoryManager.getInstance().recordRun(
-                        "Tâm-UI (Sweep)",
-                        "default.dat (" + TL + " tx)",
-                        f, partial, minSupAbs, TL,
-                        dhopCount, prunedCount, totalCand, elapsedMs, peakMb, visited
-                );
-            } else {
-                // Tson V1 Engine
-                var mineRes = tsonService.runMine(
-                        datasetPath, partial, f, 4, limit,
-                        null, null, null
-                );
-
-                double minSupAbs = partial * mineRes.totalTransactions();
-                int dhopCount = mineRes.patternCount();
-                long elapsedMs = Math.max(1, mineRes.totalMs());
-                double peakMb = mineRes.peakHeapMb();
-
-                // Ước lượng không gian tìm kiếm và cắt tỉa theo lý thuyết DUBO
-                int estCandidates = Math.max(dhopCount, (int) (dhopCount * (1.0 + (1.0 - partial) * 4.0)));
-                int estPruned = Math.max(0, estCandidates - dhopCount);
-
-                point = new MinSupSweepPoint(partial, minSupAbs, dhopCount, estPruned, estCandidates, elapsedMs, peakMb);
-
-                MiningHistoryManager.getInstance().recordRun(
-                        "Tson-V1 (Sweep)",
-                        datasetPath.getFileName().toString(),
-                        f, partial, minSupAbs, (int) mineRes.totalTransactions(),
-                        dhopCount, estPruned, estCandidates, elapsedMs, peakMb, mineRes.uiPatterns()
-                );
+                // Tuân thủ §4.2: Demo Tâm-Simulation không ghi vào MiningHistoryManager để bảo toàn độ sạch benchmark
             }
 
             points.add(point);

@@ -920,13 +920,20 @@ Nhằm đảm bảo sự phân tách tuyệt đối giữa nhóm phát triển F
   3. *Bước 3:* Nhận phản hồi xác nhận: `{"id":0,"v":1,"ok":true,"protocol":1,"manager":"dhopm-cli", ...}` $\to$ Lưu địa chỉ, chính thức thiết lập phiên làm việc.
 - **Bộ lệnh giao tiếp cốt lõi:**
   - `window`: Tra cứu kích thước cửa sổ suy giảm $W(f, minOcc)$, trần lý thuyết $maxDO$, không cần nạp dataset.
-  - `mine`: Khai phá tập dữ liệu với đầy đủ các tham số bắt buộc (`partial`, `f`, `minOcc`, `limit`, `versions`, `export`).
-  - `detail`: Trả về chi tiết top mẫu theo DO với độ chính xác cao.
-  - `stream`: Mô phỏng luồng giao dịch đến theo từng bước (`--step`).
-  - `sweep`: Khảo sát đa ngưỡng minSup tự động.
+  - `stream`: Khai phá tập dữ liệu dạng luồng sự kiện đa dòng (Multi-line JSONL Event Stream), tiếp nhận liên tục các sự kiện `progress` (tiến độ, thời gian trôi qua, ETA), `window` (cửa sổ trượt, $TL$, $minSup$), `pattern` và kết thúc bằng phản hồi tổng kết `response envelope`.
+  - `mine`: Khai phá đồng bộ tập dữ liệu với đầy đủ tham số (`partial`, `f`, `minOcc`, `limit`, `versions`, `export`).
+  - `detail`: Trả về chi tiết top mẫu theo DO với danh sách TID và bộ nhớ thực tế.
   - `inspect` & `golden`: Thống kê đặc trưng bộ dữ liệu và chạy bộ kiểm thử chuẩn TC1–TC8.
-  - `fetch <fileID>`: Tải nội dung tệp tin kết quả khai phá mà Backend đã lưu.
-- **Ràng buộc lưu trữ kết quả và Mirroring cục bộ (R14 / D48):** Khi tham số `export = true` hoặc `isLog = true`, Backend lưu kết quả vào tệp tin có định dạng chuẩn `mine_<yy-MM-dd>_<NNN>.txt` (với `NNN` là số thứ tự tự tăng trong ngày). Frontend có trách nhiệm tự động lưu bản sao (Mirror) cục bộ vào thư mục `mine/` để đảm bảo tính độc lập dữ liệu.
+  - `fetch <fileID>`: Tải nguyên văn nội dung tệp tin kết quả khai phá mà Backend đã lưu trên đĩa.
+- **Cơ chế Socket bền vững (Persistent TCP Socket):** Thay vì mở và đóng socket cho từng truy vấn gây nghẽn kết nối và mất trạng thái phiên, Frontend duy trì kết nối Socket ổn định xuyên suốt phiên làm việc, hỗ trợ nhận chuỗi sự kiện streaming mượt mà ở tần suất 10 Hz.
+- **Ràng buộc kiểm chứng và Lưu trữ bản sao cục bộ (Mirroring R14 qua fetch):** Khi khai phá thành công có cờ `export = true`, Backend trả về mã `fileID`. Frontend lập tức phát lệnh `fetch` để tải nguyên văn tệp kết quả và lưu vào thư mục `mine/mine_<fileID>.txt`, đảm bảo có "dấu vân tay" dữ liệu thực nghiệm đối chiếu độc lập giữa hai bên.
+- **Loại bỏ triệt để số liệu ước lượng giả (Fake Estimations Elimination):**
+  - Thời gian thực thi (`elapsedMs`) và bộ nhớ đỉnh (`peakMemoryMb`) được đọc trực tiếp từ lõi Backend, chấm dứt việc lấy `System.nanoTime()` và heap JVM của Frontend gây sai lệch số liệu benchmark.
+  - Loại bỏ hoàn toàn công thức tự tính ứng viên $estCandidates = dhopCount \times (1 + (1-\partial)\times 4)$ và $estPruned$; toàn bộ số ứng viên và mẫu cắt tỉa đều lấy từ dữ liệu duyệt DFS thực tế của Backend.
+- **Chuẩn hóa điều khiển và Nhận diện nguồn dữ liệu minh bạch:**
+  - Loại bỏ hoàn toàn các thanh trượt (`Slider`) vốn thiếu chính xác và dễ gây kích hoạt chạy lại ngoài ý muốn khi kéo chuột; thay thế bằng các ô nhập dữ liệu trực tiếp (`TextField`) cho $f \in (0, 1]$, $\partial \in (0, 1]$, $minOcc$, và $limit$.
+  - Gắn nhãn trạng thái nguồn dữ liệu trực quan: `🟢 Nguồn: Backend (TCP 7079)` khi kết nối thành công với Backend, và `🟡 Nguồn: DEMO (In-Process Fallback)` khi chạy mô phỏng nội bộ. Chế độ Demo chỉ dành cho mục đích sư phạm trên lớp, được cô lập hoàn toàn và không đưa vào lịch sử benchmark.
+  - Đặc tả chi tiết về cấu trúc dữ liệu, các trường nhận và giới hạn giao diện đã được chuẩn hóa trong tài liệu `docs/FE-RECEIVE-AND-USAGE.md`.
 
 ---
 
