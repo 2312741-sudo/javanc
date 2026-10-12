@@ -549,27 +549,28 @@
       </div>
     </div>
 
-    <!-- SLIDE 8: GIAO DIỆN 5 TABS & NHẬP BÀN PHÍM -->
-    <div class="slide" data-notes="Giao diện JavaFX được nâng cấp toàn diện với hệ thống 5 Tabs chuyên biệt và tính năng nhập tỷ lệ ngưỡng tối thiểu từ bàn phím. Người dùng có thể gõ trực tiếp 15%, 15, 0.15, hoặc 0.001 cho tập dữ liệu thưa, tự động đồng bộ hai chiều với Slider.">
+    <!-- SLIDE 8: GIAO DIỆN KHÔNG SLIDER & HUY HIỆU NGUỒN DỮ LIỆU -->
+    <div class="slide" data-notes="Giao diện JavaFX được nâng cấp theo chuẩn đề xuất: Thay thế hoàn toàn thanh trượt Slider bằng các ô nhập dữ liệu TextField chuẩn xác có validation (f, ∂, minOcc, limit). Loại bỏ hiện tượng kéo trượt gây trễ và tính toán ngoài ý muốn. Tích hợp huy hiệu nguồn dữ liệu minh bạch và phân tách rõ ràng luồng demo 8 giao dịch tại Panel 2.">
       <div class="slide-tag">CHƯƠNG 4: HIỆN THỰC HÓA GIAO DIỆN</div>
-      <h2 class="slide-title">7. Giao Diện 5 Tabs & Nhập Tỷ Lệ Ngưỡng Từ Bàn Phím</h2>
+      <h2 class="slide-title">7. Giao Diện Chuẩn Xác (Loại Bỏ Slider) & Huy Hiệu Nguồn Dữ Liệu</h2>
       <div class="grid-2">
         <div class="card card-success">
-          <div class="card-title">⌨️ Nhập Tỷ Lệ Ngưỡng (∂) Từ Bàn Phím Động</div>
+          <div class="card-title">🎯 Ô Nhập Dữ Liệu TextField Chuẩn Xác</div>
           <ul>
-            <li><strong>Nhập tự do từ bàn phím:</strong> Hỗ trợ các định dạng <code>15%</code>, <code>15</code>, <code>0.15</code>, <code>12.5%</code>, <code>0.001</code>.</li>
-            <li><strong>Hỗ trợ tập siêu thưa:</strong> Cho phép nhập ngưỡng cực nhỏ (0.1% cho <code>retail.dat</code>) hoặc cực lớn (35% cho <code>chess.dat</code>).</li>
-            <li><strong>Đồng bộ hai chiều (Two-Way Sync):</strong> Kéo Slider thì TextField tự cập nhật; gõ TextField thì Slider tự dịch chuyển và tính lại tức thì!</li>
+            <li><strong>Loại bỏ thanh trượt Slider:</strong> Tránh tình trạng kéo trượt kích hoạt tính toán liên tục ngoài ý muốn làm đơ giao diện.</li>
+            <li><strong>Kiểm soát miền giá trị nghiêm ngặt:</strong> Nhập chính xác hệ số suy giảm <code>f ∈ (0, 1]</code>, ngưỡng <code>∂ ∈ (0, 1]</code>, <code>minOcc</code>, và giới hạn <code>limit</code>.</li>
+            <li><strong>Chỉ tính toán khi bấm nút:</strong> Người dùng chủ động nhấn <em>"⚡ Khai phá (Mine)"</em> hoặc <em>"📊 Quét MinSup"</em>.</li>
+            <li><strong>Huy hiệu nguồn dữ liệu động:</strong> <code>🟢 BE (TCP 7079)</code>, <code>🔵 Tson V1 (In-Process)</code>, <code>🟡 DEMO (Tâm 8 tx)</code>.</li>
           </ul>
         </div>
         <div class="card card-highlight">
-          <div class="card-title">🗂️ Tổng Quan Hệ Thống 5 Tabs Chuyên Biệt</div>
+          <div class="card-title">🗂️ Tổng Quan Hệ Thống 6 Tabs & Cô Lập Panel 2</div>
           <ul>
-            <li><strong>Tab 1:</strong> Thẻ động Global DHO-List Nodes đổi màu thông minh.</li>
-            <li><strong>Tab 2:</strong> Bảng khám phá chi tiết 32 mẫu cây duyệt DFS.</li>
-            <li><strong>Tab 3:</strong> Trực quan hóa đa biểu đồ & Bảng lịch sử khai phá (Memento).</li>
-            <li><strong>Tab 4:</strong> Trung tâm khai phá Big Data FIMI với nút Dừng & ETA.</li>
-            <li><strong>Tab 5:</strong> Nhật ký chi tiết từng bước tính toán & So sánh công thức toán.</li>
+            <li><strong>Tab 1 & 2:</strong> Thẻ động Global DHO-List & Cây duyệt 32 mẫu DFS (đối soát chi tiết).</li>
+            <li><strong>Tab 3:</strong> Khảo sát Sweep đa ngưỡng minSup & Đối sánh Figures 6, 11, 13 bài báo gốc.</li>
+            <li><strong>Tab 4:</strong> Trung tâm Big Data Tson/SPMF & Kết nối TCP Socket Client (Port 7079).</li>
+            <li><strong>Tab 5 & 6:</strong> Lịch sử khai phá Memento & Nhật ký chi tiết phép toán (Calculation Logger).</li>
+            <li><strong>Cô lập Panel 2:</strong> Gắn nhãn minh bạch <code>📡 LUỒNG DỮ LIỆU [DEMO TÂM]</code>, tách biệt hoàn toàn demo 8 tx khỏi benchmark.</li>
           </ul>
         </div>
       </div>
@@ -641,21 +642,20 @@
     </div>
 
     <!-- SLIDE 11: KẾT QUẢ THỰC NGHIỆM & KIỂM THỬ -->
-    <div class="slide" data-notes="Về mặt kiểm thử, dự án đạt kết quả tuyệt đối: 46 trên 46 bài unit tests vượt qua 100%, gồm đầy đủ các testcase tính tay Lab 1, test luồng streaming, test cầu nối bridge, test Memento pattern và test calculation logger. Ma trận 8 bài toán vàng Golden TC1 đến TC8 đều PASS với sai số dưới 0.0001.">
+    <div class="slide" data-notes="Về mặt kiểm thử, dự án đạt kết quả tuyệt đối: 53 trên 53 bài unit tests vượt qua 100%, gồm đầy đủ các testcase tính tay Lab 1, test luồng streaming JSONL, test TCP client Protocol 1, test cầu nối bridge, test Memento pattern, test quét minSup và test calculation logger. Ma trận 8 bài toán vàng Golden TC1 đến TC8 đều PASS với sai số dưới 0.0001.">
       <div class="slide-tag">CHƯƠNG 5: KẾT QUẢ THỰC NGHIỆM</div>
-      <h2 class="slide-title">10. Kết Quả Kiểm Thử Tự Động & Ma Trận Golden Tests</h2>
+      <h2 class="slide-title">10. Kết Quả Kiểm Thử Tự Động (53/53 Tests) & Ma Trận Golden Tests</h2>
       <div class="grid-2">
         <div class="card card-success">
-          <div class="card-title">✅ 46 / 46 Tests PASS (100% BUILD SUCCESS)</div>
+          <div class="card-title">✅ 53 / 53 Tests PASS (100% BUILD SUCCESS)</div>
           <ul>
             <li><code>Lab1VerificationTest</code> (8 tests): Khớp số liệu tính tay Lab 1.</li>
             <li><code>DHOPMEngineTest</code> (10 tests): Kiểm thử 3 pha và luồng One-Scan.</li>
             <li><code>BridgeEngineTest</code> (10 tests): Kiểm thử hợp đồng cầu nối Bridge.</li>
-            <li><code>TsonBridgeIntegrationTest</code> (6 tests): Đối soát 2 engine.</li>
-            <li><code>TsonToolsServiceTest</code> (4 tests): Dịch vụ FIMI.</li>
-            <li><code>MiningProgressInfoTest</code> (3 tests): Định dạng ETA và % hoàn thành.</li>
-            <li><code>MiningHistoryManagerTest</code> (3 tests): Memento Pattern & Lịch sử.</li>
-            <li><code>CalculationLoggerTest</code> (2 tests): Nhật ký tính toán.</li>
+            <li><code>DhopmContractTcpClientTest</code> (7 tests): TCP Client & Protocol 1 JSONL.</li>
+            <li><code>MinSupSweepServiceTest</code> (6 tests): Quét sweep đa ngưỡng & metrics thực.</li>
+            <li><code>CalculationLoggerTest</code> (8 tests): Nhật ký tính toán chi tiết.</li>
+            <li><code>MiningHistoryManagerTest</code> (4 tests): Memento Pattern & Snapshot.</li>
           </ul>
           <p style="color: #38BDF8; font-weight: 600; margin-top: 8px;">★ Sai số tuyệt đối: &Delta; &lt; 0.0001 (Khớp 100% bài báo gốc!)</p>
         </div>
@@ -679,7 +679,7 @@
     </div>
 
     <!-- SLIDE 12: KẾT LUẬN & HƯỚNG PHÁT TRIỂN -->
-    <div class="slide" data-notes="Tóm lại, đề tài đã hoàn thành xuất sắc các mục tiêu: Làm chủ lý thuyết EAAI 2026, áp dụng thành công 9 Design Patterns, trực quan hóa 5 Tabs đồ họa native mượt mà và vượt qua 46 unit tests. Hướng phát triển tiếp theo là BitSet V2 và tích hợp Kafka/Flink cho Big Data thương mại điện tử thực tế.">
+    <div class="slide" data-notes="Tóm lại, đề tài đã hoàn thành xuất sắc các mục tiêu: Làm chủ lý thuyết EAAI 2026, áp dụng thành công 9 Design Patterns, trực quan hóa 6 Tabs đồ họa native mượt mà không slider và vượt qua 53 unit tests. Hướng phát triển tiếp theo là BitSet V2 và tích hợp Kafka/Flink cho Big Data thương mại điện tử thực tế.">
       <div class="slide-tag">CHƯƠNG 6: KẾT LUẬN & ĐÁNH GIÁ</div>
       <h2 class="slide-title">11. Kết Luận & Hướng Phát Triển Tiếp Theo</h2>
       <div class="grid-2">
@@ -688,8 +688,8 @@
           <ul>
             <li><strong>Làm chủ lý thuyết:</strong> Chứng minh và cài đặt chính xác độ đo DO, cận trên DUBO và cấu trúc DHO-List One-Scan từ bài báo quốc tế EAAI 2026.</li>
             <li><strong>Kiến trúc chuẩn công nghiệp:</strong> Áp dụng nhuần nhuyễn <strong>9 Design Patterns</strong> (Bridge, Adapter, Strategy, Factory, Observer, Memento, Singleton, MVC, Template Method).</li>
-            <li><strong>Trực quan hóa cao cấp:</strong> Hệ thống 5 Tabs JavaFX hoàn chỉnh, nhập bàn phím động, đa biểu đồ xu hướng và nhật ký tính toán chi tiết.</li>
-            <li><strong>Chất lượng mã nguồn:</strong> 46/46 unit tests PASS, chuẩn hóa quốc tế với Locale.US.</li>
+            <li><strong>Giao diện & Kết nối TCP:</strong> Giao diện 6 Tabs JavaFX không slider mượt mà, kết nối TCP cổng 7079, stream JSONL thời gian thực, đồng bộ tệp R14 và đối soát 3 cột.</li>
+            <li><strong>Chất lượng mã nguồn:</strong> 53/53 unit tests PASS (100% BUILD SUCCESS), chuẩn hóa quốc tế với Locale.US.</li>
           </ul>
         </div>
         <div class="card card-highlight">
@@ -712,8 +712,8 @@
         Em đã sẵn sàng thực hiện Demo trực tiếp các tính năng trên ứng dụng JavaFX Desktop!
       </p>
       <div style="display: flex; gap: 14px;">
-        <span class="badge" style="font-size: 13px; padding: 8px 16px;">JavaFX Desktop 5 Tabs</span>
-        <span class="badge" style="font-size: 13px; padding: 8px 16px;">46/46 Tests PASS</span>
+        <span class="badge" style="font-size: 13px; padding: 8px 16px;">JavaFX Desktop 6 Tabs</span>
+        <span class="badge" style="font-size: 13px; padding: 8px 16px;">53/53 Tests PASS</span>
         <span class="badge" style="font-size: 13px; padding: 8px 16px;">9 Design Patterns</span>
         <span class="badge" style="font-size: 13px; padding: 8px 16px;">Golden TC1-8 PASS 100%</span>
       </div>
