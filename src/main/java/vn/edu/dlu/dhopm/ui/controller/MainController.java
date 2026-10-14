@@ -540,8 +540,9 @@ public class MainController implements Initializable {
         if (cbTsonVersion != null) {
             cbTsonVersion.setEditable(false);
             cbTsonVersion.setItems(FXCollections.observableArrayList("v1", "v2", "v3"));
-            cbTsonVersion.setValue("v1");
             cbTsonVersion.valueProperty().addListener((obs, oldVal, newVal) -> onTsonVersionChanged(newVal));
+            cbTsonVersion.setValue("v1");
+            onTsonVersionChanged("v1");
         }
 
         // 3. Nút Browse file ngoài
