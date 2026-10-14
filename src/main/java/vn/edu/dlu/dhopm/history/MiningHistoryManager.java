@@ -1,5 +1,6 @@
 package vn.edu.dlu.dhopm.history;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -58,8 +59,10 @@ public class MiningHistoryManager {
                 runtimeMs, peakHeapMb, patterns
         );
 
-        history.add(memento);
-        notifyListeners(memento);
+        runOnFxThread(() -> {
+            history.add(memento);
+            notifyListeners(memento);
+        });
         return memento;
     }
 
@@ -68,8 +71,21 @@ public class MiningHistoryManager {
     }
 
     public synchronized void clearHistory() {
-        history.clear();
         sequenceCounter.set(1);
+        runOnFxThread(history::clear);
+    }
+
+    private void runOnFxThread(Runnable action) {
+        try {
+            if (Platform.isFxApplicationThread()) {
+                action.run();
+            } else {
+                Platform.runLater(action);
+            }
+        } catch (IllegalStateException e) {
+            // Khi chạy Unit Test hoặc môi trường headless, JavaFX Toolkit chưa khởi tạo
+            action.run();
+        }
     }
 
     public int size() {
