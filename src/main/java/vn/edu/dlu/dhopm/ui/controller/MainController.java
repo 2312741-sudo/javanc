@@ -334,8 +334,11 @@ public class MainController implements Initializable {
     // ── Panel 0.1: TCP Backend Tson Connection ─────────────────────────────────
 
     private void initTcpControls() {
+        // Luôn đảm bảo địa chỉ mặc định là 127.0.0.1 và cổng chuẩn là 7079
+        DhopmContractTcpClient.setBackendAddress("127.0.0.1", 7079);
+
         if (txtBackendHost != null) {
-            txtBackendHost.setText(DhopmContractTcpClient.getActiveHost());
+            txtBackendHost.setText("127.0.0.1");
             txtBackendHost.textProperty().addListener((obs, oldV, newV) -> {
                 if (newV != null && !newV.isBlank()) {
                     int p = resolveBackendPort();
@@ -346,7 +349,7 @@ public class MainController implements Initializable {
         }
 
         if (txtBackendPort != null) {
-            txtBackendPort.setText(String.valueOf(DhopmContractTcpClient.getActivePort()));
+            txtBackendPort.setText("7079");
             txtBackendPort.textProperty().addListener((obs, oldV, newV) -> {
                 if (newV != null && !newV.isBlank()) {
                     try {
