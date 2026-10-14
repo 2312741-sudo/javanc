@@ -410,71 +410,430 @@
       </div>
     </div>
 
-    <!-- SLIDE 4: DỮ LIỆU BÀI BÁO (FIGURE 2: DHO-LIST) -->
-    <div class="slide" data-notes="Ở slide này ta quan sát Figure 2 của bài báo gốc: Cấu trúc danh sách Global DHO-List được sắp xếp theo tần số Support tăng dần: G trước B, trước A, C, D, E, F. Nhờ sắp xếp mục hiếm lên trước, các nhánh vô vọng bị cắt tỉa cực sớm ngay tại tầng trên cùng của cây DFS!">
+    <!-- SLIDE 4: TỔNG QUAN 3 GIAI ĐOẠN CỦA THUẬT TOÁN DHOPM -->
+    <div class="slide" data-notes="Đây là slide quan trọng thể hiện bức tranh toàn cảnh 3 giai đoạn cốt lõi của thuật toán DHOPM theo bài báo gốc EAAI 2026: Giai đoạn 1 là One-Scan Update, luồng dữ liệu đến chỉ quét đúng 1 lần duy nhất để lưu các cặp TID và độ dài vào Global DHO-List. Giai đoạn 2 là Damped Reconstruct, khi cần khai phá ta áp dụng hàm suy giảm mũ f^(TL-Td), tính DO cho từng mục và sắp xếp theo thứ tự Support tăng dần để mục hiếm lên trước. Giai đoạn 3 là Recursive DFS Mining, xây dựng cây duyệt theo chiều sâu kết hợp cận trên DUBO để cắt tỉa an toàn toàn bộ nhánh con không tiềm năng, giảm hơn 75% không gian tìm kiếm.">
       <div class="slide-tag">CHƯƠNG 2: LÝ THUYẾT & THUẬT TOÁN</div>
-      <h2 class="slide-title">3. Cấu Trúc Global DHO-List (Figure 2 Bài Báo Gốc)</h2>
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-title">📊 Dữ Liệu Chuẩn Table 1 (TL = 8, f = 0.9, &part; = 15%)</div>
-          <table>
-            <thead>
-              <tr><th>TID</th><th>Items</th><th>|T|</th><th>Trọng số f^(8-TID)</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>T1</td><td>A, C, D, E</td><td>4</td><td>0.9^7 &approx; 0.4783 (Chỉ còn 47.8%)</td></tr>
-              <tr><td>T2</td><td>A, E, F</td><td>3</td><td>0.9^6 &approx; 0.5314</td></tr>
-              <tr><td>T3</td><td>B, C, D, E</td><td>4</td><td>0.9^5 &approx; 0.5905</td></tr>
-              <tr><td>T4</td><td>C, D, F</td><td>3</td><td>0.9^4 &approx; 0.6561</td></tr>
-              <tr><td>T5</td><td>B, F</td><td>2</td><td>0.9^3 = 0.7290</td></tr>
-              <tr><td>T6</td><td>D, E, F</td><td>3</td><td>0.9^2 = 0.8100</td></tr>
-              <tr><td>T7</td><td>A, B, C, F</td><td>4</td><td>0.9^1 = 0.9000</td></tr>
-              <tr><td>T8</td><td>A, E, G</td><td>3</td><td>0.9^0 = 1.0000 (100% Giá trị)</td></tr>
-            </tbody>
-          </table>
-        </div>
+      <h2 class="slide-title">3. Tổng Quan Kiến Trúc 3 Giai Đoạn Của Thuật Toán DHOPM</h2>
+      
+      <!-- Sơ đồ Pipeline tổng thể SVG -->
+      <div class="diagram-container" style="margin-bottom: 16px;">
+        <svg viewBox="0 0 880 130" width="100%" height="130" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1E3A8A"/>
+              <stop offset="100%" stop-color="#1D4ED8"/>
+            </linearGradient>
+            <linearGradient id="gCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#0E7490"/>
+              <stop offset="100%" stop-color="#0284C7"/>
+            </linearGradient>
+            <linearGradient id="gAmber" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#B45309"/>
+              <stop offset="100%" stop-color="#D97706"/>
+            </linearGradient>
+            <linearGradient id="gPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#6D28D9"/>
+              <stop offset="100%" stop-color="#7C3AED"/>
+            </linearGradient>
+            <linearGradient id="gGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#047857"/>
+              <stop offset="100%" stop-color="#059669"/>
+            </linearGradient>
+            <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M 0 0 L 8 4 L 0 8 z" fill="#38BDF8"/>
+            </marker>
+          </defs>
+
+          <!-- Step 0: Stream -->
+          <rect x="10" y="25" width="130" height="75" rx="8" fill="url(#gBlue)" stroke="#38BDF8" stroke-width="1.5"/>
+          <text x="75" y="52" fill="#FFFFFF" font-size="12" font-weight="bold" text-anchor="middle">Data Stream</text>
+          <text x="75" y="70" fill="#93C5FD" font-size="10" text-anchor="middle">Luồng Giao Dịch T_d</text>
+          <text x="75" y="85" fill="#CBD5E1" font-size="9" text-anchor="middle">Không lưu đĩa thô</text>
+
+          <!-- Arrow 0 -> 1 -->
+          <line x1="145" y1="62" x2="175" y2="62" stroke="#38BDF8" stroke-width="2" marker-end="url(#arr)"/>
+
+          <!-- Step 1: One-Scan List -->
+          <rect x="180" y="20" width="165" height="85" rx="8" fill="url(#gCyan)" stroke="#38BDF8" stroke-width="1.5"/>
+          <text x="262" y="44" fill="#FDE047" font-size="11" font-weight="bold" text-anchor="middle">GIAI ĐOẠN 1</text>
+          <text x="262" y="62" fill="#FFFFFF" font-size="12" font-weight="bold" text-anchor="middle">One-Scan DHO-List</text>
+          <text x="262" y="80" fill="#E2E8F0" font-size="10" text-anchor="middle">Lưu cặp &lang;TID, |T_d|&rang;</text>
+          <text x="262" y="95" fill="#BAE6FD" font-size="9" text-anchor="middle">Tiết kiệm &gt;78% RAM</text>
+
+          <!-- Arrow 1 -> 2 -->
+          <line x1="350" y1="62" x2="380" y2="62" stroke="#38BDF8" stroke-width="2" marker-end="url(#arr)"/>
+
+          <!-- Step 2: Damped Reconstruct -->
+          <rect x="385" y="20" width="170" height="85" rx="8" fill="url(#gAmber)" stroke="#FBBF24" stroke-width="1.5"/>
+          <text x="470" y="44" fill="#FEF08A" font-size="11" font-weight="bold" text-anchor="middle">GIAI ĐOẠN 2</text>
+          <text x="470" y="62" fill="#FFFFFF" font-size="12" font-weight="bold" text-anchor="middle">Damped Reconstruct</text>
+          <text x="470" y="80" fill="#FEF3C7" font-size="10" text-anchor="middle">Hàm mũ f^(TL - Td)</text>
+          <text x="470" y="95" fill="#FDE68A" font-size="9" text-anchor="middle">Sort Support tăng dần</text>
+
+          <!-- Arrow 2 -> 3 -->
+          <line x1="560" y1="62" x2="590" y2="62" stroke="#38BDF8" stroke-width="2" marker-end="url(#arr)"/>
+
+          <!-- Step 3: DFS & DUBO -->
+          <rect x="595" y="20" width="165" height="85" rx="8" fill="url(#gPurple)" stroke="#C084FC" stroke-width="1.5"/>
+          <text x="677" y="44" fill="#FDE047" font-size="11" font-weight="bold" text-anchor="middle">GIAI ĐOẠN 3</text>
+          <text x="677" y="62" fill="#FFFFFF" font-size="12" font-weight="bold" text-anchor="middle">Recursive DFS Mining</text>
+          <text x="677" y="80" fill="#E9D5FF" font-size="10" text-anchor="middle">Cận trên DUBO</text>
+          <text x="677" y="95" fill="#DDD6FE" font-size="9" text-anchor="middle">Cắt tỉa 75% không gian</text>
+
+          <!-- Arrow 3 -> Out -->
+          <line x1="765" y1="62" x2="790" y2="62" stroke="#38BDF8" stroke-width="2" marker-end="url(#arr)"/>
+
+          <!-- Output -->
+          <rect x="795" y="25" width="75" height="75" rx="8" fill="url(#gGreen)" stroke="#34D399" stroke-width="1.5"/>
+          <text x="832" y="52" fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle">KẾT QUẢ</text>
+          <text x="832" y="70" fill="#A7F3D0" font-size="12" font-weight="bold" text-anchor="middle">{AE}, {F}</text>
+          <text x="832" y="86" fill="#D1FAE5" font-size="9" text-anchor="middle">Mẫu DHOP</text>
+        </svg>
+      </div>
+
+      <div class="grid-3">
         <div class="card card-highlight">
-          <div class="card-title">🗂️ Global DHO-List Nodes (Support Tăng Dần)</div>
-          <p><strong>Thứ tự xử lý:</strong> <code>G &prec; B &prec; A &prec; C &prec; D &prec; E &prec; F</code></p>
-          <div style="background: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 6px; font-size: 13px;">
-            <p>• <strong>Node G (S=1):</strong> DO = 0.3333 | DUBO = 1.0000 &lt; 1.20 &rarr; 🔴 CẮT TỈA</p>
-            <p>• <strong>Node B (S=3):</strong> DO = 0.7366 | DUBO = 1.5000 &ge; 1.20 &rarr; ⚪ Mở rộng</p>
-            <p>• <strong>Node A (S=4):</strong> DO = 0.8551 | DUBO = 1.8333 &ge; 1.20 &rarr; ⚪ Mở rộng</p>
-            <p>• <strong>Node C (S=4):</strong> DO = 0.8643 | DUBO = 1.5000 &ge; 1.20 &rarr; ⚪ Mở rộng</p>
-            <p>• <strong>Node D (S=5):</strong> DO = 1.0963 | DUBO = 1.6667 &ge; 1.20 &rarr; ⚪ Mở rộng</p>
-            <p>• <strong>Node E (S=6):</strong> DO = 1.3418 &ge; 1.20 &rarr; 🟢 MẪU DHOP</p>
-            <p>• <strong>Node F (S=6):</strong> DO = 1.7500 &ge; 1.20 &rarr; 🟢 MẪU DHOP</p>
-          </div>
-          <p style="color: #38BDF8; font-weight: 600; margin-top: 8px;">
-            ★ Nguyên tắc vàng: Sắp xếp Support tăng dần giúp loại bỏ hơn 60% nhánh ngay từ tầng gốc!
-          </p>
+          <div class="card-title">⚡ Pha 1: One-Scan Update</div>
+          <p><strong>Nhiệm vụ:</strong> Quét dữ liệu giao dịch đúng một lần khi giao dịch xuất hiện trên luồng.</p>
+          <p><strong>Đặc điểm:</strong> Cập nhật liên tục danh sách liên kết các cặp <code>&lang;TID, |T_d|&rang;</code> cho từng item.</p>
+          <p><strong>Hiệu quả:</strong> Độ phức tạp chỉ <code>O(|T_d|)</code>, hoàn toàn không phụ thuộc độ dài toàn bộ luồng.</p>
+        </div>
+        <div class="card card-warning">
+          <div class="card-title">📉 Pha 2: Damped Reconstruct</div>
+          <p><strong>Nhiệm vụ:</strong> Khi có yêu cầu khai phá tại $T_L$, tái tính toán trọng số suy giảm thời gian <code>f^(TL - Td)</code>.</p>
+          <p><strong>Tính DO:</strong> Tính độ chiếm dụng tức thời cho từng mục đơn để phát hiện mẫu đạt chuẩn.</p>
+          <p><strong>Sắp xếp:</strong> Xếp danh sách theo <strong>Support tăng dần</strong> (mục hiếm xếp trước để cắt tỉa sớm).</p>
+        </div>
+        <div class="card card-success">
+          <div class="card-title">🌳 Pha 3: Recursive DFS & DUBO</div>
+          <p><strong>Nhiệm vụ:</strong> Duyệt không gian tổ hợp mẫu bằng cây tìm kiếm theo chiều sâu (DFS).</p>
+          <p><strong>Cắt tỉa DUBO:</strong> Nếu <code>DUBO(X) &lt; minSup</code>, cắt tỉa toàn bộ cây con xuất phát từ X.</p>
+          <p><strong>Bảo đảm an toàn:</strong> Không sinh mẫu giả, không bỏ sót mẫu thực (Zero False Negatives).</p>
         </div>
       </div>
     </div>
 
-    <!-- SLIDE 5: CÂY DUYỆT DFS (FIGURE 3) & CẮT TỈA DUBO -->
-    <div class="slide" data-notes="Slide 5 thể hiện Figure 3 của bài báo: Cây duyệt DFS và cơ chế cắt tỉa DUBO. Tổng số tổ hợp lý thuyết của 7 items là 127 mẫu. Nhờ cận trên DUBO, thuật toán chỉ duyệt 32 mẫu ứng viên, cắt tỉa 19 mẫu và chỉ giữ lại đúng 2 mẫu DHOP cuối cùng là {AE} và {F}. Giảm 75% không gian tìm kiếm!">
+    <!-- SLIDE 5: GIAI ĐOẠN 1: ONE-SCAN GLOBAL DHO-LIST -->
+    <div class="slide" data-notes="Đi sâu vào Giai đoạn 1: Khi một giao dịch mới đến, thuật toán DHOPM không lưu trữ chuỗi ký tự hay đối tượng giao dịch cồng kềnh, mà chỉ bóc tách từng mục và ghi nhận cặp số nguyên gồm Mã giao dịch TID và Độ dài giỏ hàng |Td| vào Node tương ứng trong Global DHO-List. Như trong bảng ví dụ Table 1 gồm 8 giao dịch từ T1 đến T8, giao dịch T1 có 4 mục A, C, D, E nên mỗi Node A, C, D, E sẽ được đẩy thêm một entry là <1, 4>. Cấu trúc này giúp tiết kiệm hơn 78% RAM và cho phép xử lý luồng dữ liệu vô hạn.">
       <div class="slide-tag">CHƯƠNG 2: LÝ THUYẾT & THUẬT TOÁN</div>
-      <h2 class="slide-title">4. Cây Duyệt DFS & Tính Chất Cắt Tỉa (Figure 3)</h2>
+      <h2 class="slide-title">4. Giai Đoạn 1: One-Scan Global DHO-List & Cấu Trúc Entry Tiết Kiệm RAM</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">📊 Dữ Liệu Luồng Chuẩn Table 1 (TL = 8, f = 0.9, &part; = 15%)</div>
+          <p style="font-size: 12px; color: #94A3B8; margin-bottom: 6px;">8 giao dịch lần lượt đến theo thời gian từ T1 đến T8:</p>
+          <table>
+            <thead>
+              <tr><th>TID</th><th>Các mục (Items)</th><th>Độ dài |T|</th><th>Trọng số f^(8 - TID)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>T1</strong></td><td>A, C, D, E</td><td>4</td><td>0.9^7 &approx; 0.4783</td></tr>
+              <tr><td><strong>T2</strong></td><td>A, E, F</td><td>3</td><td>0.9^6 &approx; 0.5314</td></tr>
+              <tr><td><strong>T3</strong></td><td>B, C, D, E</td><td>4</td><td>0.9^5 &approx; 0.5905</td></tr>
+              <tr><td><strong>T4</strong></td><td>C, D, F</td><td>3</td><td>0.9^4 &approx; 0.6561</td></tr>
+              <tr><td><strong>T5</strong></td><td>B, F</td><td>2</td><td>0.9^3 = 0.7290</td></tr>
+              <tr><td><strong>T6</strong></td><td>D, E, F</td><td>3</td><td>0.9^2 = 0.8100</td></tr>
+              <tr><td><strong>T7</strong></td><td>A, B, C, F</td><td>4</td><td>0.9^1 = 0.9000</td></tr>
+              <tr><td><strong>T8</strong></td><td>A, E, G</td><td>3</td><td>0.9^0 = 1.0000 (Mới nhất)</td></tr>
+            </tbody>
+          </table>
+          <p style="color: #38BDF8; font-weight: 600; font-size: 12px; margin-top: 6px;">
+            ★ Ràng buộc One-Scan: Quét mỗi giao dịch đúng 1 lần, không đọc lại quá khứ!
+          </p>
+        </div>
+
+        <div class="card card-highlight">
+          <div class="card-title">🗄️ Cấu Trúc Bộ Nhớ Global DHO-List (Figure 2)</div>
+          <p style="font-size: 12px; color: #94A3B8;">Mỗi mục là một Node quản lý danh sách mảng các entry <code>&lang;TID, |T_d|&rang;</code>:</p>
+          
+          <div class="diagram-container" style="padding: 6px; background: rgba(15, 23, 42, 0.7);">
+            <svg viewBox="0 0 460 220" width="100%" height="220" xmlns="http://www.w3.org/2000/svg">
+              <!-- Node A -->
+              <rect x="5" y="6" width="70" height="24" rx="4" fill="#1D4ED8" stroke="#38BDF8"/>
+              <text x="40" y="22" fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle">Node A</text>
+              <line x1="75" y1="18" x2="90" y2="18" stroke="#38BDF8" stroke-width="1.5"/>
+              <rect x="90" y="7" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="117" y="22" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;1, 4&gt;</text>
+              <rect x="150" y="7" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="177" y="22" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;2, 3&gt;</text>
+              <rect x="210" y="7" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="237" y="22" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;7, 4&gt;</text>
+              <rect x="270" y="7" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="297" y="22" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;8, 3&gt;</text>
+
+              <!-- Node B -->
+              <rect x="5" y="36" width="70" height="24" rx="4" fill="#1D4ED8" stroke="#38BDF8"/>
+              <text x="40" y="52" fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle">Node B</text>
+              <line x1="75" y1="48" x2="90" y2="48" stroke="#38BDF8" stroke-width="1.5"/>
+              <rect x="90" y="37" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="117" y="52" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;3, 4&gt;</text>
+              <rect x="150" y="37" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="177" y="52" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;5, 2&gt;</text>
+              <rect x="210" y="37" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="237" y="52" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;7, 4&gt;</text>
+
+              <!-- Node C -->
+              <rect x="5" y="66" width="70" height="24" rx="4" fill="#1D4ED8" stroke="#38BDF8"/>
+              <text x="40" y="82" fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle">Node C</text>
+              <line x1="75" y1="78" x2="90" y2="78" stroke="#38BDF8" stroke-width="1.5"/>
+              <rect x="90" y="67" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="117" y="82" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;1, 4&gt;</text>
+              <rect x="150" y="67" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="177" y="82" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;3, 4&gt;</text>
+              <rect x="210" y="67" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="237" y="82" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;4, 3&gt;</text>
+              <rect x="270" y="67" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="297" y="82" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;7, 4&gt;</text>
+
+              <!-- Node D -->
+              <rect x="5" y="96" width="70" height="24" rx="4" fill="#1D4ED8" stroke="#38BDF8"/>
+              <text x="40" y="112" fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle">Node D</text>
+              <line x1="75" y1="108" x2="90" y2="108" stroke="#38BDF8" stroke-width="1.5"/>
+              <rect x="90" y="97" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="117" y="112" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;1, 4&gt;</text>
+              <rect x="150" y="97" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="177" y="112" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;3, 4&gt;</text>
+              <rect x="210" y="97" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="237" y="112" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;4, 3&gt;</text>
+              <rect x="270" y="97" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="297" y="112" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;6, 3&gt;</text>
+
+              <!-- Node E -->
+              <rect x="5" y="126" width="70" height="24" rx="4" fill="#1D4ED8" stroke="#38BDF8"/>
+              <text x="40" y="142" fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle">Node E</text>
+              <line x1="75" y1="138" x2="90" y2="138" stroke="#38BDF8" stroke-width="1.5"/>
+              <rect x="90" y="127" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="117" y="142" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;1, 4&gt;</text>
+              <rect x="150" y="127" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="177" y="142" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;2, 3&gt;</text>
+              <rect x="210" y="127" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="237" y="142" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;3, 4&gt;</text>
+              <rect x="270" y="127" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="297" y="142" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;6, 3&gt;</text>
+              <rect x="330" y="127" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="357" y="142" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;8, 3&gt;</text>
+
+              <!-- Node F -->
+              <rect x="5" y="156" width="70" height="24" rx="4" fill="#047857" stroke="#34D399"/>
+              <text x="40" y="172" fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle">Node F</text>
+              <line x1="75" y1="168" x2="90" y2="168" stroke="#34D399" stroke-width="1.5"/>
+              <rect x="90" y="157" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="117" y="172" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;2, 3&gt;</text>
+              <rect x="150" y="157" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="177" y="172" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;4, 3&gt;</text>
+              <rect x="210" y="157" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="237" y="172" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;5, 2&gt;</text>
+              <rect x="270" y="157" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="297" y="172" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;6, 3&gt;</text>
+              <rect x="330" y="157" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="357" y="172" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;7, 4&gt;</text>
+
+              <!-- Node G -->
+              <rect x="5" y="186" width="70" height="24" rx="4" fill="#991B1B" stroke="#F87171"/>
+              <text x="40" y="202" fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle">Node G</text>
+              <line x1="75" y1="198" x2="90" y2="198" stroke="#F87171" stroke-width="1.5"/>
+              <rect x="90" y="187" width="55" height="22" rx="3" fill="#334155" stroke="#64748B"/>
+              <text x="117" y="202" fill="#F8FAFC" font-size="10" text-anchor="middle">&lt;8, 3&gt;</text>
+            </svg>
+          </div>
+
+          <div style="font-size: 11.5px; color: #CBD5E1; margin-top: 6px;">
+            <p>• Mỗi entry chỉ tốn đúng <strong>8 bytes</strong> (2 số nguyên int <code>tid</code> và <code>tlen</code>).</p>
+            <p>• Bộ nhớ Peak RAM giảm từ <strong>350 MB &rarr; dưới 45 MB</strong> (Tiết kiệm &gt;78% RAM)!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: GIAI ĐOẠN 2: DAMPED RECONSTRUCT & SẮP XẾP TĂNG DẦN SUPPORT -->
+    <div class="slide" data-notes="Ở Giai đoạn 2: Khi người dùng bấm Khai phá tại thời điểm hiện tại TL = 8, hệ thống áp dụng hàm suy giảm mũ f^(TL-Td) với f=0.9 để tính lại giá trị DO tức thời cho từng mục. Ví dụ với mục F, nhờ xuất hiện ở các giao dịch gần đây như T5, T6, T7 có trọng số cao, DO(F) đạt 1.2553, lớn hơn ngưỡng minSup 1.20 nên F chính là một mẫu DHOP ngay lập tức! Sau đó, thuật toán thực hiện một chiến lược tối ưu sống còn: Sắp xếp các mục theo thứ tự Support tăng dần: G trước B, trước A, C, D, E, F. Vì mục có support thấp sẽ có rất ít giao dịch chung, nên đưa lên đầu cây DFS sẽ bị cắt tỉa ngay từ gốc, triệt tiêu bùng nổ tổ hợp!">
+      <div class="slide-tag">CHƯƠNG 2: LÝ THUYẾT & THUẬT TOÁN</div>
+      <h2 class="slide-title">5. Giai Đoạn 2: Tái Cấu Trúc Suy Giảm ($f^{T_L-T_d}$) & Sắp Xếp Tăng Dần Support</h2>
       <div class="grid-2">
         <div class="card card-warning">
-          <div class="card-title">🛑 Định Lý Cắt Tỉa DUBO (Pruning Theorem)</div>
-          <p>Cận trên DUBO cho mẫu X có các độ dài giao dịch $L(X) = \{l_1, \dots, l_u\}$:</p>
-          <div class="formula-box">DUBO(X, k) = [ &sum; (n_i &times; l_k / l_i) ] &times; f^(TL - Tk)</div>
-          <p><strong>Bảo toàn tuyệt đối:</strong> $DO(X') \le DUBO(X)$ với mọi siêu mẫu $X' \supset X$.</p>
-          <p><strong>Điều kiện cắt tỉa:</strong> Nếu $DUBO(X) < minSup$, toàn bộ cây con tại $X$ bị cắt bỏ ngay lập tức!</p>
-        </div>
-        <div class="card card-success">
-          <div class="card-title">🌳 Cây Duyệt Mẫu DFS Chuẩn (Table 4 Bài Báo)</div>
-          <div style="background: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 6px; font-size: 13px;">
-            <p>• <strong>Nhánh G:</strong> $GA$ có $DUBO = 0.59 < 1.20$ &rarr; 🔴 Cắt tỉa toàn bộ cây con $G$!</p>
-            <p>• <strong>Nhánh A:</strong> Duyệt $AE$ &rarr; $DO = 1.2601 \ge 1.20$ &rarr; 🟢 <strong>DHOP {AE}</strong></p>
-            <p>• <strong>Mở rộng AE:</strong> $AEF$ ($DUBO=0.57$), $AEG$ ($DUBO=0.57$) &rarr; 🔴 Cắt tỉa!</p>
-            <p>• <strong>Nhánh F:</strong> $DO = 1.2553 \ge 1.20$ &rarr; 🟢 <strong>DHOP {F}</strong></p>
+          <div class="card-title">🧮 Tính Damped Occupancy (DO) Mẫu Đơn</div>
+          <div class="formula-box">DO(i) = &sum; [ (1 / |T_d|) &times; f^(TL - T_d) ] &emsp; với T_d &isin; list(i)</div>
+          
+          <p style="font-size: 12px; font-weight: 700; color: #FDE047;">Ví dụ số học chi tiết từ Table 1 (TL = 8, f = 0.9, minSup = 1.20):</p>
+          <div style="background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 6px; font-size: 12px; margin-top: 4px;">
+            <p>• <strong>Mục F (T2, T4, T5, T6, T7):</strong></p>
+            <p style="color: #6EE7B7; font-family: monospace;">
+              DO(F) = 1/3&times;0.9^6 + 1/3&times;0.9^4 + 1/2&times;0.9^3 + 1/3&times;0.9^2 + 1/4&times;0.9^1<br>
+              &emsp;&emsp;= 0.1771 + 0.2187 + 0.3645 + 0.2700 + 0.2250<br>
+              &emsp;&emsp;= <strong>1.2553 &ge; 1.20 &rarr; 🟢 MẪU DHOP ĐƠN {F}!</strong>
+            </p>
+            <p style="margin-top: 4px;">• <strong>Mục A (T1, T2, T7, T8):</strong></p>
+            <p style="color: #94A3B8; font-family: monospace;">
+              DO(A) = 1/4&times;0.9^7 + 1/3&times;0.9^6 + 1/4&times;0.9^1 + 1/3&times;0.9^0 = <strong>0.8551 &lt; 1.20</strong>
+            </p>
+            <p>• <strong>Mục E:</strong> DO(E) = 1.0477 &lt; 1.20 | <strong>Mục G:</strong> DO(G) = 0.3333 &lt; 1.20</p>
           </div>
-          <p style="color: #34D399; font-weight: 600; margin-top: 8px;">
-            ★ Kết quả đối soát: Khớp 100% với Table 4 trong bài báo gốc (chỉ 2 mẫu {AE} và {F} đạt DHOP)!
-          </p>
+        </div>
+
+        <div class="card card-highlight">
+          <div class="card-title">📈 Chiến Lược Sắp Xếp Tăng Dần Support (Ascending Sort)</div>
+          <p style="font-size: 12px; color: #94A3B8;">Thứ tự xử lý được xác lập dựa trên tần số Support thực tế:</p>
+          
+          <div class="diagram-container" style="padding: 4px; background: rgba(15, 23, 42, 0.7); margin-bottom: 8px;">
+            <svg viewBox="0 0 460 90" width="100%" height="90" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <marker id="arrS" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                  <path d="M 0 0 L 6 3 L 0 6 z" fill="#38BDF8"/>
+                </marker>
+              </defs>
+              <!-- G -->
+              <rect x="5" y="12" width="50" height="52" rx="4" fill="#450A0A" stroke="#F87171" stroke-width="1.5"/>
+              <text x="30" y="32" fill="#F87171" font-size="13" font-weight="bold" text-anchor="middle">G</text>
+              <text x="30" y="46" fill="#FCA5A5" font-size="9" text-anchor="middle">S=1</text>
+              <text x="30" y="58" fill="#CBD5E1" font-size="8.5" text-anchor="middle">0.33</text>
+              <line x1="57" y1="38" x2="68" y2="38" stroke="#38BDF8" stroke-width="1.5" marker-end="url(#arrS)"/>
+
+              <!-- B -->
+              <rect x="71" y="12" width="50" height="52" rx="4" fill="#1E293B" stroke="#64748B"/>
+              <text x="96" y="32" fill="#FFFFFF" font-size="13" font-weight="bold" text-anchor="middle">B</text>
+              <text x="96" y="46" fill="#94A3B8" font-size="9" text-anchor="middle">S=3</text>
+              <text x="96" y="58" fill="#CBD5E1" font-size="8.5" text-anchor="middle">0.74</text>
+              <line x1="123" y1="38" x2="134" y2="38" stroke="#38BDF8" stroke-width="1.5" marker-end="url(#arrS)"/>
+
+              <!-- A -->
+              <rect x="137" y="12" width="50" height="52" rx="4" fill="#1E293B" stroke="#64748B"/>
+              <text x="162" y="32" fill="#FFFFFF" font-size="13" font-weight="bold" text-anchor="middle">A</text>
+              <text x="162" y="46" fill="#94A3B8" font-size="9" text-anchor="middle">S=4</text>
+              <text x="162" y="58" fill="#CBD5E1" font-size="8.5" text-anchor="middle">0.86</text>
+              <line x1="189" y1="38" x2="200" y2="38" stroke="#38BDF8" stroke-width="1.5" marker-end="url(#arrS)"/>
+
+              <!-- C -->
+              <rect x="203" y="12" width="50" height="52" rx="4" fill="#1E293B" stroke="#64748B"/>
+              <text x="228" y="32" fill="#FFFFFF" font-size="13" font-weight="bold" text-anchor="middle">C</text>
+              <text x="228" y="46" fill="#94A3B8" font-size="9" text-anchor="middle">S=4</text>
+              <text x="228" y="58" fill="#CBD5E1" font-size="8.5" text-anchor="middle">0.71</text>
+              <line x1="255" y1="38" x2="266" y2="38" stroke="#38BDF8" stroke-width="1.5" marker-end="url(#arrS)"/>
+
+              <!-- D -->
+              <rect x="269" y="12" width="50" height="52" rx="4" fill="#1E293B" stroke="#64748B"/>
+              <text x="294" y="32" fill="#FFFFFF" font-size="13" font-weight="bold" text-anchor="middle">D</text>
+              <text x="294" y="46" fill="#94A3B8" font-size="9" text-anchor="middle">S=4</text>
+              <text x="294" y="58" fill="#CBD5E1" font-size="8.5" text-anchor="middle">0.76</text>
+              <line x1="321" y1="38" x2="332" y2="38" stroke="#38BDF8" stroke-width="1.5" marker-end="url(#arrS)"/>
+
+              <!-- E -->
+              <rect x="335" y="12" width="50" height="52" rx="4" fill="#1E293B" stroke="#64748B"/>
+              <text x="360" y="32" fill="#FFFFFF" font-size="13" font-weight="bold" text-anchor="middle">E</text>
+              <text x="360" y="46" fill="#94A3B8" font-size="9" text-anchor="middle">S=5</text>
+              <text x="360" y="58" fill="#CBD5E1" font-size="8.5" text-anchor="middle">1.05</text>
+              <line x1="387" y1="38" x2="398" y2="38" stroke="#38BDF8" stroke-width="1.5" marker-end="url(#arrS)"/>
+
+              <!-- F -->
+              <rect x="401" y="12" width="54" height="52" rx="4" fill="#064E3B" stroke="#34D399" stroke-width="1.5"/>
+              <text x="428" y="32" fill="#34D399" font-size="13" font-weight="bold" text-anchor="middle">F ★</text>
+              <text x="428" y="46" fill="#A7F3D0" font-size="9" text-anchor="middle">S=5</text>
+              <text x="428" y="58" fill="#6EE7B7" font-size="8.5" text-anchor="middle">1.255</text>
+
+              <text x="230" y="78" fill="#38BDF8" font-size="9.5" font-weight="bold" text-anchor="middle">G &prec; B &prec; A &prec; C &prec; D &prec; E &prec; F</text>
+            </svg>
+          </div>
+
+          <div style="font-size: 12px; color: #CBD5E1;">
+            <p><strong>★ Nguyên Lý Cắt Tỉa Sớm Nhất Từ Gốc:</strong></p>
+            <p>• Mục hiếm (ít giao dịch) có rất ít cơ hội tạo ra siêu mẫu thỏa ngưỡng.</p>
+            <p>• Đặt mục hiếm lên trước giúp điều kiện <code>DUBO &lt; minSup</code> kích hoạt ngay tại tầng cao nhất của cây DFS &rarr; Loại bỏ hơn 60% tổ hợp ngay lập tức!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: GIAI ĐOẠN 3: CÂY DUYỆT DFS & CẮT TỈA AN TOÀN DUBO -->
+    <div class="slide" data-notes="Giai đoạn 3 là trái tim của thuật toán: Khai phá đệ quy theo chiều sâu DFS kết hợp Cận trên DUBO. Vì hàm Occupancy phi đơn điệu, một siêu mẫu X' chứa thêm item có thể có độ chiếm dụng lớn hơn X. Do đó không thể áp dụng luật Apriori thông thường. Bài báo đã chứng minh Định lý Cắt tỉa DUBO: DUBO luôn là trần chặn trên của mọi siêu mẫu X'. Nhờ đó, ngay khi DUBO(X) nhỏ hơn minSup, ta có thể cắt tỉa an toàn 100% toàn bộ cây con tại X mà không bao giờ bỏ sót bất kỳ mẫu thực nào. Trên dữ liệu Table 1, không gian tìm kiếm giảm từ 127 tổ hợp lý thuyết xuống chỉ còn 32 mẫu duyệt, cắt tỉa 19 mẫu và chỉ giữ lại đúng 2 mẫu DHOP là {AE} và {F}, giảm 75% chi phí tính toán!">
+      <div class="slide-tag">CHƯƠNG 2: LÝ THUYẾT & THUẬT TOÁN</div>
+      <h2 class="slide-title">6. Giai Đoạn 3: Cây Duyệt Đệ Quy DFS & Định Lý Cắt Tỉa An Toàn DUBO</h2>
+      <div class="grid-2">
+        <div class="card card-warning">
+          <div class="card-title">🛑 Định Lý Cắt Tỉa An Toàn DUBO (Pruning Theorem)</div>
+          <p style="font-size: 12px;">Vì Occupancy <strong>phi đơn điệu</strong> ($DO(X')$ có thể $> DO(X)$), cận trên DUBO được thiết lập:</p>
+          <div class="formula-box">
+            DUBO(X) = &sum; [ f^(TL - T_d) ] &emsp; với T_d &isin; list(X)<br>
+            &forall; X' &sup; X &implies; DO(X') &le; DUBO(X)
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 6px; font-size: 12px;">
+            <p><strong>Điều kiện cắt tỉa:</strong> Nếu <code>DUBO(X) &lt; minSup</code>:</p>
+            <p style="color: #F87171; font-weight: 600;">
+              &rarr; Mọi siêu mẫu X' chứa X chắc chắn đều có DO(X') &le; DUBO(X) &lt; minSup!
+            </p>
+            <p style="color: #34D399; font-weight: 600; margin-top: 4px;">
+              &rarr; CẮT TỈA NGAY LẬP TỨC toàn bộ cây con xuất phát từ X (Zero False Negatives)!
+            </p>
+          </div>
+          
+          <div style="margin-top: 8px; font-size: 12px; color: #CBD5E1;">
+            <p><strong>Hiệu quả cắt tỉa ấn tượng:</strong></p>
+            <p>• Tổng tổ hợp lý thuyết ($2^7 - 1$): <strong>127 mẫu</strong>.</p>
+            <p>• Ứng viên thực tế cần duyệt: <strong>32 mẫu</strong> (Cắt tỉa 19 mẫu).</p>
+            <p>• <strong>Giảm 75% không gian tìm kiếm!</strong> Khớp 100% Table 4 bài báo.</p>
+          </div>
+        </div>
+
+        <div class="card card-success">
+          <div class="card-title">🌳 Cây Tìm Kiếm DFS & Các Điểm Cắt Tỉa (Figure 3 Bài Báo)</div>
+          
+          <div class="diagram-container" style="padding: 4px; background: rgba(15, 23, 42, 0.7);">
+            <svg viewBox="0 0 460 215" width="100%" height="215" xmlns="http://www.w3.org/2000/svg">
+              <!-- Root -->
+              <circle cx="230" cy="16" r="12" fill="#1E3A8A" stroke="#38BDF8" stroke-width="1.5"/>
+              <text x="230" y="20" fill="#FFFFFF" font-size="9" font-weight="bold" text-anchor="middle">Root</text>
+
+              <!-- Branch G -->
+              <line x1="220" y1="26" x2="60" y2="52" stroke="#F87171" stroke-width="1.5" stroke-dasharray="3,3"/>
+              <rect x="35" y="52" width="50" height="24" rx="4" fill="#450A0A" stroke="#F87171" stroke-width="1.5"/>
+              <text x="60" y="66" fill="#FCA5A5" font-size="10" font-weight="bold" text-anchor="middle">Node G</text>
+              <text x="60" y="74" fill="#F87171" font-size="7.5" text-anchor="middle">DUBO=1.0 &lt; 1.2</text>
+              <rect x="38" y="80" width="44" height="15" rx="3" fill="#DC2626"/>
+              <text x="60" y="90" fill="#FFFFFF" font-size="7.5" font-weight="bold" text-anchor="middle">&#x2702; C&#x1EAE;T T&#x1EC8;A</text>
+
+              <!-- Branch B -->
+              <line x1="224" y1="28" x2="145" y2="52" stroke="#64748B" stroke-width="1.5"/>
+              <rect x="125" y="52" width="40" height="22" rx="4" fill="#1E293B" stroke="#94A3B8"/>
+              <text x="145" y="66" fill="#E2E8F0" font-size="10" font-weight="bold" text-anchor="middle">B</text>
+              <line x1="145" y1="74" x2="145" y2="86" stroke="#F87171" stroke-dasharray="2,2"/>
+              <rect x="123" y="86" width="44" height="15" rx="3" fill="#DC2626"/>
+              <text x="145" y="96" fill="#FFFFFF" font-size="7.5" font-weight="bold" text-anchor="middle">&#x2702; C&#x1EAE;T T&#x1EC8;A</text>
+
+              <!-- Branch A -->
+              <line x1="230" y1="28" x2="235" y2="52" stroke="#38BDF8" stroke-width="1.5"/>
+              <rect x="215" y="52" width="40" height="22" rx="4" fill="#1E293B" stroke="#38BDF8"/>
+              <text x="235" y="66" fill="#FFFFFF" font-size="10" font-weight="bold" text-anchor="middle">A</text>
+
+              <!-- A -> AE -->
+              <line x1="235" y1="74" x2="235" y2="98" stroke="#34D399" stroke-width="2"/>
+              <rect x="200" y="98" width="70" height="30" rx="4" fill="#064E3B" stroke="#34D399" stroke-width="1.5"/>
+              <text x="235" y="112" fill="#34D399" font-size="10.5" font-weight="bold" text-anchor="middle">&#x1F7E2; {AE}</text>
+              <text x="235" y="123" fill="#A7F3D0" font-size="8" text-anchor="middle">DO=1.2601 &#x2265; 1.20</text>
+
+              <!-- AE -> AEF -->
+              <line x1="235" y1="128" x2="235" y2="148" stroke="#F87171" stroke-dasharray="2,2"/>
+              <rect x="205" y="148" width="60" height="24" rx="3" fill="#450A0A" stroke="#F87171"/>
+              <text x="235" y="159" fill="#FCA5A5" font-size="8.5" text-anchor="middle">{AEF} (0.53)</text>
+              <text x="235" y="169" fill="#F87171" font-size="7.5" font-weight="bold" text-anchor="middle">&#x2702; C&#x1EAE;T T&#x1EC8;A</text>
+
+              <!-- Branch C, D, E -->
+              <line x1="236" y1="28" x2="330" y2="52" stroke="#64748B" stroke-width="1.5"/>
+              <rect x="310" y="52" width="40" height="22" rx="4" fill="#1E293B" stroke="#94A3B8"/>
+              <text x="330" y="66" fill="#E2E8F0" font-size="10" font-weight="bold" text-anchor="middle">C, D, E</text>
+              <line x1="330" y1="74" x2="330" y2="86" stroke="#F87171" stroke-dasharray="2,2"/>
+              <rect x="308" y="86" width="44" height="15" rx="3" fill="#DC2626"/>
+              <text x="330" y="96" fill="#FFFFFF" font-size="7.5" font-weight="bold" text-anchor="middle">&#x2702; C&#x1EAE;T T&#x1EC8;A</text>
+
+              <!-- Branch F -->
+              <line x1="240" y1="26" x2="405" y2="52" stroke="#34D399" stroke-width="2"/>
+              <rect x="375" y="52" width="65" height="30" rx="4" fill="#064E3B" stroke="#34D399" stroke-width="1.5"/>
+              <text x="407" y="66" fill="#34D399" font-size="10.5" font-weight="bold" text-anchor="middle">&#x1F7E2; {F}</text>
+              <text x="407" y="77" fill="#A7F3D0" font-size="8" text-anchor="middle">DO=1.2553 &#x2265; 1.20</text>
+              <rect x="382" y="86" width="50" height="15" rx="3" fill="#047857"/>
+              <text x="407" y="96" fill="#FFFFFF" font-size="7.5" font-weight="bold" text-anchor="middle">M&#x1EAA;U &#x110;&#xCD;CH</text>
+            </svg>
+          </div>
+
+          <div style="font-size: 12px; color: #34D399; font-weight: 600; margin-top: 6px;">
+            ★ Trích xuất đúng 2 mẫu DHOP duy nhất: {AE} (DO=1.2601) và {F} (DO=1.2553)!
+          </div>
         </div>
       </div>
     </div>
@@ -482,7 +841,7 @@
     <!-- SLIDE 6: BIỂU ĐỒ RUNTIME VÀ BỘ NHỚ (FIGURES 4 & 5) -->
     <div class="slide" data-notes="Slide 6 thể hiện các biểu đồ thực nghiệm Figures 4, 5, 6 của bài báo gốc: Khi ngưỡng minSup tăng, thời gian thực thi giảm theo hàm mũ nhờ DUBO cắt tỉa hiệu quả. Về mặt bộ nhớ RAM, cấu trúc DHO-List One-Scan chỉ tốn dưới 45 MB so với hơn 350 MB của thuật toán lưu trữ toàn bộ giao dịch, tiết kiệm hơn 78% RAM.">
       <div class="slide-tag">CHƯƠNG 2: THỰC NGHIỆM BÀI BÁO GỐC</div>
-      <h2 class="slide-title">5. Đánh Giá Hiệu Năng & Bộ Nhớ (Figures 4, 5, 6 Bài Báo)</h2>
+      <h2 class="slide-title">7. Đánh Giá Hiệu Năng & Bộ Nhớ (Figures 4, 5, 6 Bài Báo)</h2>
       <div class="grid-3">
         <div class="card card-highlight">
           <div class="card-title">📈 Figure 4: Runtime So Với &part;</div>
@@ -652,18 +1011,19 @@
     </div>
 
     <!-- SLIDE 11: KẾT QUẢ THỰC NGHIỆM & KIỂM THỬ -->
-    <div class="slide" data-notes="Về mặt kiểm thử, dự án đạt kết quả tuyệt đối: 59 trên 59 bài unit tests vượt qua 100% trên 11 test suites độc lập, gồm đầy đủ test tính tay Lab 1, test 3 pha DHOPMEngine, test TCP Client Protocol 1, test Mock Server TCP nội bộ, test cầu nối Bridge, test đối soát tích hợp với Tson, test Memento pattern, test quét minSup và test calculation logger. Ma trận 8 bài toán vàng Golden TC1 đến TC8 đều PASS với sai số dưới 0.0001.">
+    <div class="slide" data-notes="Về mặt kiểm thử, dự án đạt kết quả tuyệt đối: 63 trên 63 bài unit tests vượt qua 100% trên 11 test suites độc lập, gồm đầy đủ test tính tay Lab 1, test 3 pha DHOPMEngine, test TCP Client Protocol 1, test Mock Server TCP nội bộ, test cầu nối Bridge, test đối soát tích hợp với Tson, test Memento pattern, test quét minSup và test calculation logger. Ma trận 8 bài toán vàng Golden TC1 đến TC8 đều PASS với sai số dưới 0.0001.">
       <div class="slide-tag">CHƯƠNG 5: KẾT QUẢ THỰC NGHIỆM</div>
-      <h2 class="slide-title">10. Kết Quả Kiểm Thử Tự Động (60/60 Tests) & Ma Trận Golden Tests</h2>
+      <h2 class="slide-title">12. Kết Quả Kiểm Thử Tự Động (63/63 Tests) & Ma Trận Golden Tests</h2>
       <div class="grid-2">
         <div class="card card-success">
-          <div class="card-title">✅ 60 / 60 Tests PASS (100% BUILD SUCCESS - 11 Suites)</div>
+          <div class="card-title">✅ 63 / 63 Tests PASS (100% BUILD SUCCESS - 12 Suites)</div>
           <ul>
             <li><code>Lab1VerificationTest</code> (8 tests): Khớp số liệu tính tay Lab 1.</li>
             <li><code>DHOPMEngineTest</code> (10 tests): Kiểm thử 3 pha và luồng One-Scan.</li>
             <li><code>BridgeEngineTest</code> (10 tests) & <code>TsonBridgeIntegrationTest</code> (6 tests).</li>
             <li><code>DhopmContractTcpClientTest</code> (9 tests): TCP Socket, JSONL, Deduplication.</li>
-            <li><code>DhopmContractTcpServerTest</code> (2 tests): Mock Server nội bộ đa luồng.</li>
+            <li><code>ChartPaperVerificationTest</code> (2 tests): Khớp đồ thị Fig 2, 6, 11, 13.</li>
+            <li><code>DhopmContractTcpServerTest</code> (3 tests): Mock Server nội bộ đa luồng.</li>
             <li><code>TsonToolsServiceTest</code> (4 tests) & <code>MinSupSweepServiceTest</code> (2 tests).</li>
             <li><code>MiningProgressInfoTest</code> (3 tests) & <code>MiningHistoryManagerTest</code> (3 tests).</li>
             <li><code>CalculationLoggerTest</code> (3 tests): Nhật ký giải trình chi tiết.</li>
@@ -692,7 +1052,7 @@
     <!-- SLIDE 12: KẾT LUẬN & HƯỚNG PHÁT TRIỂN -->
     <div class="slide" data-notes="Tóm lại, đề tài đã hoàn thành xuất sắc 100% mục tiêu đề ra: Làm chủ lý thuyết EAAI 2026, áp dụng thành công 9 Design Patterns, trực quan hóa 6 Tabs đồ họa TableView native mượt mà, kết nối mạng phân tán TCP Client-Server với quét LAN tự động, động cơ khử trùng lặp dữ liệu và vượt qua tuyệt đối 60/60 unit tests. Hướng phát triển tiếp theo là BitSet V2 và tích hợp Kafka/Flink cho Big Data thương mại điện tử thực tế.">
       <div class="slide-tag">CHƯƠNG 6: KẾT LUẬN & ĐÁNH GIÁ</div>
-      <h2 class="slide-title">11. Kết Luận & Hướng Phát Triển Tiếp Theo</h2>
+      <h2 class="slide-title">13. Kết Luận & Hướng Phát Triển Tiếp Theo</h2>
       <div class="grid-2">
         <div class="card card-success">
           <div class="card-title">🏆 Kết Quả Đạt Được</div>

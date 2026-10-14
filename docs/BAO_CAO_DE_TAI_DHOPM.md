@@ -21,11 +21,15 @@
 <br/>
 
 **Giảng viên hướng dẫn:** ThS. Đoàn Minh Khuê  
-**Sinh viên thực hiện:** 2312741 – Nguyễn Thanh Tâm (Lớp: CTK47-PM / CTK45)  
-**Thành viên phối hợp:** Nguyễn Hữu Trung Sơn (Phụ trách Core Engine & SPMF)  
+**Sinh viên thực hiện:** 2312741 – Nguyễn Thanh Tâm (Lớp: CTK47-PM)  
+**Thành viên phối hợp:** Nguyễn Hữu Trung Sơn (Lớp: CTK45-PM)  
 
 <br/>
-<br/>
+
+**Kho lưu trữ mã nguồn Frontend (UI Visualizer):** [https://github.com/2312741-sudo/javanc](https://github.com/2312741-sudo/javanc)  
+**Kho lưu trữ mã nguồn Backend (Core Engine CLI):** [https://github.com/Tson-dev/JVNC](https://github.com/Tson-dev/JVNC)  
+**Hợp đồng kết nối FE ↔ BE (CONTRACT.md):** [https://github.com/Tson-dev/JVNC/blob/main/CONTRACT.md](https://github.com/Tson-dev/JVNC/blob/main/CONTRACT.md)  
+
 <br/>
 
 **Đà Lạt, tháng 10 năm 2026**
@@ -142,14 +146,17 @@
 #### Công cụ phát triển:
 - **IntelliJ IDEA Ultimate / Community:** Môi trường phát triển tích hợp (IDE) chính.
 - **Scene Builder:** Công cụ thiết kế trực quan tệp giao diện FXML.
-- **Git & GitHub:** Quản lý phiên bản phân tán, lưu trữ mã nguồn tại kho: `https://github.com/2312741-sudo/javanc.git`.
+- **Git & GitHub:** Quản lý phiên bản phân tán, lưu trữ mã nguồn tại 2 kho lưu trữ:
+  - **Kho Frontend (JavaFX Visualizer & Client):** [https://github.com/2312741-sudo/javanc](https://github.com/2312741-sudo/javanc) (Nguyễn Thanh Tâm phụ trách)
+  - **Kho Backend (Core Engine CLI & Big Data):** [https://github.com/Tson-dev/JVNC](https://github.com/Tson-dev/JVNC) (Nguyễn Hữu Trung Sơn phụ trách)
+  - **Hợp đồng kết nối FE ↔ BE (CONTRACT.md):** [https://github.com/Tson-dev/JVNC/blob/main/CONTRACT.md](https://github.com/Tson-dev/JVNC/blob/main/CONTRACT.md)
 
 ---
 
 ### 4. Dự kiến kết quả đạt được
 - Làm chủ toàn bộ cơ sở toán học và cơ chế cắt tỉa của thuật toán DHOPM trên luồng dữ liệu.
 - Xây dựng phần mềm JavaFX hoàn chỉnh, thẩm mỹ, mượt mà, đầy đủ tính năng trực quan hóa và kiểm soát tiến trình.
-- Vượt qua 100% bộ 48 ca kiểm thử tự động (Unit & Integration Tests), khớp tuyệt đối với kết quả tính tay và bảng kiểm thử Golden Test của bài báo gốc.
+- Vượt qua 100% bộ 63 ca kiểm thử tự động (Unit & Integration Tests), khớp tuyệt đối với kết quả tính tay và bảng kiểm thử Golden Test của bài báo gốc.
 - Rèn luyện kỹ năng phân tích thiết kế phần mềm, áp dụng thuần thục 9 mẫu thiết kế hướng đối tượng kinh điển trong môi trường dự án thực tế.
 - Hoàn thiện tài liệu báo cáo khoa học, slide thuyết trình chuẩn mực học thuật.
 
@@ -250,11 +257,14 @@ Một lần nữa, chúng em xin kính chúc quý Thầy Cô luôn dồi dào s�
     - [3.2.3. Các bảng đặc tả Use Case chi tiết](#323-các-bảng-đặc-tả-use-case-chi-tiết)
     - [3.2.4. Thiết kế cấu trúc dữ liệu Model](#324-thiết-kế-cấu-trúc-dữ-liệu-model)
     - [3.2.5. Hợp đồng giao thức kết nối Frontend ↔ Backend (FE Contract Protocol 1)](#325-hợp-đồng-giao-thức-kết-nối-frontend--backend-fe-contract-protocol-1)
-  - [3.5. Kiến Trúc Mạng TCP Socket Phân Tán và Giao Thức JSONL (Protocol 1)](#35-kiến-trúc-mạng-tcp-socket-phân-tán-và-giao-thức-jsonl-protocol-1)
-  - [3.6. Cơ Chế Đảm Bảo Tính Toàn Vẹn Dữ Liệu & Khử Trùng Lặp Mẫu (Deduplication Engine)](#36-cơ-chế-đảm-bảo-tính-toàn-vẹn-dữ-liệu--khử-trùng-lặp-mẫu-deduplication-engine)
+  - [3.3. Kiến Trúc Mạng TCP Socket Phân Tán và Giao Thức JSONL (Protocol 1)](#33-kiến-trúc-mạng-tcp-socket-phân-tán-và-giao-thức-jsonl-protocol-1)
+  - [3.4. Cơ Chế Đảm Bảo Tính Toàn Vẹn Dữ Liệu & Khử Trùng Lặp Mẫu (Deduplication Engine)](#34-cơ-chế-đảm-bảo-tính-toàn-vẹn-dữ-liệu--khử-trùng-lặp-mẫu-deduplication-engine)
 - [CHƯƠNG 4. XÂY DỰNG HỆ THỐNG VÀ HIỆN THỰC HÓA](#chương-4-xây-dựng-hệ-thống-và-hiện-thực-hóa)
   - [4.1. Cấu trúc thư mục và tổ chức mã nguồn](#41-cấu-trúc-thư-mục-và-tổ-chức-mã-nguồn)
   - [4.2. Hiện thực hóa các phân hệ lõi nghiệp vụ](#42-hiện-thực-hóa-các-phân-hệ-lõi-nghiệp-vụ)
+    - [4.2.1. Cài đặt thuật toán lõi DHOPMEngine (Template Method Pattern)](#421-cài-đặt-thuật-toán-lõi-dhopmengine-template-method-pattern)
+    - [4.2.2. Dịch vụ khảo sát Benchmark Sweep đa ngưỡng minSup](#422-dịch-vụ-khảo-sát-benchmark-sweep-đa-ngưỡng-minsup)
+    - [4.2.3. Quản lý lịch sử bằng Memento Pattern](#423-quản-lý-lịch-sử-bằng-memento-pattern)
   - [4.3. Xây dựng giao diện trực quan hóa JavaFX](#43-xây-dựng-giao-diện-trực-quan-hóa-javafx)
     - [4.3.1. Tab 1 & Tab 2: Khai phá Stream & Cây DHO-Tree](#431-tab-1--tab-2-khai-phá-stream--cây-dho-tree)
     - [4.3.2. Tab 3: Khảo sát Benchmark Sweep đa ngưỡng minSup](#432-tab-3-khảo-sát-benchmark-sweep-đa-ngưỡng-minsup)
@@ -263,7 +273,7 @@ Một lần nữa, chúng em xin kính chúc quý Thầy Cô luôn dồi dào s�
     - [4.3.5. Tab 6: Nhật ký tính toán chi tiết từng bước](#435-tab-6-nhật-ký-tính-toán-chi-tiết-từng-bước)
   - [4.4. Xử lý đa luồng bất đồng bộ và kiểm soát an toàn bộ nhớ](#44-xử-lý-đa-luồng-bất-đồng-bộ-và-kiểm-soát-an-toàn-bộ-nhớ)
 - [CHƯƠNG 5. KẾT QUẢ THỰC NGHIỆM VÀ ĐỐI SOÁT BÀI BÁO GỐC](#chương-5-kết-quả-thực-nghiệm-và-đối-soát-bài-báo-gốc)
-  - [5.1. Bộ Kiểm Thử Tự Động 60 Test Cases (JUnit 5)](#51-bộ-kiểm-thử-tự-động-59-test-cases-junit-5)
+  - [5.1. Bộ Kiểm Thử Tự Động 63 Test Cases (JUnit 5)](#51-bộ-kiểm-thử-tự-động-63-test-cases-junit-5)
   - [5.2. Bộ dữ liệu thực nghiệm](#52-bộ-dữ-liệu-thực-nghiệm)
   - [5.3. Đối soát tính đúng đắn với công trình gốc (Golden Tests)](#53-đối-soát-tính-đúng-đắn-với-công-trình-gốc-golden-tests)
   - [5.4. Đánh giá hiệu năng và hiệu quả cắt tỉa](#54-đánh-giá-hiệu-năng-và-hiệu-quả-cắt-tỉa)
@@ -299,7 +309,7 @@ Một lần nữa, chúng em xin kính chúc quý Thầy Cô luôn dồi dào s�
 - **Hình 16.** Giao diện Tab 5: Lịch sử khai phá (Memento) và đa biểu đồ so sánh xu hướng
 - **Hình 17.** Giao diện Tab 6: Nhật ký tính toán chi tiết từng bước (Calculation Logger & Formula Inspector)
 - **Hình 18.** Hộp thoại cảnh báo an toàn bùng nổ tổ hợp đối với tập dữ liệu dày đặc (Dense Dataset Warning)
-- **Hình 19.** Kết quả thực thi kiểm thử tự động 48/48 test cases thành công trên Maven Surefire
+- **Hình 19.** Kết quả thực thi kiểm thử tự động 63/63 test cases thành công trên Maven Surefire
 
 ---
 
@@ -314,7 +324,7 @@ Một lần nữa, chúng em xin kính chúc quý Thầy Cô luôn dồi dào s�
 - **Bảng 5.** Bảng đặc tả Use case Thực thi khai phá luồng dữ liệu DHOPM
 - **Bảng 6.** Bảng đặc tả Use case Cắt tỉa nhánh cây tìm kiếm DFS bằng cận trên DUBO
 - **Bảng 7.** Bảng đặc tả Use case Trực quan hóa cấu trúc danh sách Global DHO-List
-- **Bảng 8.** Bảng đặc tả Use case Hiển thị kết quả mẫu khai phá (Support $tx / \%$)
+- **Bảng 8.** Bảng đặc tả Use case Hiển thị kết quả mẫu khai phá (Support (tx / %))
 - **Bảng 9.** Bảng đặc tả Use case Khảo sát đối sánh Benchmark Sweep đa ngưỡng minSup
 - **Bảng 10.** Bảng đặc tả Use case Dựng biểu đồ xu hướng theo bài báo gốc (Figures 6, 11, 13)
 - **Bảng 11.** Bảng đặc tả Use case Khai phá Big Data qua Tson / SPMF Engine
@@ -505,7 +515,10 @@ Maven tự động hóa quy trình quản lý thư viện, biên dịch mã ngu�
 SPMF là thư viện khai phá dữ liệu nguồn mở hàng đầu thế giới bằng Java, cung cấp chuẩn cấu trúc tệp dữ liệu không gian giao dịch `.dat`. Dự án tích hợp SPMF Core Engine và mô đun cầu nối `TsonEngine` để xử lý các bộ dữ liệu khổng lồ hàng trăm ngàn dòng.
 
 ### 2.4.5. Git và GitHub
-Hệ thống quản lý mã nguồn Git giúp lưu vết toàn bộ tiến trình phát triển, phân nhánh chức năng và đồng bộ lên kho lưu trữ đám mây GitHub tại: `https://github.com/2312741-sudo/javanc.git`.
+Hệ thống quản lý mã nguồn Git giúp lưu vết toàn bộ tiến trình phát triển, phân nhánh chức năng và đồng bộ lên kho lưu trữ đám mây GitHub tại 2 repository phối hợp kỹ thuật:
+- **Kho lưu trữ Frontend (Giao diện trực quan hóa JavaFX & Network Client):** [https://github.com/2312741-sudo/javanc](https://github.com/2312741-sudo/javanc) (Nguyễn Thanh Tâm phụ trách).
+- **Kho lưu trữ Backend (Động cơ tính toán CLI & Máy chủ phân tán Big Data):** [https://github.com/Tson-dev/JVNC](https://github.com/Tson-dev/JVNC) (Nguyễn Hữu Trung Sơn phụ trách).
+- **Hợp đồng kết nối chính thức (Protocol 1):** [https://github.com/Tson-dev/JVNC/blob/main/CONTRACT.md](https://github.com/Tson-dev/JVNC/blob/main/CONTRACT.md).
 
 ---
 
@@ -705,11 +718,11 @@ graph LR
 | **Luồng chính** | 1) Người dùng mở Tab 1 "Mô Phỏng Cây DHO-Tree".<br/>2) Hệ thống sinh các đối tượng `DHONodeCard` cho từng mục theo thứ tự $G \prec B \prec A \prec C \prec D \prec E \prec F$.<br/>3) Hiển thị thông số Support, $DO$, $DUBO$ và danh sách entry $\langle TID, TLen \rangle$.<br/>4) Tô màu trạng thái: Xanh (Đạt DHOP), Đỏ (Cắt tỉa), Xám (Trung gian). |
 | **Luồng ngoại lệ** | Không có dữ liệu giao dịch $\to$ Hiển thị thông báo yêu cầu nạp dữ liệu. |
 
-*Bảng 8. Bảng đặc tả Use case Hiển thị kết quả mẫu khai phá (Support $tx / \%$)*
+*Bảng 8. Bảng đặc tả Use case Hiển thị kết quả mẫu khai phá (Support (tx / %))*
 
 | Thuộc tính | Chi tiết đặc tả |
 |:---|:---|
-| **Tên Use case** | **Hiển thị kết quả mẫu khai phá (Support $tx / \%$)** |
+| **Tên Use case** | **Hiển thị kết quả mẫu khai phá (Support (tx / %))** |
 | **Mô tả** | Trình bày bảng danh sách các mẫu DHOP tìm được kèm giá trị Support hiển thị cả số lượng giao dịch và tỷ lệ phần trăm chính xác. |
 | **Tác nhân chính** | Nhà nghiên cứu, Kỹ sư dữ liệu |
 | **Luồng chính** | 1) Người dùng mở Tab 2 "Bảng Kết Quả Chi Tiết" hoặc Tab 4 "Khai Phá Big Data".<br/>2) Hệ thống đổ dữ liệu vào `TableView`.<br/>3) Cột Support hiển thị định dạng: `X tx (Y.Y%)` (Ví dụ: `4 tx (50.0%)`).<br/>4) Người dùng có thể click vào tiêu đề cột để sắp xếp số học tự nhiên (Natural Sorting). |
@@ -859,14 +872,14 @@ graph LR
 | `isDHOP` | `boolean` | Đánh dấu mẫu có đạt chuẩn $DO \ge minSup$ hay không. |
 | `isPruned` | `boolean` | Đánh dấu mẫu có bị cắt tỉa bởi điều kiện $DUBO < minSup$ hay không. |
 
-*Bảng 22. Cấu trúc dữ liệu thực thể `DHOEntry`*
+*Bảng 23. Cấu trúc dữ liệu thực thể `DHOEntry`*
 
 | Trường | Kiểu dữ liệu | Mô tả ý nghĩa |
 |:---|:---|:---|
 | `tid` | `int` | Định danh giao dịch trong luồng dữ liệu ($1 \dots L$). |
 | `tlen` | `int` | Tổng số lượng mục có trong giao dịch đó ($|T_d|$). |
 
-*Bảng 23. Cấu trúc dữ liệu thực thể `MiningRunMemento`*
+*Bảng 24. Cấu trúc dữ liệu thực thể `MiningRunMemento`*
 
 | Trường | Kiểu dữ liệu | Mô tả ý nghĩa |
 |:---|:---|:---|
@@ -883,7 +896,7 @@ graph LR
 | `peakHeapMb` | `double` | Dung lượng bộ nhớ JVM Heap tiêu thụ tại đỉnh điểm (MB). |
 | `topPatterns` | `List<PatternResult>` | Danh sách toàn bộ các mẫu kết quả của lần chạy. |
 
-*Bảng 24. Cấu trúc dữ liệu thực thể `MinSupSweepResult` (Java Record)*
+*Bảng 25. Cấu trúc dữ liệu thực thể `MinSupSweepResult` (Java Record)*
 
 | Trường | Kiểu dữ liệu | Mô tả ý nghĩa |
 |:---|:---|:---|
@@ -895,7 +908,7 @@ graph LR
 | `runtimeMs` | `long` | Thời gian chạy tại mốc này (ms). |
 | `peakHeapMb` | `double` | Mức tiêu thụ bộ nhớ RAM Heap tại mốc này (MB). |
 
-*Bảng 25. Cấu trúc dữ liệu thực thể `CalculationLogEntry` (Java Record)*
+*Bảng 26. Cấu trúc dữ liệu thực thể `CalculationLogEntry` (Java Record)*
 
 | Trường | Kiểu dữ liệu | Mô tả ý nghĩa |
 |:---|:---|:---|
@@ -940,7 +953,7 @@ Nhằm đảm bảo sự phân tách tuyệt đối giữa nhóm phát triển F
   - Gắn nhãn trạng thái nguồn dữ liệu trực quan: `🟢 Nguồn: Backend (TCP 7079)` khi kết nối thành công với Backend, và `🟡 Nguồn: DEMO (In-Process Fallback)` khi chạy mô phỏng nội bộ. Chế độ Demo chỉ dành cho mục đích sư phạm trên lớp, được cô lập hoàn toàn và không đưa vào lịch sử benchmark.
   - Đặc tả chi tiết về cấu trúc dữ liệu, các trường nhận và giới hạn giao diện đã được chuẩn hóa trong tài liệu `docs/FE-RECEIVE-AND-USAGE.md`.
 
-## 3.5. Kiến Trúc Mạng TCP Socket Phân Tán và Giao Thức JSONL (Protocol 1)
+## 3.3. Kiến Trúc Mạng TCP Socket Phân Tán và Giao Thức JSONL (Protocol 1)
 
 Để đáp ứng yêu cầu kiến trúc phân tán trong khai phá dữ liệu lớn theo thỏa thuận `CONTRACT.md`, hệ thống xây dựng cơ chế giao tiếp Client - Server thông qua kết nối mạng TCP Socket trên cổng 7079, truyền tải dữ liệu theo giao thức dòng JSON (JSON Lines - JSONL). Tầng kiến trúc mạng bao gồm các thành phần trọng yếu:
 
@@ -953,7 +966,7 @@ Nhằm đảm bảo sự phân tách tuyệt đối giữa nhóm phát triển F
 - **`DhopmContractTcpServer` (Mock Server Tích Hợp)**: Đồ án tích hợp một máy chủ TCP Server nội bộ chạy ngầm với `CachedThreadPool`, cho phép ứng dụng tự đóng vai trò Backend khi chạy offline, trong môi trường kiểm thử CI/CD độc lập hoặc khi không có kết nối mạng tới máy bạn Sơn.
 - **Cơ Chế Phản Chiếu Dữ Liệu R14 (Data Mirroring via `fetch`)**: Khi quá trình khai phá phân tán hoàn tất với cờ `export=true`, Backend lưu tệp kết quả vào kho lưu trữ nội bộ và trả về `fileID`. Frontend lập tức kích hoạt lệnh `fetch <fileID>`, tự động tải nguyên văn tệp kết quả và lưu vào thư mục `mine/mine_<fileID>.txt`, đảm bảo tính minh bạch, có đối chứng chéo và không bị thất lạc dữ liệu.
 
-## 3.6. Cơ Chế Đảm Bảo Tính Toàn Vẹn Dữ Liệu & Khử Trùng Lặp Mẫu (Deduplication Engine)
+## 3.4. Cơ Chế Đảm Bảo Tính Toàn Vẹn Dữ Liệu & Khử Trùng Lặp Mẫu (Deduplication Engine)
 
 Trong quá trình tích hợp thực tế với Backend qua luồng JSON Lines từ xa, nhóm phát hiện nguy cơ sai lệch số liệu benchmark do Backend trả về kết quả ở cả hai mảng `patterns` (toàn cục) và `perVersion` (theo từng phiên bản trượt), dẫn đến hiện tượng các mẫu DHOP bị lặp lại nhiều lần (gấp đôi số lượng hàng hiển thị) và xuất hiện lỗi định dạng lồng ngoặc nhọn dạng `{{B, F}}`.
 
@@ -1015,7 +1028,7 @@ dhopm-visualizer/
 │   │   └── resources/vn/edu/dlu/dhopm/
 │   │       ├── view/main.fxml                # Bố cục giao diện 6 Tab JavaFX
 │   │       └── css/style.css                 # Bảng định dạng giao diện hiện đại
-│   └── test/java/vn/edu/dlu/dhopm/           # Bộ kiểm thử tự động 51 test cases (JUnit 5)
+│   └── test/java/vn/edu/dlu/dhopm/           # Bộ kiểm thử tự động 63 test casess (JUnit 5)
 └── docs/                                     # Toàn bộ tài liệu báo cáo học thuật & slide
 ```
 *Hình 12. Cấu trúc tổ chức mã nguồn dự án theo chuẩn Apache Maven*
@@ -1060,7 +1073,7 @@ Khi người dùng chọn một dòng bất kỳ trong bảng lịch sử, hệ 
 
 ### 4.3.1. Tab 1 & Tab 2: Khai phá Stream & Cây DHO-Tree
 - **Tab 1:** Sử dụng `FlowPane` để chứa các thẻ `DHONodeCard`. Mỗi thẻ hiển thị rõ mã mục, Support, giá trị $DO$, $DUBO$ và toàn bộ danh sách tuple $\langle TID, TLen \rangle$. Màu sắc thẻ tự động thay đổi dựa trên trạng thái cắt tỉa hoặc đạt chuẩn.
-- **Tab 2:** Sử dụng `TableView` với các cột: Mẫu $X$, $Support\ (tx / \% )$, $DO(X)$, $DUBO(X)$, Trạng thái, và Danh sách TIDs. Cột Support hiển thị cả số giao dịch và phần trăm chính xác theo công thức:
+- **Tab 2:** Sử dụng `TableView` với các cột: Mẫu $X$, Support (tx / %), $DO(X)$, $DUBO(X)$, Trạng thái, và Danh sách TIDs. Cột Support hiển thị cả số giao dịch và phần trăm chính xác theo công thức:
   $$\text{Relative Support } (\%) = \frac{\text{support}(X)}{N} \times 100\%$$
   Đồng thời, cột được cài đặt bộ so sánh số học `Comparator.comparingInt(...)` giúp việc sắp xếp cột hoạt động tự nhiên theo giá trị số thay vì thứ tự chuỗi chữ cái.
 
@@ -1099,11 +1112,12 @@ Tab 3 cung cấp giải pháp trực quan hóa toàn diện tương tự các h�
 
 # CHƯƠNG 5. KẾT QUẢ THỰC NGHIỆM VÀ ĐỐI SOÁT BÀI BÁO GỐC
 
-## 5.1. Bộ Kiểm Thử Tự Động 60 Test Cases (JUnit 5)
-Hệ thống áp dụng phương pháp kiểm thử hướng kiểm chứng (Test-Driven Verification) với tổng cộng **60 test cases** tự động được thực thi thông qua Maven Surefire Plugin. Tất cả các bài kiểm thử đều đạt kết quả tuyệt đối (**100% BUILD SUCCESS**):
+## 5.1. Bộ Kiểm Thử Tự Động 63 Test Cases (JUnit 5)
+Hệ thống áp dụng phương pháp kiểm thử hướng kiểm chứng (Test-Driven Verification) với tổng cộng **63 test cases** tự động được thực thi thông qua Maven Surefire Plugin. Tất cả các bài kiểm thử đều đạt kết quả tuyệt đối (**100% BUILD SUCCESS**):
 
 - **Lab1VerificationTest (8 tests)**: Xác minh tính toán thủ công độ đo DO, DUBO của các mẫu đơn và mẫu phức hợp theo dữ liệu Table 1.
 - **DHOPMEngineTest (10 tests)**: Kiểm tra 3 pha hoạt động của thuật toán, cơ chế thêm bớt giao dịch luồng, tính đúng đắn của danh sách DHOPs.
+- **ChartPaperVerificationTest (2 tests)**: Kiểm chứng tính đúng đắn các đường cong và số liệu đồ thị chuẩn theo bài báo gốc EAAI 2026 (Figure 2, Figure 6, Figure 11 và Figure 13).
 - **BridgeEngineTest (10 tests)**: Xác minh hợp đồng BridgeEngine, khả năng tráo đổi Runtime giữa hai Engine và cơ chế chuyển đổi dữ liệu an toàn.
 - **TsonBridgeIntegrationTest (6 tests)**: Đối soát 8 testcases chính quy giữa engine của Tâm và engine của Tson, kiểm tra độ đồng nhất kết quả.
 - **TsonToolsServiceTest (4 tests)**: Kiểm thử các công cụ thống kê tệp dữ liệu, trích xuất Top-10 mục và kiểm thử 8 trường hợp vàng TC1-TC8.
@@ -1118,30 +1132,31 @@ Hệ thống áp dụng phương pháp kiểm thử hướng kiểm chứng (Tes
 [INFO] -------------------------------------------------------
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
-[INFO] Running vn.edu.dlu.dhopm.core.Lab1VerificationTest (8 tests)    -> PASS [0.137 s]
-[INFO] Running vn.edu.dlu.dhopm.core.DHOPMEngineTest (10 tests)        -> PASS [0.016 s]
-[INFO] Running vn.edu.dlu.dhopm.core.MinSupSweepServiceTest (2 tests)  -> PASS [0.014 s]
-[INFO] Running vn.edu.dlu.dhopm.bridge.DhopmContractTcpClientTest (9)  -> PASS [0.012 s]
-[INFO] Running vn.edu.dlu.dhopm.bridge.DhopmContractTcpServerTest (2)  -> PASS [0.021 s]
-[INFO] Running vn.edu.dlu.dhopm.bridge.TsonBridgeIntegrationTest (6)  -> PASS [0.024 s]
-[INFO] Running vn.edu.dlu.dhopm.bridge.BridgeEngineTest (10 tests)     -> PASS [0.008 s]
-[INFO] Running vn.edu.dlu.dhopm.bridge.MiningProgressInfoTest (3 tests)-> PASS [0.004 s]
-[INFO] Running vn.edu.dlu.dhopm.bridge.TsonToolsServiceTest (4 tests)  -> PASS [0.026 s]
-[INFO] Running vn.edu.dlu.dhopm.history.MiningHistoryManagerTest (3)   -> PASS [0.002 s]
-[INFO] Running vn.edu.dlu.dhopm.log.CalculationLoggerTest (3 tests)    -> PASS [0.001 s]
+[INFO] Running vn.edu.dlu.dhopm.core.Lab1VerificationTest (8 tests)        -> PASS [0.138 s]
+[INFO] Running vn.edu.dlu.dhopm.core.DHOPMEngineTest (10 tests)            -> PASS [0.015 s]
+[INFO] Running vn.edu.dlu.dhopm.core.MinSupSweepServiceTest (2 tests)      -> PASS [0.018 s]
+[INFO] Running vn.edu.dlu.dhopm.core.ChartPaperVerificationTest (2 tests)  -> PASS [0.019 s]
+[INFO] Running vn.edu.dlu.dhopm.bridge.DhopmContractTcpClientTest (9 tests)-> PASS [0.019 s]
+[INFO] Running vn.edu.dlu.dhopm.bridge.DhopmContractTcpServerTest (3 tests)-> PASS [0.043 s]
+[INFO] Running vn.edu.dlu.dhopm.bridge.TsonBridgeIntegrationTest (6 tests) -> PASS [0.012 s]
+[INFO] Running vn.edu.dlu.dhopm.bridge.BridgeEngineTest (10 tests)         -> PASS [0.008 s]
+[INFO] Running vn.edu.dlu.dhopm.bridge.MiningProgressInfoTest (3 tests)    -> PASS [0.002 s]
+[INFO] Running vn.edu.dlu.dhopm.bridge.TsonToolsServiceTest (4 tests)      -> PASS [0.017 s]
+[INFO] Running vn.edu.dlu.dhopm.history.MiningHistoryManagerTest (3 tests) -> PASS [0.002 s]
+[INFO] Running vn.edu.dlu.dhopm.log.CalculationLoggerTest (3 tests)        -> PASS [0.002 s]
 [INFO] 
 [INFO] Results:
-[INFO] Tests run: 60, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 63, Failures: 0, Errors: 0, Skipped: 0
 [INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS (Total time: 2.145 s)
+[INFO] BUILD SUCCESS (Total time: 1.035 s)
 [INFO] ------------------------------------------------------------------------
 ```
-*Tỷ lệ thành công:* **60/60 ca kiểm thử đạt 100% Green**, minh chứng cho độ tin cậy và sự ổn định vượt trội của mã nguồn.
+*Tỷ lệ thành công:* **63/63 ca kiểm thử đạt 100% Green**, minh chứng cho độ tin cậy và sự ổn định vượt trội của mã nguồn.
 
 ## 5.2. Bộ dữ liệu thực nghiệm
 Hệ thống được thử nghiệm và đánh giá toàn diện trên các tập dữ liệu chuẩn:
 
-*Bảng 27. Tổng hợp các bộ dữ liệu thực nghiệm chuẩn bài báo*
+*Bảng 28. Tổng hợp các bộ dữ liệu thực nghiệm chuẩn bài báo*
 
 | Tên bộ dữ liệu | Số giao dịch ($|DB|$) | Số lượng mục khác nhau | Độ dài trung bình | Đặc tính phân bố |
 |:---|:---:|:---:|:---:|:---|
@@ -1154,7 +1169,7 @@ Hệ thống được thử nghiệm và đánh giá toàn diện trên các t�
 ## 5.3. Đối soát tính đúng đắn với công trình gốc (Golden Tests)
 Nhóm tiến hành đối soát chéo kết quả xuất ra của hệ thống phần mềm với kết quả tính toán lý thuyết và bảng kiểm thử vàng (Golden Test Cases) của bài báo EAAI 2026 trên tập `default.dat`:
 
-*Bảng 28. Ma trận đối soát kiểm thử Golden Test Cases (TC1 – TC8)*
+*Bảng 29. Ma trận đối soát kiểm thử Golden Test Cases (TC1 – TC8)*
 
 | Mã TC | Hệ số $f$ | Ngưỡng $\partial$ | Ngưỡng $minSup$ | Kỳ vọng bài báo gốc | Kết quả phần mềm | Đánh giá |
 |:---:|:---:|:---:|:---:|:---|:---|:---:|
@@ -1201,7 +1216,7 @@ Sau thời gian nghiêm túc nghiên cứu và triển khai, đồ án đã hoà
 1. **Về mặt học thuật**: Làm chủ lý thuyết học thuật quốc tế, nghiên cứu và chứng minh trọn vẹn mô hình Damped Sliding Window, độ đo Damped Occupancy ($DO$), tính đơn điệu chống suy giảm của cận trên $DUBO$ và cấu trúc dữ liệu nén Global DHO-List một lần quét từ bài báo EAAI 2026.
 2. **Về mặt kiến trúc phần mềm**: Vận dụng thành công **9 Mẫu thiết kế phần mềm GoF**, tạo nên một hệ thống mã nguồn có tính module hóa cao, tuân thủ nguyên lý SOLID, sẵn sàng bảo trì và tích hợp thêm các thuật toán mới.
 3. **Về mặt trải nghiệm người dùng**: Xây dựng thành công ứng dụng **DHOPM Stream Visualizer** đa nền tảng bằng JavaFX 21 với 6 Tab chức năng phong phú, chuyển đổi 100% câu lệnh terminal thành giao diện TableView native mượt mà, trực quan hóa cây DHO-Tree, quét Benchmark Sweep, theo dõi tiến độ mượt mà, lưu trữ lịch sử Memento và nhật ký tính toán từng bước Calculation Logger.
-4. **Về mặt kiểm chứng thực nghiệm & phân tán**: Đạt **60/60 ca kiểm thử tự động (100% Build Success)**, tích hợp thành công kiến trúc mạng phân tán TCP Client/Server (Protocol 1 JSONL), cơ chế tự động quét mạng LAN (32 threads), máy chủ Mock Server tích hợp, và thuật toán khử trùng lặp dữ liệu lớn với sai số $\Delta < 10^{-4}$.
+4. **Về mặt kiểm chứng thực nghiệm & phân tán**: Đạt **63/63 ca kiểm thử tự động (100% Build Success)**, tích hợp thành công kiến trúc mạng phân tán TCP Client/Server (Protocol 1 JSONL), cơ chế tự động quét mạng LAN (32 threads), máy chủ Mock Server tích hợp, và thuật toán khử trùng lặp dữ liệu lớn với sai số $\Delta < 10^{-4}$.
 
 ## 6.2. Hạn chế hiện tại
 - **Giới hạn bộ nhớ trên tập dữ liệu siêu lớn**: Đối với các tập dữ liệu có số lượng mục cực lớn (>100,000 items) như Kosarak, việc duyệt cây DFS ở ngưỡng $minSup$ cực thấp vẫn tiêu tốn nhiều bộ nhớ RAM.
@@ -1212,13 +1227,6 @@ Sau thời gian nghiêm túc nghiên cứu và triển khai, đồ án đã hoà
 - **Tích hợp Message Broker thời gian thực (Apache Kafka / RabbitMQ)**: Đóng gói phần mềm thành microservice nhận luồng giao dịch trực tiếp từ các sàn thương mại điện tử thực tế như Shopee, Tiki, Lazada.
 - **Mở rộng trên nền tảng phân tán (Apache Flink / Spark Streaming)**: Triển khai thuật toán trên cụm máy chủ phân tán (Distributed Cluster) để xử lý hàng triệu giao dịch mỗi giây trên môi trường đám mây (Cloud Computing).
 - **Hỗ trợ xuất báo cáo đa định dạng**: Bổ sung tính năng xuất kết quả khai phá và đồ thị tự động ra các tệp PDF, Excel và Word (.docx) chuyên nghiệp chỉ với một cú nhấp chuột.
-
-## 2. Hướng phát triển
-Nhóm đề xuất các hướng nâng cấp và mở rộng trong tương lai:
-1. **Nâng cấp động cơ BitSet DFS Engine:** Tối ưu hóa biểu diễn giao dịch bằng mảng bit và các phép toán logic cấp phần cứng (Bitwise AND) để gia tăng tốc độ khai phá lên gấp 5 đến 10 lần trên các tập dữ liệu cực lớn.
-2. **Tích hợp Message Broker thời gian thực (Apache Kafka / RabbitMQ):** Đóng gói phần mềm thành dịch vụ Microservice nhận luồng giao dịch trực tiếp từ các sàn thương mại điện tử thực tế như Shopee, Tiki, Lazada.
-3. **Mở rộng trên nền tảng phân tán (Apache Flink / Spark Streaming):** Triển khai thuật toán trên cụm máy chủ phân tán (Distributed Cluster) để xử lý hàng triệu giao dịch mỗi giây trên môi trường đám mây (Cloud Computing).
-4. **Hỗ trợ xuất báo cáo đa định dạng:** Bổ sung tính năng xuất kết quả khai phá và đồ thị tự động ra các tệp PDF, Excel và Word (.docx) chuyên nghiệp chỉ với một cú nhấp chuột.
 
 ---
 
@@ -1250,16 +1258,21 @@ Nhóm đề xuất các hướng nâng cấp và mở rộng trong tương lai:
 
 ### Bảng phân công trách nhiệm và khối lượng công việc
 
-*Bảng 29. Bảng phân công trách nhiệm và khối lượng công việc*
+*Bảng 30. Bảng phân công trách nhiệm và khối lượng công việc*
 
 | Họ và Tên | Vai trò | Nội dung công việc đảm nhiệm | Mức độ hoàn thành |
 |:---|:---|:---|:---:|
-| **Nguyễn Thanh Tâm**<br/>*(MSSV: 2312741)* | Trưởng nhóm | - Phân tích kiến trúc hệ thống MVC và áp dụng 9 Mẫu thiết kế phần mềm GoF.<br/>- Thiết kế và lập trình toàn bộ giao diện JavaFX 6 Tab trực quan hóa (`main.fxml`, `style.css`, `MainController.java`).<br/>- Cài đặt phân hệ Benchmark Sweep đa ngưỡng và hệ thống đồ thị đối sánh bài báo gốc (Fig 6, 11, 13).<br/>- Hiện thực hóa Memento Pattern quản lý lịch sử và Observer Pattern ghi nhật ký tính toán (`CalculationLogger`).<br/>- Xây dựng bộ 48 ca kiểm thử tự động JUnit 5 và viết báo cáo học thuật hoàn chỉnh. | **100%** |
+| **Nguyễn Thanh Tâm**<br/>*(MSSV: 2312741)* | Trưởng nhóm | - Phân tích kiến trúc hệ thống MVC và áp dụng 9 Mẫu thiết kế phần mềm GoF.<br/>- Thiết kế và lập trình toàn bộ giao diện JavaFX 6 Tab trực quan hóa (`main.fxml`, `style.css`, `MainController.java`).<br/>- Cài đặt phân hệ Benchmark Sweep đa ngưỡng và hệ thống đồ thị đối sánh bài báo gốc (Fig 6, 11, 13).<br/>- Hiện thực hóa Memento Pattern quản lý lịch sử và Observer Pattern ghi nhật ký tính toán (`CalculationLogger`).<br/>- Xây dựng bộ 63 ca kiểm thử tự động JUnit 5 và viết báo cáo học thuật hoàn chỉnh. | **100%** |
 | **Nguyễn Hữu Trung Sơn** | Thành viên | - Nghiên cứu cơ sở toán học thuật toán DHOPM và cấu trúc Global DHO-List một lần quét.<br/>- Hiện thực hóa thuật toán lõi `DHOPMEngine` và cơ chế cắt tỉa an toàn bằng cận trên DUBO.<br/>- Đóng gói và tích hợp động cơ Tson / SPMF Engine xử lý dữ liệu lớn.<br/>- Thực hiện các ca kiểm thử Golden Test Cases (TC1 – TC8) và đối soát với số liệu bài báo. | **100%** |
 
 ---
 
 ### Hướng dẫn cài đặt, biên dịch và vận hành ứng dụng
+
+#### Kho lưu trữ mã nguồn chính thức (Repositories):
+- **Frontend (UI Visualizer):** [https://github.com/2312741-sudo/javanc](https://github.com/2312741-sudo/javanc)
+- **Backend (Core Engine & CLI):** [https://github.com/Tson-dev/JVNC](https://github.com/Tson-dev/JVNC)
+- **Hợp đồng giao thức kết nối FE ↔ BE (CONTRACT.md):** [https://github.com/Tson-dev/JVNC/blob/main/CONTRACT.md](https://github.com/Tson-dev/JVNC/blob/main/CONTRACT.md)
 
 #### 1. Yêu cầu môi trường:
 - Hệ điều hành: macOS (Apple Silicon / Intel), Windows 10/11, hoặc Linux Ubuntu 20.04+.
@@ -1271,7 +1284,7 @@ Mở Terminal tại thư mục gốc của dự án và chạy lệnh:
 ```bash
 mvn clean test
 ```
-Hệ thống sẽ tự động biên dịch và thực thi 48 ca kiểm thử đơn vị. Kết quả đạt `BUILD SUCCESS`.
+Hệ thống sẽ tự động biên dịch và thực thi 63 ca kiểm thử tự động. Kết quả đạt `BUILD SUCCESS` (100% Green).
 
 #### 3. Khởi chạy ứng dụng đồ họa JavaFX:
 Chạy kịch bản khởi chạy đi kèm:
