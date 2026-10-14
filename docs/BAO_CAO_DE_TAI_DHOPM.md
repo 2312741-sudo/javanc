@@ -114,6 +114,7 @@
   3. *Tab 4 — Trung tâm Khai phá Big Data Tson/SPMF:* Hỗ trợ bộ dữ liệu thực tế lớn (retail, chess, mushroom), tích hợp thanh tiến trình %, nút Dừng an toàn (Thread Interruption), và ước tính thời gian hoàn thành (ETA).
   4. *Tab 5 — Lịch sử khai phá & Đa biểu đồ xu hướng:* Lưu trữ snapshot các lượt chạy bằng Memento Pattern, hỗ trợ khôi phục bảng kết quả và so sánh trực quan hiệu năng bộ nhớ, thời gian chạy.
   5. *Tab 6 — Nhật ký tính toán từng bước (Calculation Logger):* Ghi vết chi tiết từng công thức toán học, so sánh cận trên và lý do đưa ra quyết định cắt tỉa/giữ lại mẫu.
+  6. *Tab 7 — Phân tích minOcc & Cửa sổ suy giảm:* Trực quan hóa tương tác tham số minOcc — ngưỡng dưới Damped Occupancy, tính toán và biểu đồ kích thước cửa sổ $W = \lfloor\log_f(minOcc)\rfloor$.
 
 #### Kiến trúc hệ thống và Mẫu thiết kế chuẩn công nghiệp:
 - Ứng dụng đầy đủ **9 Mẫu Thiết Kế (Design Patterns)** chuẩn GoF (Bridge, Adapter, Strategy, Factory Method, Observer, Memento, Singleton, MVC, Template Method).
@@ -241,6 +242,7 @@ Một lần nữa, chúng em xin kính chúc quý Thầy Cô luôn dồi dào s�
     - [2.3.1. Độ đo Damped Occupancy (DO)](#231-độ-đo-damped-occupancy-do)
     - [2.3.2. Cận trên DUBO và tính chất cắt tỉa an toàn](#232-cận-trên-dubo-và-tính-chất-cắt-tỉa-an-toàn)
     - [2.3.3. Cấu trúc danh sách Global DHO-List một lần quét](#233-cấu-trúc-danh-sách-global-dho-list-một-lần-quét)
+    - [2.3.4. Tham số ngưỡng minOcc và cửa sổ suy giảm](#234-tham-số-ngưỡng-minocc-và-cửa-sổ-suy-giảm-damped-window)
   - [2.4. Công nghệ sử dụng](#24-công-nghệ-sử-dụng)
     - [2.4.1. Ngôn ngữ lập trình Java 21 / 25](#241-ngôn-ngữ-lập-trình-java-21--25)
     - [2.4.2. Framework JavaFX 21](#242-framework-javafx-21)
@@ -271,6 +273,7 @@ Một lần nữa, chúng em xin kính chúc quý Thầy Cô luôn dồi dào s�
     - [4.3.3. Tab 4: Phân hệ khai phá Big Data Tson / SPMF](#433-tab-4-phân-hệ-khai-phá-big-data-tson--spmf)
     - [4.3.4. Tab 5: Lịch sử khai phá và đa biểu đồ xu hướng](#434-tab-5-lịch-sử-khai-phá-và-đa-biểu-đồ-xu-hướng)
     - [4.3.5. Tab 6: Nhật ký tính toán chi tiết từng bước](#435-tab-6-nhật-ký-tính-toán-chi-tiết-từng-bước)
+    - [4.3.6. Tab 7: Phân tích minOcc & Cửa sổ suy giảm](#436-tab-7-phân-tích-minocc--cửa-sổ-suy-giảm-damped-window)
   - [4.4. Xử lý đa luồng bất đồng bộ và kiểm soát an toàn bộ nhớ](#44-xử-lý-đa-luồng-bất-đồng-bộ-và-kiểm-soát-an-toàn-bộ-nhớ)
 - [CHƯƠNG 5. KẾT QUẢ THỰC NGHIỆM VÀ ĐỐI SOÁT BÀI BÁO GỐC](#chương-5-kết-quả-thực-nghiệm-và-đối-soát-bài-báo-gốc)
   - [5.1. Bộ Kiểm Thử Tự Động 63 Test Cases (JUnit 5)](#51-bộ-kiểm-thử-tự-động-63-test-cases-junit-5)
@@ -490,6 +493,32 @@ trong đó $TID$ là định danh giao dịch và $|T_d|$ là độ dài giao d�
 | **DB2** | T8 | A, E, G | 3 | $0.9^0 = 1.0000$ |
 
 Cấu trúc danh sách sau khi đọc 8 giao dịch được sắp xếp theo thứ tự Support tăng dần: $G \prec B \prec A \prec C \prec D \prec E \prec F$. Cấu trúc này giảm thiểu hơn 78.5% bộ nhớ tiêu thụ so với việc lưu trữ toàn bộ chuỗi giao dịch thô.
+
+### 2.3.4. Tham số ngưỡng minOcc và cửa sổ suy giảm (Damped Window)
+
+Ngoài các tham số cốt lõi $f$ và $\partial$, thuật toán DHOPM bổ sung tham số **minOcc** — ngưỡng dưới của Damped Occupancy. Tham số này mang lại cơ chế kiểm soát kích thước cửa sổ trượt một cách chính xác về mặt toán học.
+
+**Định nghĩa:** Khi $DO(X, T_O) \le minOcc$, giao dịch $T_O$ được coi là không còn đóng góp giá trị thực sự và bị loại khỏi DHO-List, tránh tính toán lãng phí trên giá trị nhỏ hơn sai số máy tính ($\varepsilon \approx 10^{-12}$).
+
+**Mối quan hệ với hàm suy giảm:** Vì $DO(X, T_O) = O(X, T_O) \times f^{(T_L - T_O)}$ với $O(X, T_O) \in (0, 1]$, điều kiện $DO(X, T_O) \le minOcc$ tương đương $f^{(T_L - T_O)} \le minOcc$. Gọi $W = T_L - T_O$ là **kích thước cửa sổ trượt tự nhiên**:
+
+$$W = \left\lfloor \log_f(minOcc) \right\rfloor = \left\lfloor \frac{\ln(minOcc)}{\ln(f)} \right\rfloor$$
+
+Các giao dịch trong $[T_L - W, T_L]$ được giữ lại; giao dịch cũ hơn $W$ bị loại — tạo thành **Sliding Window tự nhiên** từ hai tham số $f$ và minOcc.
+
+*Bảng 2. Kích thước cửa sổ W theo các giá trị minOcc với $f = 0.90$ cố định*
+
+| minOcc | $W = \lfloor\ln(\text{minOcc})/\ln(f)\rfloor$ | $maxDO = f^W$ | Nhận xét |
+|:---:|:---:|:---:|:---|
+| $10^{-1}$ | 21 | 0.10940 | Cửa sổ nhỏ — ưu tiên dữ liệu mới |
+| $10^{-2}$ | 43 | 0.01054 | Cửa sổ vừa nhỏ |
+| $10^{-3}$ | 65 | 0.00090 | Cửa sổ trung bình |
+| $10^{-4}$ | 87 | 0.00008 | Cân bằng lịch sử và dữ liệu mới |
+| $10^{-6}$ | 131 | $\approx 0$ | Cửa sổ rộng — giữ nhiều lịch sử |
+
+**Ảnh hưởng của f và minOcc lên W:** (i) $f$ tăng → $f(x)$ giảm chậm hơn → $W$ tăng; (ii) minOcc nhỏ → cần nhiều bước hơn để $f^{(T_L-T_O)} \le minOcc$ → $W$ tăng.
+
+*Hình 2. Biểu đồ kích thước cửa sổ W theo minOcc — được hiện thực hóa tương tác trong Tab 6 của chương trình DHOPM Visualizer.*
 
 ## 2.4. Công nghệ sử dụng
 
@@ -1100,6 +1129,15 @@ Tab 3 cung cấp giải pháp trực quan hóa toàn diện tương tự các h�
 - Bảng `tblCalculationLogs` ghi vết chi tiết hàng ngàn phép tính toán học.
 - Thanh công cụ hỗ trợ lọc nhanh theo Pha (Phase 1, Phase 2, Phase 3), ô tìm kiếm từ khóa mẫu mục, nút Xóa nhật ký và nút Sao chép công thức vào Clipboard.
 - Vùng Formula Inspector bên dưới hiển thị tường minh biểu thức toán học LaTeX/Unicode phục vụ mục đích kiểm chứng học thuật và giảng dạy.
+
+### 4.3.6. Tab 7: Phân tích minOcc & Cửa sổ suy giảm (Damped Window)
+Tab mới bổ sung, hiện thực hóa hoàn toàn lý thuyết tham số **minOcc** và cửa sổ suy giảm (Mục 2.3.4):
+- **Ô nhập liệu tương tác:** Người dùng nhập $f$ và minOcc, bấm nút "Phân Tích Window" để tính toán ngay lập tức.
+- **Preset nhanh:** Ba mức "Chặt ($10^{-3}$)", "Chuẩn ($10^{-4}$)", "Rộng ($10^{-6}$)".
+- **Bốn thẻ KPI:** Kích thước cửa sổ $W$, giá trị $maxDO = f^W$, timeliness $1/W$, và công thức log đầy đủ.
+- **Biểu đồ đường:** Hai đường $W$ vs minOcc cho $f$ hiện tại và $f + 0.05$.
+- **Bảng so sánh:** 10 mức minOcc từ $10^{-1}$ đến $10^{-6}$, hiển thị $W$, $maxDO$, timeliness và nhận xét.
+- **Ô lý thuyết nhúng:** Giải thích ý nghĩa minOcc, công thức suy ra $W$, và quan hệ $f$ vs $W$.
 
 ## 4.4. Xử lý đa luồng bất đồng bộ và kiểm soát an toàn bộ nhớ
 - Để đảm bảo giao diện luôn mượt mà ở tốc độ 60 FPS, mọi tác vụ khai phá và quét benchmark đều được đóng gói trong `javafx.concurrent.Task<T>` chạy trên các luồng ngầm của `ForkJoinPool` hoặc `ExecutorService`.

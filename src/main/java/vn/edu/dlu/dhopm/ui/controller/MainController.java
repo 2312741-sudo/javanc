@@ -248,6 +248,41 @@ public class MainController implements Initializable {
     @FXML private TableColumn<CalculationLogEntry, String> colLogDecision;
     @FXML private TextArea txtLogDetail;
 
+    // ── Tab 6: Phân Tích minOcc & Cửa Sổ Suy Giảm ───────────────────────────
+    @FXML private TextField txtMinOccF;
+    @FXML private TextField txtMinOccThreshold;
+    @FXML private Button btnMinOccPreset1;
+    @FXML private Button btnMinOccPreset2;
+    @FXML private Button btnMinOccPreset3;
+    @FXML private Button btnMinOccAnalyze;
+    @FXML private Label lblMinOccW;
+    @FXML private Label lblMinOccMaxDO;
+    @FXML private Label lblMinOccTimeliness;
+    @FXML private Label lblMinOccFormula;
+    @FXML private LineChart<String, Number> lineChartMinOcc;
+    @FXML private TableView<MinOccRow> tblMinOccComparison;
+    @FXML private TableColumn<MinOccRow, String> colMinOccF;
+    @FXML private TableColumn<MinOccRow, String> colMinOccThresh;
+    @FXML private TableColumn<MinOccRow, String> colMinOccW;
+    @FXML private TableColumn<MinOccRow, String> colMinOccMaxDO;
+    @FXML private TableColumn<MinOccRow, String> colMinOccTimeliness;
+    @FXML private TableColumn<MinOccRow, String> colMinOccNote;
+    private final ObservableList<MinOccRow> minOccData = FXCollections.observableArrayList();
+
+    /** Model for minOcc analysis table rows. */
+    public static record MinOccRow(String f, String minOcc, String w, String maxDo, String timeliness, String note) {}
+
+    // ── Static minOcc computation ─────────────────────────────────────────────
+    /**
+     * Tính kích thước cửa sổ W từ hệ số suy giảm f và ngưỡng minOcc.
+     * Công thức: W = ⌊log_f(minOcc)⌋ = ⌊ln(minOcc)/ln(f)⌋
+     * Nguồn: aaa.md §2.3 "Hệ quả từ chứng minh (Window)"
+     */
+    public static int calcWindowSize(double f, double minOcc) {
+        if (f <= 0.0 || f >= 1.0 || minOcc <= 0.0 || minOcc >= 1.0) return 0;
+        return (int) Math.floor(Math.log(minOcc) / Math.log(f));
+    }
+
     // ── Backend Services ─────────────────────────────────────────────────────
     private DHOPMEngine tamEngine;
     private StreamSimulator streamSimulator;
@@ -295,6 +330,7 @@ public class MainController implements Initializable {
         initMiningHistoryViews();
         initCalculationLogView();
         initCharts();
+        initMinOccTab();
         initEventHandlers();
         loadInitialPaperData();
     }
@@ -306,6 +342,113 @@ public class MainController implements Initializable {
         if (lineChartDO != null) lineChartDO.setAnimated(false);
         if (lineChartHistory != null) lineChartHistory.setAnimated(false);
         if (barChartDistribution != null) barChartDistribution.setAnimated(false);
+        if (lineChartMinOcc != null) lineChartMinOcc.setAnimated(false);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TAB 6: minOcc Analysis — init & event handlers
+    // ─────────────────────────────────────────────────────────────────────────
+    private void initMinOccTab() {
+        if (tblMinOccComparison == null) return;
+
+        // Wire table columns
+        colMinOccF.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().f()));
+        colMinOccThresh.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().minOcc()));
+        colMinOccW.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().w()));
+        colMinOccMaxDO.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().maxDo()));
+        colMinOccTimeliness.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().timeliness()));
+        colMinOccNote.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().note()));
+        tblMinOccComparison.setItems(minOccData);
+
+        // Preset buttons
+        if (btnMinOccPreset1 != null) btnMinOccPreset1.setOnAction(e -> {
+            txtMinOccThreshold.setText("0.001"); runMinOccAnalysis();
+        });
+        if (btnMinOccPreset2 != null) btnMinOccPreset2.setOnAction(e -> {
+            txtMinOccThreshold.setText("0.0001"); runMinOccAnalysis();
+        });
+        if (btnMinOccPreset3 != null) btnMinOccPreset3.setOnAction(e -> {
+            txtMinOccThreshold.setText("0.000001"); runMinOccAnalysis();
+        });
+
+        // Main analyze button
+        if (btnMinOccAnalyze != null) btnMinOccAnalyze.setOnAction(e -> runMinOccAnalysis());
+
+        // Run once with defaults
+        runMinOccAnalysis();
+    }
+
+    /** Compute window analysis and update Tab 6 UI. */
+    private void runMinOccAnalysis() {
+        double f, minOcc;
+        try {
+            f = Double.parseDouble(txtMinOccF.getText().trim());
+            if (f <= 0.0 || f >= 1.0) throw new NumberFormatException("f out of range");
+        } catch (Exception e) {
+            f = 0.90;
+            txtMinOccF.setText("0.90");
+        }
+        try {
+            minOcc = Double.parseDouble(txtMinOccThreshold.getText().trim());
+            if (minOcc <= 0.0 || minOcc >= 1.0) throw new NumberFormatException("minOcc out of range");
+        } catch (Exception e) {
+            minOcc = 0.0001;
+            txtMinOccThreshold.setText("0.0001");
+        }
+
+        final double fFinal = f;
+        int w = calcWindowSize(f, minOcc);
+        double maxDo = Math.pow(f, w);
+        double timeliness = w > 0 ? 1.0 / w : 0.0;
+        String formula = String.format(Locale.US, "W = ⌊ln(%.6f) / ln(%.2f)⌋ = ⌊%.4f⌋ = %d", minOcc, f,
+                Math.log(minOcc) / Math.log(f), w);
+
+        // Update KPI labels
+        lblMinOccW.setText(w + " tx");
+        lblMinOccMaxDO.setText(String.format(Locale.US, "%.8f", maxDo));
+        lblMinOccTimeliness.setText(w > 0 ? String.format(Locale.US, "1/%d = %.4f", w, timeliness) : "—");
+        lblMinOccFormula.setText(formula);
+
+        // Build comparison table: vary minOcc over several magnitudes, keep f fixed
+        minOccData.clear();
+        double[] thresholds = {1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4, 5e-5, 1e-5, 1e-6};
+        for (double t : thresholds) {
+            int wt = calcWindowSize(fFinal, t);
+            double mdo = wt > 0 ? Math.pow(fFinal, wt) : 0.0;
+            double tim = wt > 0 ? 1.0 / wt : 0.0;
+            String note;
+            if (t >= 0.05) note = "Cửa sổ rất nhỏ — ưu tiên cực cao dữ liệu mới";
+            else if (t >= 0.001) note = "Cửa sổ nhỏ — phù hợp stream tốc độ cao";
+            else if (t >= 0.00001) note = "Cửa sổ vừa — cân bằng lịch sử & mới";
+            else note = "Cửa sổ lớn — giữ lịch sử lâu dài";
+            minOccData.add(new MinOccRow(
+                    String.format(Locale.US, "%.2f", fFinal),
+                    String.format(Locale.US, "%.1e", t),
+                    String.valueOf(wt),
+                    wt > 0 ? String.format(Locale.US, "%.8f", mdo) : "—",
+                    wt > 0 ? String.format(Locale.US, "%.5f", tim) : "—",
+                    note));
+        }
+
+        // Build line chart: W vs minOcc (logarithmic sweep)
+        if (lineChartMinOcc != null) {
+            lineChartMinOcc.getData().clear();
+            XYChart.Series<String, Number> series = new XYChart.Series<>();
+            series.setName("W (f=" + String.format(Locale.US, "%.2f", fFinal) + ")");
+            for (double t : thresholds) {
+                int wt = calcWindowSize(fFinal, t);
+                series.getData().add(new XYChart.Data<>(String.format(Locale.US, "%.0e", t), wt));
+            }
+            // Add a second series for a different f to compare
+            double f2 = Math.min(fFinal + 0.05, 0.99);
+            XYChart.Series<String, Number> series2 = new XYChart.Series<>();
+            series2.setName("W (f=" + String.format(Locale.US, "%.2f", f2) + ")");
+            for (double t : thresholds) {
+                int wt2 = calcWindowSize(f2, t);
+                series2.getData().add(new XYChart.Data<>(String.format(Locale.US, "%.0e", t), wt2));
+            }
+            lineChartMinOcc.getData().addAll(series, series2);
+        }
     }
 
     // ── Panel 0: Engine Selector ─────────────────────────────────────────────

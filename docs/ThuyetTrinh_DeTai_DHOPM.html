@@ -310,7 +310,7 @@
       <span class="title-nav">Đồ Án: DHOPM Stream Visualizer | Sinh viên: Nguyễn Thanh Tâm (2312741)</span>
     </div>
     <div class="controls">
-      <span id="slide-counter" style="font-size: 13px; color: var(--text-muted); margin-right: 8px;">1 / 13</span>
+      <span id="slide-counter" style="font-size: 13px; color: var(--text-muted); margin-right: 8px;">1 / 15</span>
       <button class="btn btn-outline" onclick="toggleNotes()">📝 Lời Thoại (Notes)</button>
       <button class="btn btn-outline" onclick="prevSlide()">◀ Trước</button>
       <button class="btn" onclick="nextSlide()">Tiếp ▶</button>
@@ -834,6 +834,109 @@
           <div style="font-size: 12px; color: #34D399; font-weight: 600; margin-top: 6px;">
             ★ Trích xuất đúng 2 mẫu DHOP duy nhất: {AE} (DO=1.2601) và {F} (DO=1.2553)!
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 7b: minOcc VÀ CỬA SỔ SUY GIẢM (DAMPED WINDOW) -->
+    <div class="slide" data-notes="Một đóng góp bổ sung quan trọng được hiện thực hóa trong chương trình là tham số minOcc — ngưỡng dưới của Damped Occupancy. Khi DO(X,T) của một transaction T giảm xuống dưới ngưỡng minOcc, transaction đó được coi là không còn đóng góp thực sự và bị loại khỏi DHO-List. Điều thú vị là từ minOcc ta có thể suy ra kích thước cửa sổ W = floor(log_f(minOcc)) — một cửa sổ trượt tự nhiên. f nhỏ → cửa sổ nhỏ, ưu tiên dữ liệu mới; f lớn hoặc minOcc nhỏ → cửa sổ rộng, giữ nhiều lịch sử hơn. Tab 6 của chương trình trực quan hóa hoàn toàn quan hệ này qua biểu đồ tương tác và bảng so sánh.">
+      <div class="slide-tag">CHƯƠNG 2: THAM SỐ minOcc</div>
+      <h2 class="slide-title">7b. Tham Số minOcc &amp; Cửa Sổ Suy Giảm (Damped Window)</h2>
+      <div class="grid-2">
+        <!-- Left: Theory -->
+        <div class="card">
+          <div class="card-title">📖 Định Nghĩa &amp; Ý Nghĩa</div>
+          <p><strong>minOcc</strong> là ngưỡng dưới của Damped Occupancy:</p>
+          <p style="text-align:center; font-size:1.1em; margin:10px 0; color:#38BDF8; font-family:monospace;">
+            DO(X,T) ≤ minOcc  →  loại T khỏi DHO-List
+          </p>
+          <p>Vì <code>DO(X,T) = O(X,T) × f<sup>(TL−T)</sup></code>, khi T càng cũ thì <code>f<sup>(TL−T)</sup></code> càng nhỏ đến mức chạm ngưỡng <strong>minOcc</strong>.</p>
+          <hr style="border-color:#334155; margin:10px 0;">
+          <p><strong>🪟 Cửa Sổ W xuất hiện tự nhiên:</strong></p>
+          <p style="text-align:center; font-size:1.25em; margin:10px 0; color:#FBBF24; font-family:monospace;">
+            W = ⌊log<sub>f</sub>(minOcc)⌋ = ⌊ln(minOcc) / ln(f)⌋
+          </p>
+          <p>Các transaction trong cửa sổ W được coi là có giá trị; transaction cũ hơn W bị loại → <strong>Sliding Window tự nhiên</strong>.</p>
+        </div>
+        <!-- Right: Visualization table + formula -->
+        <div class="card">
+          <div class="card-title">📊 Ví Dụ Minh Họa (f = 0.90)</div>
+          <table style="width:100%; border-collapse:collapse; font-size:0.88em;">
+            <thead>
+              <tr style="background:#1e40af; color:white;">
+                <th style="padding:5px 8px; text-align:center;">minOcc</th>
+                <th style="padding:5px 8px; text-align:center;">W (cửa sổ)</th>
+                <th style="padding:5px 8px; text-align:center;">maxDO = f<sup>W</sup></th>
+                <th style="padding:5px 8px; text-align:left;">Nhận xét</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="background:#1e293b;">
+                <td style="padding:5px 8px; text-align:center; color:#f87171;">1e-1</td>
+                <td style="padding:5px 8px; text-align:center; font-weight:bold; color:#38BDF8;">21</td>
+                <td style="padding:5px 8px; text-align:center; color:#34D399;">0.1094</td>
+                <td style="padding:5px 8px; color:#94A3B8;">Cửa sổ nhỏ — dữ liệu mới</td>
+              </tr>
+              <tr style="background:#273344;">
+                <td style="padding:5px 8px; text-align:center; color:#f87171;">1e-3</td>
+                <td style="padding:5px 8px; text-align:center; font-weight:bold; color:#38BDF8;">65</td>
+                <td style="padding:5px 8px; text-align:center; color:#34D399;">0.0009</td>
+                <td style="padding:5px 8px; color:#94A3B8;">Cửa sổ trung bình</td>
+              </tr>
+              <tr style="background:#1e293b;">
+                <td style="padding:5px 8px; text-align:center; color:#f87171;">1e-4</td>
+                <td style="padding:5px 8px; text-align:center; font-weight:bold; color:#38BDF8;">87</td>
+                <td style="padding:5px 8px; text-align:center; color:#34D399;">0.0001</td>
+                <td style="padding:5px 8px; color:#94A3B8;">Cân bằng lịch sử &amp; mới</td>
+              </tr>
+              <tr style="background:#273344;">
+                <td style="padding:5px 8px; text-align:center; color:#f87171;">1e-6</td>
+                <td style="padding:5px 8px; text-align:center; font-weight:bold; color:#38BDF8;">131</td>
+                <td style="padding:5px 8px; text-align:center; color:#34D399;">0.0000</td>
+                <td style="padding:5px 8px; color:#94A3B8;">Cửa sổ rộng — nhiều lịch sử</td>
+              </tr>
+            </tbody>
+          </table>
+          <hr style="border-color:#334155; margin:12px 0;">
+          <!-- SVG: W vs minOcc sketch -->
+          <svg viewBox="0 0 400 100" style="width:100%; height:100px;">
+            <defs>
+              <marker id="arrowM" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#94A3B8"/>
+              </marker>
+            </defs>
+            <!-- Axes -->
+            <line x1="30" y1="80" x2="390" y2="80" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arrowM)"/>
+            <line x1="30" y1="80" x2="30" y2="5" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arrowM)"/>
+            <text x="200" y="98" fill="#94A3B8" font-size="10" text-anchor="middle">minOcc (nhỏ → lớn)</text>
+            <text x="12" y="42" fill="#94A3B8" font-size="10" text-anchor="middle" transform="rotate(-90,12,42)">W</text>
+            <!-- Curve: W decreases as minOcc increases (log scale: left=small minOcc=large W) -->
+            <polyline points="40,12 80,24 140,38 200,50 260,60 320,68 370,75"
+                      fill="none" stroke="#38BDF8" stroke-width="2.5"/>
+            <!-- Labels -->
+            <text x="42" y="10" fill="#FBBF24" font-size="9">1e-6</text>
+            <text x="362" y="73" fill="#FBBF24" font-size="9">1e-1</text>
+            <text x="200" y="45" fill="#34D399" font-size="9" text-anchor="middle">W = ⌊ln(minOcc)/ln(f)⌋</text>
+          </svg>
+          <p style="font-size:0.85em; color:#94A3B8; margin-top:4px; text-align:center;">
+            🪟 Tab 6 trong chương trình cho phép tương tác trực tiếp với đồ thị này
+          </p>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top:12px;">
+        <div class="card" style="background:linear-gradient(135deg,#1e3a5f,#1e293b); border-color:#38BDF8;">
+          <div class="card-title" style="color:#38BDF8;">⚙️ Ảnh Hưởng Của f &amp; minOcc Lên W</div>
+          <p>• <strong>f tăng</strong> (gần 1.0) → f(x) giảm chậm hơn → khoảng cách để đến minOcc tăng → <strong>W tăng</strong></p>
+          <p>• <strong>minOcc nhỏ</strong> (gần 0) → cần nhiều bước hơn để f<sup>(TL−T)</sup> ≤ minOcc → <strong>W tăng</strong></p>
+          <p>• <strong>Điều chỉnh linh hoạt:</strong> Chỉ cần thay đổi 2 tham số f &amp; minOcc, ta kiểm soát hoàn toàn kích thước cửa sổ trượt</p>
+        </div>
+        <div class="card" style="background:linear-gradient(135deg,#14532d,#1e293b); border-color:#34D399;">
+          <div class="card-title" style="color:#34D399;">🪟 Tab 6: Phân Tích minOcc &amp; Window Trong Chương Trình</div>
+          <p>• <strong>Input:</strong> Nhập f và minOcc → bấm "Phân Tích Window"</p>
+          <p>• <strong>KPI Cards:</strong> W, maxDO, Timeliness (1/W), công thức log</p>
+          <p>• <strong>Biểu đồ:</strong> W vs minOcc cho 2 đường f khác nhau</p>
+          <p>• <strong>Bảng so sánh:</strong> 10 mức minOcc từ 1e-1 đến 1e-6</p>
+          <p>• <strong>Preset nhanh:</strong> Chặt (1e-3) / Chuẩn (1e-4) / Rộng (1e-6)</p>
         </div>
       </div>
     </div>

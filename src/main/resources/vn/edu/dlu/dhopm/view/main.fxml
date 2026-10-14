@@ -559,6 +559,121 @@
                 </VBox>
             </Tab>
 
+            <!-- TAB 6: PHÂN TÍCH minOcc & CỬA SỔ SUY GIẢM -->
+            <Tab text="🪟 Phân Tích minOcc &amp; Window">
+                <VBox spacing="12.0">
+                    <padding>
+                        <Insets top="14.0" right="16.0" bottom="14.0" left="16.0"/>
+                    </padding>
+
+                    <!-- HEADER BANNER -->
+                    <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-padding: 10 14 10 14; -fx-background-color: #eff6ff; -fx-background-radius: 8; -fx-border-color: #bfdbfe; -fx-border-radius: 8;">
+                        <Label text="🪟 PHÂN TÍCH minOcc VÀ CỬA SỔ SUY GIẢM (DAMPED WINDOW)" style="-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #1e40af;"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label text="W = ⌊log_f(minOcc)⌋" style="-fx-font-family: 'Menlo','Monaco','Courier New',monospace; -fx-font-size: 13px; -fx-text-fill: #2563eb; -fx-font-weight: bold; -fx-background-color: #dbeafe; -fx-padding: 4 10 4 10; -fx-background-radius: 6;"/>
+                    </HBox>
+
+                    <!-- THEORY DESCRIPTION BOX -->
+                    <VBox spacing="6.0" style="-fx-padding: 10 14 10 14; -fx-background-color: #f0fdf4; -fx-background-radius: 8; -fx-border-color: #86efac; -fx-border-radius: 8;">
+                        <Label text="📖 Lý Thuyết:" style="-fx-font-weight: bold; -fx-font-size: 11.5px; -fx-text-fill: #14532d;"/>
+                        <Label wrapText="true" style="-fx-font-size: 11px; -fx-text-fill: #166534;"
+                               text="• minOcc là ngưỡng dưới của Damped Occupancy — DO(X,T) ≤ minOcc thì transaction T bị loại khỏi DHO-List."/>
+                        <Label wrapText="true" style="-fx-font-size: 11px; -fx-text-fill: #166534;"
+                               text="• Vì DO(X,T) = O(X,T) × f^(TL−T), khi f^(TL−T) ≤ minOcc thì T quá cũ. Tập hợp các T còn giá trị tạo thành cửa sổ W."/>
+                        <Label wrapText="true" style="-fx-font-size: 11px; -fx-text-fill: #166534;"
+                               text="• Công thức: W = ⌊log_f(minOcc)⌋ = ⌊ln(minOcc) / ln(f)⌋. f tăng → W tăng; minOcc nhỏ → W tăng."/>
+                    </VBox>
+
+                    <!-- CONTROLS ROW -->
+                    <HBox spacing="14.0" alignment="CENTER_LEFT" style="-fx-padding: 10 14 10 14; -fx-background-color: #ffffff; -fx-background-radius: 8; -fx-border-color: #e2e8f0; -fx-border-radius: 8;">
+                        <!-- f input -->
+                        <VBox spacing="3.0">
+                            <Label text="Hệ số suy giảm (f):" style="-fx-font-size: 11.5px; -fx-font-weight: bold; -fx-text-fill: #334155;"/>
+                            <TextField fx:id="txtMinOccF" text="0.90" promptText="0.0 < f ≤ 1.0" prefWidth="110.0" prefHeight="30.0"
+                                       style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-background-color: #eff6ff; -fx-border-color: #93c5fd; -fx-border-radius: 4; -fx-background-radius: 4;"/>
+                            <Label text="f ∈ (0, 1]" style="-fx-font-size: 10px; -fx-text-fill: #64748b;"/>
+                        </VBox>
+
+                        <!-- minOcc input -->
+                        <VBox spacing="3.0">
+                            <Label text="Ngưỡng minOcc:" style="-fx-font-size: 11.5px; -fx-font-weight: bold; -fx-text-fill: #334155;"/>
+                            <TextField fx:id="txtMinOccThreshold" text="0.0001" promptText="VD: 0.001" prefWidth="120.0" prefHeight="30.0"
+                                       style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-background-color: #eff6ff; -fx-border-color: #93c5fd; -fx-border-radius: 4; -fx-background-radius: 4;"/>
+                            <Label text="minOcc ∈ (0, 1)" style="-fx-font-size: 10px; -fx-text-fill: #64748b;"/>
+                        </VBox>
+
+                        <!-- Preset buttons -->
+                        <VBox spacing="4.0">
+                            <Label text="Preset nhanh:" style="-fx-font-size: 11px; -fx-text-fill: #64748b;"/>
+                            <HBox spacing="5.0">
+                                <Button fx:id="btnMinOccPreset1" text="Chặt (1e-3)" prefHeight="28.0"
+                                        style="-fx-font-size: 10px; -fx-background-color: #e0e7ff; -fx-text-fill: #3730a3; -fx-background-radius: 5; -fx-cursor: hand;"/>
+                                <Button fx:id="btnMinOccPreset2" text="Chuẩn (1e-4)" prefHeight="28.0"
+                                        style="-fx-font-size: 10px; -fx-background-color: #dcfce7; -fx-text-fill: #15803d; -fx-background-radius: 5; -fx-cursor: hand;"/>
+                                <Button fx:id="btnMinOccPreset3" text="Rộng (1e-6)" prefHeight="28.0"
+                                        style="-fx-font-size: 10px; -fx-background-color: #fef3c7; -fx-text-fill: #92400e; -fx-background-radius: 5; -fx-cursor: hand;"/>
+                            </HBox>
+                        </VBox>
+
+                        <Region HBox.hgrow="ALWAYS"/>
+
+                        <!-- Action button -->
+                        <Button fx:id="btnMinOccAnalyze" text="📊 Phân Tích Window" prefHeight="40.0"
+                                style="-fx-background-color: linear-gradient(to right,#2563eb,#1d4ed8); -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px; -fx-background-radius: 7; -fx-cursor: hand; -fx-padding: 6 18 6 18;"/>
+                    </HBox>
+
+                    <!-- RESULT KPI CARDS -->
+                    <HBox spacing="12.0">
+                        <VBox styleClass="kpi-card" HBox.hgrow="ALWAYS" spacing="4.0">
+                            <Label text="🪟 KÍCH THƯỚC CỬA SỔ (W)" styleClass="kpi-title"/>
+                            <Label fx:id="lblMinOccW" text="—" styleClass="kpi-value" style="-fx-text-fill: #2563eb;"/>
+                            <Label text="Số transaction còn giá trị" styleClass="help-text"/>
+                        </VBox>
+                        <VBox styleClass="kpi-card" HBox.hgrow="ALWAYS" spacing="4.0">
+                            <Label text="📉 maxDO (max decay)" styleClass="kpi-title"/>
+                            <Label fx:id="lblMinOccMaxDO" text="—" styleClass="kpi-value" style="-fx-text-fill: #059669;"/>
+                            <Label text="f^W — giá trị DO nhỏ nhất vẫn giữ" styleClass="help-text"/>
+                        </VBox>
+                        <VBox styleClass="kpi-card" HBox.hgrow="ALWAYS" spacing="4.0">
+                            <Label text="⚡ ĐỘ SỐT (TIMELINESS)" styleClass="kpi-title"/>
+                            <Label fx:id="lblMinOccTimeliness" text="—" styleClass="kpi-value" style="-fx-text-fill: #ea580c;"/>
+                            <Label text="1/W — mức ưu tiên dữ liệu mới" styleClass="help-text"/>
+                        </VBox>
+                        <VBox styleClass="kpi-card" HBox.hgrow="ALWAYS" spacing="4.0">
+                            <Label text="📐 CÔNG THỨC LOG" styleClass="kpi-title"/>
+                            <Label fx:id="lblMinOccFormula" text="—" styleClass="kpi-value" style="-fx-font-size: 11px; -fx-text-fill: #7c3aed; -fx-font-family: 'Menlo','Monaco',monospace;"/>
+                            <Label text="ln(minOcc) / ln(f)" styleClass="help-text"/>
+                        </VBox>
+                    </HBox>
+
+                    <!-- CHART: W vs minOcc -->
+                    <LineChart fx:id="lineChartMinOcc" VBox.vgrow="ALWAYS" styleClass="trend-chart"
+                               title="Kích Thước Cửa Sổ W theo minOcc (với f cố định)">
+                        <xAxis><CategoryAxis fx:id="axisMinOccX" label="Giá trị minOcc (log scale)"/></xAxis>
+                        <yAxis><NumberAxis fx:id="axisMinOccY" label="Kích thước cửa sổ W (số transaction)"/></yAxis>
+                    </LineChart>
+
+                    <!-- TABLE: Comparison -->
+                    <VBox spacing="4.0" prefHeight="200.0">
+                        <Label text="📋 Bảng So Sánh: W theo các giá trị minOcc khác nhau (f cố định)"
+                               style="-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #334155;"/>
+                        <TableView fx:id="tblMinOccComparison" VBox.vgrow="ALWAYS" styleClass="results-table">
+                            <columns>
+                                <TableColumn fx:id="colMinOccF" text="f (suy giảm)" prefWidth="120.0" style="-fx-alignment: CENTER; -fx-font-weight: bold;"/>
+                                <TableColumn fx:id="colMinOccThresh" text="minOcc" prefWidth="130.0" style="-fx-alignment: CENTER; -fx-font-weight: bold;"/>
+                                <TableColumn fx:id="colMinOccW" text="W (window)" prefWidth="120.0" style="-fx-alignment: CENTER-RIGHT; -fx-font-weight: bold; -fx-text-fill: #2563eb;"/>
+                                <TableColumn fx:id="colMinOccMaxDO" text="maxDO = f^W" prefWidth="140.0" style="-fx-alignment: CENTER-RIGHT; -fx-text-fill: #059669;"/>
+                                <TableColumn fx:id="colMinOccTimeliness" text="Timeliness (1/W)" prefWidth="150.0" style="-fx-alignment: CENTER-RIGHT; -fx-text-fill: #ea580c;"/>
+                                <TableColumn fx:id="colMinOccNote" text="Nhận xét" prefWidth="200.0"/>
+                            </columns>
+                            <columnResizePolicy>
+                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                            </columnResizePolicy>
+                        </TableView>
+                    </VBox>
+                </VBox>
+            </Tab>
+
             <!-- TAB 5: NHẬT KÝ CHI TIẾT TỪNG BƯỚC TÍNH TOÁN -->
             <Tab text="📜 Nhật Ký &amp; Phép Tính">
                 <VBox spacing="10.0">
