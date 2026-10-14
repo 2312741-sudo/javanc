@@ -21,7 +21,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 
 case "$1" in
     test)
-        echo "🧪 Dang chay 18 Unit Tests xac thuc Lab 1..."
+        echo "🧪 Dang chay 61 Unit Tests (JUnit 5)..."
         mvn test
         ;;
     verify|runner)

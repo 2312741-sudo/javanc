@@ -141,18 +141,18 @@
                     <!-- Actions directly matching Tson's README commands -->
                     <Label text="Chạy lệnh (không cần terminal):" styleClass="field-label" style="-fx-font-weight: bold;"/>
 
-                    <Button fx:id="btnTsonGolden" text="🏆 Chạy TestKit Vàng (Golden TC1-8)" maxWidth="Infinity" prefHeight="34.0" styleClass="btn-purple" style="-fx-background-color: #7c3aed; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 6;"/>
+                    <HBox spacing="6.0">
+                        <Button fx:id="btnTsonGolden" text="🏆 TestKit Vàng (TC1-8)" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="32.0" styleClass="btn-purple" style="-fx-background-color: #7c3aed; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-cursor: hand; -fx-background-radius: 6; -fx-padding: 6 8 6 8;"/>
+                        <Button fx:id="btnTsonInspect" text="📊 Thống kê (Inspect)" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="32.0" styleClass="btn-emerald" style="-fx-font-size: 11px; -fx-padding: 6 8 6 8;"/>
+                    </HBox>
 
                     <HBox spacing="6.0">
-                        <Button fx:id="btnTsonInspect" text="📊 Thống kê (Inspect)" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="32.0" styleClass="btn-emerald"/>
-                        <Button fx:id="btnTsonDetail" text="🔬 Top DO (Detail)" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="32.0" styleClass="btn-indigo"/>
+                        <Button fx:id="btnTsonDetail" text="🔬 Top DO (Detail)" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="32.0" styleClass="btn-indigo" style="-fx-font-size: 11px; -fx-padding: 6 8 6 8;"/>
+                        <Button fx:id="btnTsonStop" text="🛑 Dừng" disable="true" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="32.0" style="-fx-background-color: #dc2626; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-cursor: hand; -fx-background-radius: 6; -fx-padding: 6 8 6 8;"/>
                     </HBox>
 
-                    <!-- Nút Mining to nhất và ở dưới cùng -->
-                    <HBox spacing="8.0">
-                        <Button fx:id="btnTsonMine" text="🚀 Khai Phá Dataset (Mine)" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="48.0" style="-fx-background-color: linear-gradient(to right, #1d4ed8, #2563eb); -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13.5px; -fx-cursor: hand; -fx-background-radius: 8; -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.45), 8, 0, 0, 3);"/>
-                        <Button fx:id="btnTsonStop" text="🛑 Dừng" disable="true" prefHeight="48.0" prefWidth="90.0" style="-fx-background-color: #dc2626; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12.5px; -fx-cursor: hand; -fx-background-radius: 8;"/>
-                    </HBox>
+                    <!-- Nút Mining dài nhất và to nhất ở dưới cùng (Full width 100%) -->
+                    <Button fx:id="btnTsonMine" text="🚀 KHAI PHÁ DATASET (MINE)" maxWidth="Infinity" prefHeight="52.0" styleClass="btn-primary" style="-fx-background-color: linear-gradient(to right, #1d4ed8, #2563eb); -fx-text-fill: white; -fx-font-weight: 900; -fx-font-size: 14px; -fx-cursor: hand; -fx-background-radius: 8; -fx-effect: dropshadow(gaussian, rgba(37,99,235,0.45), 10, 0, 0, 3);"/>
                 </VBox>
 
                 <!-- PANEL 1: THAM SO THUAT TOAN (TEXT INPUTS ONLY - NO SLIDERS) -->

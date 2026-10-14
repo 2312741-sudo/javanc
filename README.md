@@ -270,6 +270,21 @@ classDiagram
    - Hỗ trợ nạp các tập dữ liệu FIMI chuẩn: `chess.dat`, `retail.dat`, `mushroom.dat`, `connect.dat`, `pumsb.dat`.
    - Có nút **🛑 Dừng Khai Phá (Stop Mining)** tức thời và tính toán **ETA thời gian còn lại** theo thời gian thực.
    - Cảnh báo bùng nổ tổ hợp (Dense explosion confirmation) khi chọn tập dữ liệu dày đặc với số giao dịch nhỏ.
+6. **Bộ Điều Khiển Tson CLI Trực Quan Hóa (Panel 0.5 Tson Tools) & Tối Ưu Hóa UI:**
+   - **Bố cục nút bấm công thái học:** Nút **`🚀 Khai Phá Dataset (Mine)`** được thiết kế to nhất (chiều cao 48px, chuyển sắc xanh gradient nổi bật, hiệu ứng đổ bóng mờ) đặt ở vị trí dưới cùng thuận tiện thao tác nhất, bên cạnh nút **`🛑 Dừng`**.
+   - Nút **`🏆 Chạy TestKit Vàng (Golden TC1-8)`** đặt ở vị trí trên cùng, một chạm đối chiếu tức thì 8 trường hợp kiểm thử vàng của bài báo gốc.
+   - Các nút công cụ bổ trợ: **`📊 Thống kê (Inspect)`** & **`🔬 Top DO (Detail)`** phân tích sâu tần suất và phân phối các mục.
+   - **Cơ chế ẩn/hiện trường `minOcc` tự động theo phiên bản CLI:**
+     - Khi chọn phiên bản `v1`: Hệ thống tự động ẩn trường nhập `minOcc` (do v1 không sử dụng minOcc theo hợp đồng), đồng thời ô `Giới hạn (limit)` tự động co giãn 100% chiều ngang.
+     - Khi chọn phiên bản `v2` hoặc `v3`: Hệ thống tự động hiển thị trường nhập `minOcc (v2/v3)` để thiết lập ngưỡng tần suất phụ.
+7. **Tích Hợp TCP Backend Hợp Đồng V1 (Contract Protocol 1) & Quét minSup Đa Luồng:**
+   - Hỗ trợ kết nối Backend qua cổng TCP Socket `localhost:7079` với cơ chế nhận sự kiện trực tuyến (Event Streaming JSON Lines).
+   - Tự động bắt tay xác thực (Handshake Verification) trước khi thực thi quét dải minSup hoặc khai phá dataset.
+   - **Tái sử dụng kết nối bền vững (Persistent Connection Reuse):** Trong suốt tiến trình quét 5–10 mốc minSup, hệ thống duy trì một socket TCP duy nhất, tránh đóng/mở kết nối liên tục gây nghẽn socket.
+   - **Tích hợp Mock TCP Server nội bộ:** Hỗ trợ nút bật/tắt Mock Server trực tiếp trên UI, cho phép kiểm thử và chạy offline hoàn toàn độc lập.
+8. **Tự Động Cập Nhật Biểu Đồ & Chuyển Tab Trực Quan:**
+   - Sau khi hoàn thành khai phá (Mine), hệ thống tự động cập nhật biểu đồ DO chi tiết các mẫu DHOP và tự chuyển sang Tab đối chiếu lịch sử để người dùng xem ngay kết quả.
+   - Quá trình Quét minSup (Sweep) tự động vẽ và cập nhật tức thời 4 biểu đồ chuẩn bài báo (Figure 4, 6, 11, 13).
 
 ---
 
@@ -280,14 +295,14 @@ classDiagram
 | **JDK** | Java 17+ (Khuyên dùng Java 25) | Hỗ trợ Records, Switch Expressions |
 | **Apache Maven** | 3.8+ | Build tool chính |
 | **JavaFX** | 21.0.2 | Giao diện đồ họa Desktop |
-| **JUnit** | 5.10.2 | Kiểm thử tự động (46 tests) |
+| **JUnit** | 5.10.2 | Kiểm thử tự động (61 unit tests chuẩn hóa) |
 
 ### 🚀 Khởi Chạy Ứng Dụng:
 
 ```bash
 cd dhopm-visualizer
 
-# 1. Chạy toàn bộ 46 Unit Tests
+# 1. Chạy toàn bộ 61 Unit Tests
 ./run.sh test
 
 # 2. In bảng đối chiếu kết quả thực nghiệm Lab 1 vs Lab 2
@@ -338,14 +353,20 @@ dhopm-visualizer/
 │   ├── main/
 │   │   ├── java/vn/edu/dlu/dhopm/
 │   │   │   ├── Main.java                       # Entry point ứng dụng
-│   │   │   ├── bridge/                         # ★ Bridge & Adapter Layer
+│   │   │   ├── bridge/                         # ★ Bridge & Adapter Layer (TCP Contract & Local)
 │   │   │   │   ├── BridgeEngine.java           # Interface hợp đồng chung (Bridge)
-│   │   │   │   ├── EngineMode.java             # Enum chiến lược (Strategy)
+│   │   │   │   ├── EngineMode.java             # Enum chiến lược (Strategy: TAM, TSON_LOCAL, TCP)
 │   │   │   │   ├── EngineFactory.java          # Factory Method tạo engine
-│   │   │   │   ├── TamSimulationBridge.java    # Adapter bọc DHOPMEngine
+│   │   │   │   ├── TamSimulationBridge.java    # Adapter bọc DHOPMEngine của Tâm
 │   │   │   │   ├── TsonV1Bridge.java           # Adapter bọc MiningEngine Tson
-│   │   │   │   ├── TsonToolsService.java       # Dịch vụ khai phá & thống kê FIMI
-│   │   │   │   └── MiningProgressInfo.java     # ETA & tiến độ mining
+│   │   │   │   ├── TsonTcpContractBridge.java  # Adapter kết nối Backend qua TCP Socket
+│   │   │   │   ├── DhopmContractTcpClient.java # TCP Client Protocol 1 (Streaming, Persistent)
+│   │   │   │   ├── DhopmContractTcpServer.java # Mock TCP Server tích hợp sẵn (Test/Offline)
+│   │   │   │   ├── TsonToolsService.java       # Dịch vụ khai phá, inspect, top-DO FIMI
+│   │   │   │   ├── MiningProgressInfo.java     # ETA & tiến độ mining
+│   │   │   │   ├── GoldenRow.java              # Model dữ liệu bảng Golden TestKit
+│   │   │   │   ├── TopItemStat.java            # Dữ liệu phân tích tần suất Item
+│   │   │   │   └── TableFormatter.java         # Tiện ích định dạng bảng ASCII
 │   │   │   ├── history/                        # ★ Memento Pattern
 │   │   │   │   ├── MiningRunMemento.java       # Snapshot kết quả từng lượt mining
 │   │   │   │   └── MiningHistoryManager.java   # Caretaker & Singleton quản lý lịch sử
@@ -353,27 +374,34 @@ dhopm-visualizer/
 │   │   │   │   ├── CalculationLogEntry.java    # Record nhật ký phép tính chi tiết
 │   │   │   │   └── CalculationLogger.java      # Singleton & Observer ghi log
 │   │   │   ├── core/                           # Thuật toán cốt lõi & Template Method
-│   │   │   │   ├── DHOPMEngine.java            # Quy trình 3 pha DHOPM
+│   │   │   │   ├── DHOPMEngine.java            # Quy trình 3 pha DHOPM One-Scan
 │   │   │   │   ├── DUBOCalculator.java         # Tính toán cận trên DUBO
+│   │   │   │   ├── MinSupSweepService.java     # Quét dải minSup đa luồng (Local + TCP)
 │   │   │   │   ├── StreamSimulator.java        # Giả lập luồng dữ liệu thời gian thực
-│   │   │   │   └── DatasetLoader.java          # Nạp dữ liệu Table 1 và stream
+│   │   │   │   ├── DatasetLoader.java          # Nạp dữ liệu Table 1 và stream
+│   │   │   │   └── Lab1VerificationRunner.java # Runner in bảng đối chiếu Lab 1 & 2
 │   │   │   ├── model/                          # Data Models (Records)
 │   │   │   │   ├── Entry.java                  # Record <TID, TLen>
 │   │   │   │   ├── Transaction.java            # Giao dịch luồng
 │   │   │   │   ├── DHONode.java                # Nút trong DHO-List
 │   │   │   │   ├── DHOList.java                # Cấu trúc Global DHO-List
-│   │   │   │   └── PatternResult.java          # Kết quả khai phá từng mẫu
+│   │   │   │   ├── PatternResult.java          # Kết quả khai phá từng mẫu
+│   │   │   │   └── MinSupSweepPoint.java       # Điểm số liệu biểu đồ Figure 4, 6, 11, 13
 │   │   │   ├── event/                          # Observer Pattern Interfaces
 │   │   │   │   ├── StreamListener.java         # Sự kiện luồng dữ liệu mới
 │   │   │   │   └── MiningListener.java         # Sự kiện khai phá hoàn tất
 │   │   │   └── ui/                             # Giao diện JavaFX (MVC Pattern)
 │   │   │       ├── DHOPMApplication.java       # Khởi tạo Stage & Scene
-│   │   │       ├── controller/MainController.java # Controller điều khiển 5 Tabs
+│   │   │       ├── controller/MainController.java # Controller điều khiển toàn bộ giao diện
 │   │   │       └── component/DHONodeCard.java  # Thẻ card hiển thị node DHO
 │   │   └── resources/vn/edu/dlu/dhopm/
-│   │       ├── view/main.fxml                  # Layout FXML 5 Tabs
-│   │       └── css/style.css                   # Định kiểu giao diện CSS
-│   └── test/java/vn/edu/dlu/dhopm/             # 46 Unit Tests (JUnit 5)
+│   │       ├── view/main.fxml                  # Layout FXML tối ưu hóa công thái học
+│   │       └── css/style.css                   # Định kiểu giao diện CSS hiện đại
+│   └── test/java/vn/edu/dlu/dhopm/             # 61 Unit Tests (11 Suites, JUnit 5)
+│       ├── bridge/                             # Tests Bridge, TCP Client, TCP Server, Tools
+│       ├── core/                               # Tests DHOPMEngine, SweepService, Lab1
+│       ├── history/                            # Tests Memento Manager
+│       └── log/                                # Tests CalculationLogger
 ├── docs/                                       # Báo cáo và slide thuyết trình
 │   ├── BAO_CAO_DE_TAI_DHOPM.md
 │   └── ThuyetTrinh_DeTai_DHOPM.html
