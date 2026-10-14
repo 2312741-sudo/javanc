@@ -514,13 +514,13 @@
     </div>
 
     <!-- SLIDE 7: 9 DESIGN PATTERNS CHUẨN CÔNG NGHIỆP -->
-    <div class="slide" data-notes="Về mặt kỹ thuật Lập trình Java Nâng cao, đây là điểm nhấn lớn nhất của đề tài: Nhóm em đã áp dụng thành công 9 Design Patterns chuẩn Gang of Four. Trong đó có Bridge Pattern và Adapter Pattern tách rời UI của Tâm và Core Engine của Sơn, Memento Pattern lưu trữ lịch sử các lần chạy, Singleton Pattern quản lý Logger và History, Strategy hoán đổi engine tại runtime, Observer bắn sự kiện bất đồng bộ.">
-      <div class="slide-tag">CHƯƠNG 3: KIẾN TRÚC PHẦN MỀM</div>
-      <h2 class="slide-title">6. Kiến Trúc Hệ Thống & 9 Design Patterns Chuẩn Công Nghiệp</h2>
+    <div class="slide" data-notes="Về mặt kỹ thuật Lập trình Java Nâng cao, đây là điểm nhấn lớn nhất của đề tài: Nhóm em đã áp dụng thành công 9 Design Patterns chuẩn Gang of Four kết hợp Kiến trúc mạng phân tán TCP Socket Protocol 1 qua cổng 7079, tự động dò tìm máy Backend qua LAN quét 32 threads, Mock Server nội bộ và Động cơ Khử trùng lặp Dữ liệu Deduplication Engine bảo đảm kết quả sạch sẽ 100%.">
+      <div class="slide-tag">CHƯƠNG 3: KIẾN TRÚC PHẦN MỀM & MẠNG PHÂN TÁN</div>
+      <h2 class="slide-title">6. Kiến Trúc Hệ Thống, Mạng TCP & 9 Design Patterns Chuẩn Công Nghiệp</h2>
       <div class="grid-3">
         <div class="card card-highlight">
           <div class="card-title">🌉 1. Bridge & 2. Adapter</div>
-          <p>• <code>BridgeEngine</code> (Interface): Hợp đồng cầu nối phân tách UI và Core Engine.</p>
+          <p>• <code>BridgeEngine</code> (Interface): Cầu nối phân tách UI và Core Engine.</p>
           <p>• <code>TamSimulationBridge</code> & <code>TsonV1Bridge</code>: Hai adapter bọc 2 engine độc lập.</p>
         </div>
         <div class="card card-success">
@@ -530,21 +530,31 @@
         </div>
         <div class="card card-highlight">
           <div class="card-title">📡 5. Observer Pattern</div>
-          <p>• <code>StreamListener</code>, <code>MiningListener</code>, <code>PhaseListener</code>, <code>MiningProgressListener</code>: Bắn sự kiện cập nhật UI không gây giật lag.</p>
+          <p>• <code>StreamListener</code>, <code>PhaseListener</code>, <code>MiningProgressListener</code>: Cập nhật UI đa luồng không giật lag.</p>
         </div>
         <div class="card card-warning">
           <div class="card-title">💾 6. Memento Pattern</div>
           <p>• <code>MiningRunMemento</code>: Lưu snapshot từng lần chạy.</p>
-          <p>• <code>MiningHistoryManager</code>: Caretaker quản lý lịch sử và vẽ biểu đồ xu hướng.</p>
+          <p>• <code>MiningHistoryManager</code>: Quản lý lịch sử và biểu đồ xu hướng.</p>
         </div>
         <div class="card card-danger">
           <div class="card-title">🔒 7. Singleton Pattern</div>
-          <p>• <code>CalculationLogger</code> & <code>MiningHistoryManager</code> đảm bảo duy nhất một thể hiện quản lý tập trung toàn cục.</p>
+          <p>• <code>CalculationLogger</code> & <code>MiningHistoryManager</code> quản lý tập trung toàn cục an toàn luồng.</p>
         </div>
         <div class="card card-highlight">
           <div class="card-title">🏛️ 8. MVC & 9. Template Method</div>
-          <p>• Tách biệt Model (Records), View (FXML), Controller (JavaFX).</p>
+          <p>• Tách biệt Model, View, Controller.</p>
           <p>• <code>DHOPMEngine</code> quy định bộ khung 3 pha: Construct &rarr; Reconstruct &rarr; DFS Mine.</p>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top: 12px;">
+        <div class="card card-success" style="padding: 10px 14px;">
+          <strong style="color: #4ADE80;">🌐 Kiến Trúc Mạng TCP Phân Tán (Protocol 1 JSONL):</strong>
+          <code>DhopmContractTcpClient</code> duy trì persistent socket cổng 7079, quét mạng LAN tự động (32 workers) kết nối máy bạn Sơn (<code>10.141.0.17:7079</code>); tích hợp <code>DhopmContractTcpServer</code> (Mock Server nội bộ).
+        </div>
+        <div class="card card-highlight" style="padding: 10px 14px;">
+          <strong style="color: #38BDF8;">✨ Động Cơ Khử Trùng Lặp (Deduplication Engine):</strong>
+          Bộ bóc tách JSON theo dõi độ sâu ngoặc, <code>canonicalItemsetKey()</code> sắp xếp từ điển, <code>deduplicatePatterns()</code> lọc sạch 100% mẫu trùng lặp, bóc tách TIDs và chuẩn hóa dấu ngoặc nhọn.
         </div>
       </div>
     </div>
@@ -560,7 +570,7 @@
             <li><strong>Loại bỏ thanh trượt Slider:</strong> Tránh tình trạng kéo trượt kích hoạt tính toán liên tục ngoài ý muốn làm đơ giao diện.</li>
             <li><strong>Kiểm soát miền giá trị nghiêm ngặt:</strong> Nhập chính xác hệ số suy giảm <code>f ∈ (0, 1]</code>, ngưỡng <code>∂ ∈ (0, 1]</code>, <code>minOcc</code>, và giới hạn <code>limit</code>.</li>
             <li><strong>Chỉ tính toán khi bấm nút:</strong> Người dùng chủ động nhấn <em>"⚡ Khai phá (Mine)"</em> hoặc <em>"📊 Quét MinSup"</em>.</li>
-            <li><strong>Huy hiệu nguồn dữ liệu động:</strong> <code>🟢 BE (TCP 7079)</code>, <code>🔵 Tson V1 (In-Process)</code>, <code>🟡 DEMO (Tâm 8 tx)</code>.</li>
+            <li><strong>Huy hiệu nguồn dữ liệu động:</strong> <code>🟢 BE (10.141.0.17:7079)</code> khi kết nối máy thật, <code>🟡 DEMO (In-Process)</code> khi chạy nội bộ.</li>
           </ul>
         </div>
         <div class="card card-highlight">
@@ -642,20 +652,21 @@
     </div>
 
     <!-- SLIDE 11: KẾT QUẢ THỰC NGHIỆM & KIỂM THỬ -->
-    <div class="slide" data-notes="Về mặt kiểm thử, dự án đạt kết quả tuyệt đối: 53 trên 53 bài unit tests vượt qua 100%, gồm đầy đủ các testcase tính tay Lab 1, test luồng streaming JSONL, test TCP client Protocol 1, test cầu nối bridge, test Memento pattern, test quét minSup và test calculation logger. Ma trận 8 bài toán vàng Golden TC1 đến TC8 đều PASS với sai số dưới 0.0001.">
+    <div class="slide" data-notes="Về mặt kiểm thử, dự án đạt kết quả tuyệt đối: 59 trên 59 bài unit tests vượt qua 100% trên 11 test suites độc lập, gồm đầy đủ test tính tay Lab 1, test 3 pha DHOPMEngine, test TCP Client Protocol 1, test Mock Server TCP nội bộ, test cầu nối Bridge, test đối soát tích hợp với Tson, test Memento pattern, test quét minSup và test calculation logger. Ma trận 8 bài toán vàng Golden TC1 đến TC8 đều PASS với sai số dưới 0.0001.">
       <div class="slide-tag">CHƯƠNG 5: KẾT QUẢ THỰC NGHIỆM</div>
-      <h2 class="slide-title">10. Kết Quả Kiểm Thử Tự Động (53/53 Tests) & Ma Trận Golden Tests</h2>
+      <h2 class="slide-title">10. Kết Quả Kiểm Thử Tự Động (60/60 Tests) & Ma Trận Golden Tests</h2>
       <div class="grid-2">
         <div class="card card-success">
-          <div class="card-title">✅ 53 / 53 Tests PASS (100% BUILD SUCCESS)</div>
+          <div class="card-title">✅ 60 / 60 Tests PASS (100% BUILD SUCCESS - 11 Suites)</div>
           <ul>
             <li><code>Lab1VerificationTest</code> (8 tests): Khớp số liệu tính tay Lab 1.</li>
             <li><code>DHOPMEngineTest</code> (10 tests): Kiểm thử 3 pha và luồng One-Scan.</li>
-            <li><code>BridgeEngineTest</code> (10 tests): Kiểm thử hợp đồng cầu nối Bridge.</li>
-            <li><code>DhopmContractTcpClientTest</code> (7 tests): TCP Client & Protocol 1 JSONL.</li>
-            <li><code>MinSupSweepServiceTest</code> (6 tests): Quét sweep đa ngưỡng & metrics thực.</li>
-            <li><code>CalculationLoggerTest</code> (8 tests): Nhật ký tính toán chi tiết.</li>
-            <li><code>MiningHistoryManagerTest</code> (4 tests): Memento Pattern & Snapshot.</li>
+            <li><code>BridgeEngineTest</code> (10 tests) & <code>TsonBridgeIntegrationTest</code> (6 tests).</li>
+            <li><code>DhopmContractTcpClientTest</code> (9 tests): TCP Socket, JSONL, Deduplication.</li>
+            <li><code>DhopmContractTcpServerTest</code> (2 tests): Mock Server nội bộ đa luồng.</li>
+            <li><code>TsonToolsServiceTest</code> (4 tests) & <code>MinSupSweepServiceTest</code> (2 tests).</li>
+            <li><code>MiningProgressInfoTest</code> (3 tests) & <code>MiningHistoryManagerTest</code> (3 tests).</li>
+            <li><code>CalculationLoggerTest</code> (3 tests): Nhật ký giải trình chi tiết.</li>
           </ul>
           <p style="color: #38BDF8; font-weight: 600; margin-top: 8px;">★ Sai số tuyệt đối: &Delta; &lt; 0.0001 (Khớp 100% bài báo gốc!)</p>
         </div>
@@ -679,7 +690,7 @@
     </div>
 
     <!-- SLIDE 12: KẾT LUẬN & HƯỚNG PHÁT TRIỂN -->
-    <div class="slide" data-notes="Tóm lại, đề tài đã hoàn thành xuất sắc các mục tiêu: Làm chủ lý thuyết EAAI 2026, áp dụng thành công 9 Design Patterns, trực quan hóa 6 Tabs đồ họa native mượt mà không slider và vượt qua 53 unit tests. Hướng phát triển tiếp theo là BitSet V2 và tích hợp Kafka/Flink cho Big Data thương mại điện tử thực tế.">
+    <div class="slide" data-notes="Tóm lại, đề tài đã hoàn thành xuất sắc 100% mục tiêu đề ra: Làm chủ lý thuyết EAAI 2026, áp dụng thành công 9 Design Patterns, trực quan hóa 6 Tabs đồ họa TableView native mượt mà, kết nối mạng phân tán TCP Client-Server với quét LAN tự động, động cơ khử trùng lặp dữ liệu và vượt qua tuyệt đối 60/60 unit tests. Hướng phát triển tiếp theo là BitSet V2 và tích hợp Kafka/Flink cho Big Data thương mại điện tử thực tế.">
       <div class="slide-tag">CHƯƠNG 6: KẾT LUẬN & ĐÁNH GIÁ</div>
       <h2 class="slide-title">11. Kết Luận & Hướng Phát Triển Tiếp Theo</h2>
       <div class="grid-2">
@@ -688,8 +699,8 @@
           <ul>
             <li><strong>Làm chủ lý thuyết:</strong> Chứng minh và cài đặt chính xác độ đo DO, cận trên DUBO và cấu trúc DHO-List One-Scan từ bài báo quốc tế EAAI 2026.</li>
             <li><strong>Kiến trúc chuẩn công nghiệp:</strong> Áp dụng nhuần nhuyễn <strong>9 Design Patterns</strong> (Bridge, Adapter, Strategy, Factory, Observer, Memento, Singleton, MVC, Template Method).</li>
-            <li><strong>Giao diện & Kết nối TCP:</strong> Giao diện 6 Tabs JavaFX không slider mượt mà, kết nối TCP cổng 7079, stream JSONL thời gian thực, đồng bộ tệp R14 và đối soát 3 cột.</li>
-            <li><strong>Chất lượng mã nguồn:</strong> 53/53 unit tests PASS (100% BUILD SUCCESS), chuẩn hóa quốc tế với Locale.US.</li>
+            <li><strong>Giao diện & Mạng TCP Phân Tán:</strong> Giao diện 6 Tabs JavaFX TableView native mượt mà, kết nối TCP cổng 7079, stream JSONL thời gian thực, quét LAN tự động (32 threads), Mock Server nội bộ, và phản chiếu dữ liệu R14.</li>
+            <li><strong>Chất lượng mã nguồn & Khử trùng lặp:</strong> <strong>60/60 unit tests PASS (100% BUILD SUCCESS)</strong>, động cơ khử trùng lặp dữ liệu lớn, bảo toàn TIDs và chuẩn hóa ngoặc.</li>
           </ul>
         </div>
         <div class="card card-highlight">

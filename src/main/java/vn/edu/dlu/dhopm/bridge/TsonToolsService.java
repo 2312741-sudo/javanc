@@ -416,8 +416,8 @@ public class TsonToolsService {
             ));
         }
 
-        // Sắp xếp DO giảm dần
-        uiPatterns.sort((a, b) -> Double.compare(b.doValue(), a.doValue()));
+        // Khử trùng lặp (Deduplicate) và sắp xếp DO giảm dần
+        List<PatternResult> cleanPatterns = DhopmContractTcpClient.deduplicatePatterns(uiPatterns);
 
         // Ghi nhật ký vào CalculationLogger
         vn.edu.dlu.dhopm.log.CalculationLogger.getInstance().log(
@@ -428,8 +428,8 @@ public class TsonToolsService {
                 String.format("Tổng thời gian: %d ms", totalMs),
                 "⚡ HOÀN TẤT"
         );
-        for (int i = 0; i < Math.min(15, uiPatterns.size()); i++) {
-            PatternResult pr = uiPatterns.get(i);
+        for (int i = 0; i < Math.min(15, cleanPatterns.size()); i++) {
+            PatternResult pr = cleanPatterns.get(i);
             vn.edu.dlu.dhopm.log.CalculationLogger.getInstance().log(
                     "Tson Mẫu DHOP",
                     pr.pattern(),
@@ -442,7 +442,7 @@ public class TsonToolsService {
         }
 
         return new MineExecutionResult(
-            uiPatterns,
+            cleanPatterns,
             result,
             cMs,
             rMs,
@@ -450,7 +450,7 @@ public class TsonToolsService {
             totalMs,
             peakHeapMb,
             result.totalTransactions(),
-            result.patterns().size(),
+            cleanPatterns.size(),
             log.toString()
         );
     }

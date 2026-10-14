@@ -225,9 +225,8 @@ public class TsonV1Bridge implements BridgeEngine {
             uiList.add(new PatternResult(patternStr, doValue, dubo, support, isDHOP, isPruned, tidList));
         }
 
-        // Sắp xếp DO giảm dần
-        uiList.sort((a, b) -> Double.compare(b.doValue(), a.doValue()));
-        return uiList;
+        // Khử trùng lặp (Deduplicate) và sắp xếp DO giảm dần
+        return DhopmContractTcpClient.deduplicatePatterns(uiList);
     }
 
     private String phaseDisplayName(Phase phase) {

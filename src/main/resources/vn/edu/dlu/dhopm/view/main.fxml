@@ -58,12 +58,58 @@
                     </HBox>
                 </VBox>
 
+                <!-- PANEL 0.1: TCP BACKEND TSON CONNECTION (IP & PORT) -->
+                <VBox fx:id="boxTcpConfig" spacing="8.0" styleClass="panel-card" style="-fx-background-color: #f0fdf4; -fx-border-color: #86efac; -fx-border-width: 1.5;">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="🌐 KẾT NỐI MÁY TSON (TCP 7079)" styleClass="panel-title" style="-fx-text-fill: #166534; -fx-font-weight: bold;"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="lblTcpQuickStatus" text="Chưa kết nối" styleClass="status-badge"
+                               style="-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-font-size: 10px;"/>
+                    </HBox>
+
+                    <!-- Host & Port input -->
+                    <HBox spacing="6.0" alignment="CENTER_LEFT">
+                        <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                            <Label text="Địa chỉ IP máy Tson:" styleClass="field-label-sub"/>
+                            <TextField fx:id="txtBackendHost" text="127.0.0.1" promptText="VD: 10.141.0.45 hoặc 127.0.0.1" prefHeight="28.0"
+                                       style="-fx-font-size: 11px; -fx-font-weight: bold;"/>
+                        </VBox>
+                        <VBox spacing="2.0" prefWidth="65.0">
+                            <Label text="Cổng:" styleClass="field-label-sub"/>
+                            <TextField fx:id="txtBackendPort" text="7079" promptText="7079" prefHeight="28.0"
+                                       style="-fx-font-size: 11px; -fx-alignment: CENTER;"/>
+                        </VBox>
+                    </HBox>
+
+                    <!-- Action buttons -->
+                    <HBox spacing="6.0">
+                        <Button fx:id="btnTestTcp" text="🔗 Thử kết nối" HBox.hgrow="ALWAYS" maxWidth="Infinity" prefHeight="28.0"
+                                styleClass="btn-outline" style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #166534; -fx-border-color: #86efac;"/>
+                        <Button fx:id="btnScanLan" text="🔍 Quét LAN" prefHeight="28.0"
+                                styleClass="btn-outline" style="-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #1e40af; -fx-border-color: #bfdbfe;"/>
+                    </HBox>
+
+                    <!-- Server CLI version indicator -->
+                    <HBox alignment="CENTER_LEFT" spacing="6.0" style="-fx-padding: 1 0 1 0;">
+                        <Label text="Phiên bản CLI máy chủ:" styleClass="field-label-sub" style="-fx-font-size: 10.5px;"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="lblTcpCliVersion" text="v1" styleClass="stat-number" style="-fx-font-size: 10.5px; -fx-text-fill: #166534; -fx-font-weight: bold;"/>
+                    </HBox>
+
+                    <!-- Local server toggle fallback -->
+                    <Button fx:id="btnToggleLocalServer" text="⚡ Bật Server nội bộ (Nếu Tson chưa bật máy)" maxWidth="Infinity" prefHeight="26.0"
+                            style="-fx-background-color: #e0e7ff; -fx-text-fill: #3730a3; -fx-font-size: 10.5px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;"/>
+
+                    <Label fx:id="lblTcpDetailMsg" text="Nhập IP máy bạn Sơn trên WiFi rồi bấm 'Thử kết nối'." wrapText="true"
+                           styleClass="help-text" style="-fx-text-fill: #15803d; -fx-font-size: 10px;"/>
+                </VBox>
+
                 <!-- PANEL 0.5: TSON FIMI DATASETS & TOOLS -->
                 <VBox spacing="10.0" styleClass="panel-card" style="-fx-border-color: #cbd5e1; -fx-border-width: 1.5;">
                     <HBox alignment="CENTER_LEFT" spacing="6.0">
                         <Label text="📦 TẬP DỮ LIỆU FIMI (TSON)" styleClass="panel-title"/>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <Label text="V1 CLI" styleClass="status-badge" style="-fx-background-color: #ede9fe; -fx-text-fill: #7c3aed;"/>
+                        <Label fx:id="lblTsonVersionBadge" text="V1 CLI" styleClass="status-badge" style="-fx-background-color: #ede9fe; -fx-text-fill: #7c3aed;"/>
                     </HBox>
 
                     <!-- ComboBox Dataset -->
@@ -72,17 +118,23 @@
                         <ComboBox fx:id="cbTsonDataset" maxWidth="Infinity" prefHeight="30.0"/>
                     </VBox>
 
-                    <!-- Limit & Browse -->
+                    <!-- Version CLI & Limit -->
                     <HBox spacing="8.0" alignment="CENTER_LEFT">
+                        <VBox spacing="4.0" prefWidth="110.0">
+                            <Label text="Version CLI:" styleClass="field-label"/>
+                            <ComboBox fx:id="cbTsonVersion" maxWidth="Infinity" prefHeight="30.0"/>
+                        </VBox>
                         <VBox spacing="4.0" HBox.hgrow="ALWAYS">
-                            <Label text="Giới hạn tx (tự gõ số):" styleClass="field-label"/>
+                            <Label text="Giới hạn tx (tự gõ):" styleClass="field-label"/>
                             <ComboBox fx:id="cbTsonLimit" editable="true" promptText="VD: 2500 (0=hết)" maxWidth="Infinity" prefHeight="30.0"/>
                         </VBox>
-                        <VBox spacing="4.0">
-                            <Label text="File ngoài:" styleClass="field-label"/>
-                            <Button fx:id="btnBrowseDataset" text="📂 Chọn..." prefHeight="30.0" styleClass="btn-outline"/>
-                        </VBox>
                     </HBox>
+
+                    <!-- File ngoài -->
+                    <VBox spacing="4.0">
+                        <Label text="File ngoài (tùy chọn):" styleClass="field-label"/>
+                        <Button fx:id="btnBrowseDataset" text="📂 Chọn file dataset ngoài..." maxWidth="Infinity" prefHeight="30.0" styleClass="btn-outline"/>
+                    </VBox>
 
                     <Separator/>
 

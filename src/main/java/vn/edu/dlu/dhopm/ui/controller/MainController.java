@@ -293,8 +293,18 @@ public class MainController implements Initializable {
         initTsonTableViews();
         initMiningHistoryViews();
         initCalculationLogView();
+        initCharts();
         initEventHandlers();
         loadInitialPaperData();
+    }
+
+    private void initCharts() {
+        if (lineChartFig11 != null) lineChartFig11.setAnimated(false);
+        if (lineChartFig6 != null) lineChartFig6.setAnimated(false);
+        if (lineChartFig13 != null) lineChartFig13.setAnimated(false);
+        if (lineChartDO != null) lineChartDO.setAnimated(false);
+        if (lineChartHistory != null) lineChartHistory.setAnimated(false);
+        if (barChartDistribution != null) barChartDistribution.setAnimated(false);
     }
 
     // ── Panel 0: Engine Selector ─────────────────────────────────────────────
@@ -894,6 +904,7 @@ public class MainController implements Initializable {
                     if (tableResults != null) tableResults.refresh();
                     if (tblTsonPatterns != null) tblTsonPatterns.refresh();
                     updateChartFromPatterns(clean, newVal.getMinSup());
+                    showChartFigure(4);
                 }
             });
         }
@@ -922,11 +933,11 @@ public class MainController implements Initializable {
         }
 
         // ── 3. Bộ nút chuyển đổi Biểu Đồ Bài Báo EAAI 2026
-        if (btnChartFig11 != null) btnChartFig11.setOnAction(e -> showChartFigure(1));
-        if (btnChartFig6 != null) btnChartFig6.setOnAction(e -> showChartFigure(2));
-        if (btnChartFig13 != null) btnChartFig13.setOnAction(e -> showChartFigure(3));
+        if (btnChartFig11 != null) btnChartFig11.setOnAction(e -> { showChartFigure(1); switchTableView(1); });
+        if (btnChartFig6 != null) btnChartFig6.setOnAction(e -> { showChartFigure(2); switchTableView(1); });
+        if (btnChartFig13 != null) btnChartFig13.setOnAction(e -> { showChartFigure(3); switchTableView(1); });
         if (btnChartModeDO != null) btnChartModeDO.setOnAction(e -> showChartFigure(4));
-        if (btnChartModeHistory != null) btnChartModeHistory.setOnAction(e -> showChartFigure(5));
+        if (btnChartModeHistory != null) btnChartModeHistory.setOnAction(e -> { showChartFigure(5); switchTableView(2); });
 
         // ── 4. Bộ nút chuyển đổi Bảng Dữ Liệu
         if (btnViewSweepTable != null) btnViewSweepTable.setOnAction(e -> switchTableView(1));
@@ -1092,6 +1103,16 @@ public class MainController implements Initializable {
         Task<List<MinSupSweepPoint>> task = new Task<>() {
             @Override
             protected List<MinSupSweepPoint> call() throws Exception {
+                if (mode == EngineMode.TSON_TCP_BACKEND) {
+                    vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient handshakeClient = new vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient();
+                    boolean ok = handshakeClient.handshake();
+                    if (!ok) {
+                        throw new IOException("Không kết nối được Backend TCP trên " + handshakeClient.getHost() + ":" + handshakeClient.getPort() +
+                                ". Vui lòng kiểm tra địa chỉ IP máy Tson hoặc bật Server nội bộ!");
+                    }
+                    handshakeClient.close();
+                }
+
                 return sweepService.executeSweep(
                         steps, f, mode, tamEngine, tsonService, path, limit, getTsonVersions(),
                         progress -> Platform.runLater(() -> {
@@ -1144,9 +1165,11 @@ public class MainController implements Initializable {
             if (btnCancelSweep != null) btnCancelSweep.setDisable(true);
             if (progressSweep != null) progressSweep.setProgress(0.0);
             Throwable ex = task.getException();
+            String msg = (ex != null && ex.getMessage() != null) ? ex.getMessage() : "Không xác định";
             if (lblSweepStatus != null) {
-                lblSweepStatus.setText("❌ Lỗi khi quét: " + (ex != null ? ex.getMessage() : "Không xác định"));
+                lblSweepStatus.setText("❌ Lỗi khi quét: " + msg);
             }
+            new Alert(Alert.AlertType.ERROR, "Lỗi khi chạy quét minSup: " + msg).show();
         });
 
         Thread t = new Thread(task, "DHOPM-MinSup-Sweep-Worker");
@@ -1164,49 +1187,61 @@ public class MainController implements Initializable {
     }
 
     private void updateHistoryCharts() {
-        var runs = MiningHistoryManager.getInstance().getHistory();
-        if (runs.isEmpty()) {
-            if (lineChartHistory != null) lineChartHistory.getData().clear();
-            if (barChartDistribution != null) barChartDistribution.getData().clear();
-            return;
-        }
-
-        // 1. LineChart History
-        if (lineChartHistory != null) {
-            lineChartHistory.getData().clear();
-            XYChart.Series<String, Number> dhopSeries = new XYChart.Series<>();
-            dhopSeries.setName("Số mẫu DHOP");
-
-            XYChart.Series<String, Number> prunedSeries = new XYChart.Series<>();
-            prunedSeries.setName("Số mẫu Bị cắt tỉa");
-
-            XYChart.Series<String, Number> timeSeries = new XYChart.Series<>();
-            timeSeries.setName("Thời gian chạy (ms)");
-
-            for (MiningRunMemento r : runs) {
-                String label = "#" + r.getRunId() + " (" + r.getDatasetName() + ")";
-                dhopSeries.getData().add(new XYChart.Data<>(label, r.getDhopCount()));
-                prunedSeries.getData().add(new XYChart.Data<>(label, r.getPrunedCount()));
-                timeSeries.getData().add(new XYChart.Data<>(label, r.getRuntimeMs()));
+        try {
+            var runs = MiningHistoryManager.getInstance().getHistory();
+            if (runs.isEmpty()) {
+                if (lineChartHistory != null) {
+                    lineChartHistory.setAnimated(false);
+                    lineChartHistory.getData().clear();
+                }
+                if (barChartDistribution != null) {
+                    barChartDistribution.setAnimated(false);
+                    barChartDistribution.getData().clear();
+                }
+                return;
             }
-            lineChartHistory.getData().addAll(dhopSeries, prunedSeries, timeSeries);
-        }
 
-        // 2. BarChart Distribution
-        if (barChartDistribution != null) {
-            barChartDistribution.getData().clear();
-            XYChart.Series<String, Number> barDhopSeries = new XYChart.Series<>();
-            barDhopSeries.setName("🟢 Mẫu DHOP hợp lệ");
+            // 1. LineChart History
+            if (lineChartHistory != null) {
+                lineChartHistory.setAnimated(false);
+                lineChartHistory.getData().clear();
+                XYChart.Series<String, Number> dhopSeries = new XYChart.Series<>();
+                dhopSeries.setName("Số mẫu DHOP");
 
-            XYChart.Series<String, Number> barPrunedSeries = new XYChart.Series<>();
-            barPrunedSeries.setName("🔴 Mẫu Bị Cắt Tỉa (DUBO)");
+                XYChart.Series<String, Number> prunedSeries = new XYChart.Series<>();
+                prunedSeries.setName("Số mẫu Bị cắt tỉa");
 
-            for (MiningRunMemento r : runs) {
-                String label = "#" + r.getRunId();
-                barDhopSeries.getData().add(new XYChart.Data<>(label, r.getDhopCount()));
-                barPrunedSeries.getData().add(new XYChart.Data<>(label, r.getPrunedCount()));
+                XYChart.Series<String, Number> timeSeries = new XYChart.Series<>();
+                timeSeries.setName("Thời gian chạy (ms)");
+
+                for (MiningRunMemento r : runs) {
+                    String label = "#" + r.getRunId() + " (" + r.getDatasetName() + ")";
+                    dhopSeries.getData().add(new XYChart.Data<>(label, r.getDhopCount()));
+                    prunedSeries.getData().add(new XYChart.Data<>(label, r.getPrunedCount()));
+                    timeSeries.getData().add(new XYChart.Data<>(label, r.getRuntimeMs()));
+                }
+                lineChartHistory.getData().addAll(dhopSeries, prunedSeries, timeSeries);
             }
-            barChartDistribution.getData().addAll(barDhopSeries, barPrunedSeries);
+
+            // 2. BarChart Distribution
+            if (barChartDistribution != null) {
+                barChartDistribution.setAnimated(false);
+                barChartDistribution.getData().clear();
+                XYChart.Series<String, Number> barDhopSeries = new XYChart.Series<>();
+                barDhopSeries.setName("🟢 Mẫu DHOP hợp lệ");
+
+                XYChart.Series<String, Number> barPrunedSeries = new XYChart.Series<>();
+                barPrunedSeries.setName("🔴 Mẫu Bị Cắt Tỉa (DUBO)");
+
+                for (MiningRunMemento r : runs) {
+                    String label = "#" + r.getRunId();
+                    barDhopSeries.getData().add(new XYChart.Data<>(label, r.getDhopCount()));
+                    barPrunedSeries.getData().add(new XYChart.Data<>(label, r.getPrunedCount()));
+                }
+                barChartDistribution.getData().addAll(barDhopSeries, barPrunedSeries);
+            }
+        } catch (Exception ex) {
+            System.err.println("Notice: updateHistoryCharts skipped non-fatal chart refresh: " + ex.getMessage());
         }
     }
 
@@ -1495,6 +1530,8 @@ public class MainController implements Initializable {
             lblTL.setText("T" + lastTidVal);
 
             updateChartFromPatterns(cleanPatterns, minSupVal);
+            showChartFigure(4);
+            switchTableView(2);
 
             // Lưu Memento lịch sử khai phá (phân biệt BE TCP và Tson V1)
             String engineLabel = (cbEngineMode.getValue() == EngineMode.TSON_TCP_BACKEND)
@@ -2147,9 +2184,14 @@ public class MainController implements Initializable {
     private void updateChartFromPatterns(List<PatternResult> patterns, double minSup) {
         lineChartDO.getData().clear();
 
+        String engineLabel = (cbEngineMode.getValue() == EngineMode.TSON_TCP_BACKEND)
+                ? "Backend TCP 7079" : (currentMode == EngineMode.TSON_V1_STANDARD ? "Tson V1 CLI" : "Tâm 8 tx");
+        lineChartDO.setTitle("Figure 2: Damped Occupancy (DO) vs minSup = " + String.format(Locale.US, "%.2f", minSup)
+                + " [" + engineLabel + " - " + patterns.size() + " mẫu tìm được]");
+
         XYChart.Series<String, Number> patternSeries = new XYChart.Series<>();
-        patternSeries.setName("DO mẫu tìm được");
-        int count = Math.min(10, patterns.size());
+        patternSeries.setName("DO mẫu tìm được (" + engineLabel + ")");
+        int count = Math.min(15, patterns.size());
         for (int i = 0; i < count; i++) {
             PatternResult p = patterns.get(i);
             patternSeries.getData().add(new XYChart.Data<>(p.pattern(), p.doValue()));

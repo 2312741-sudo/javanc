@@ -64,35 +64,42 @@
 
 ---
 
-### Slide 6: Giao Diện Trực Quan Hóa Tương Tác Cao (Tabs 1, 2, 3)
-- **Thời lượng:** ~30 giây.
+### Slide 6: Giao Diện Trực Quan Hóa Tương Tác Cao & Kiến Trúc Mạng Phân Tán TCP (Protocol 1)
+- **Thời lượng:** ~45 giây.
 - **Lời thoại gợi ý:**
-> *"Giao diện ứng dụng được thiết kế trên nền tảng JavaFX với 3 Tab đầu tiên phục vụ mục đích trực quan hóa:  
-> - **Tab 1:** Hiển thị cấu trúc Global DHO-List bằng các thẻ động `DHONodeCard` sắp xếp theo thứ tự Support tăng dần $G \prec B \prec A \prec C \prec D \prec E \prec F$. Thẻ tự động đổi màu: Xanh là đạt DHOP, Đỏ là bị cắt tỉa DUBO.  
-> - **Tab 2:** Cung cấp bảng chi tiết 32 mẫu ứng viên trong cây duyệt DFS tương ứng với Table 4 của bài báo.  
-> - **Tab 3:** Biểu đồ đường Live LineChart cập nhật thời gian thực điểm DO của các item so sánh trực tiếp với đường ngưỡng $minSup$ màu đỏ."*
+> *"Giao diện ứng dụng được thiết kế trên nền tảng JavaFX 21 cao cấp, kết nối với Backend thông qua **Kiến trúc mạng TCP Socket phân tán (Protocol 1 JSON Lines)**:  
+> - **DhopmContractTcpClient & Persistent Socket:** Duy trì socket kết nối ổn định trên cổng 7079, gửi bắt tay `hello`, tiếp nhận luồng sự kiện đa dòng `progress`, `window`, `pattern` với tần số mượt mà.  
+> - **Cơ chế Quét Mạng Tự Động (LAN Auto-Discovery):** Tích hợp công cụ quét đa luồng 32 workers, tự động nhận diện máy chủ Backend của bạn Sơn trong mạng LAN (địa chỉ thực tế `10.141.0.17:7079`) và kết nối tức thì.  
+> - **Mock Server Nội Bộ (DhopmContractTcpServer):** Tích hợp máy chủ giả lập chạy ngầm trên `CachedThreadPool` để ứng dụng hoạt động độc lập ngay cả khi offline hoặc trong CI/CD.  
+> - **Động Cơ Khử Trùng Lặp (Deduplication Engine):** Sử dụng bộ phân tích JSON theo dõi độ sâu ngoặc, hàm `canonicalItemsetKey()` sắp xếp từ điển, và `deduplicatePatterns()` giúp bảng kết quả sạch sẽ 100%, không bị trùng mẫu và loại bỏ lỗi lồng ngoặc nhọn.  
+> - **Các Tab Trực Quan:** Tab 1 hiển thị các thẻ động `DHONodeCard` đổi màu theo ngưỡng DUBO; Tab 2 hiển thị bảng 32 mẫu cây DFS; Tab 3 hiển thị đồ thị quét đa ngưỡng minSup chuẩn bài báo."*
 
 ---
 
-### Slide 7: Tab 4 - Tích Hợp Động Cơ Big Data Tson & Bảng Native TableView
+### Slide 7: Tab 4 - Tích Hợp Động Cơ Big Data Tson, Bảng Native TableView & Phản Chiếu Dữ Liệu R14
 - **Thời lượng:** ~45 giây.
 - **Lời thoại gợi ý:**
 > *"Ở Tab 4, em đã hoàn thành một nâng cấp then chốt:  
 > Trước đây, động cơ của bạn Sơn yêu cầu phải mở Terminal để gõ lệnh. Em đã **chuyển đổi 100% các câu lệnh dòng lệnh thành các nút bấm đồ họa GUI** trực quan: `🚀 Khai Phá (Mine)`, `🔍 Thống Kê (Inspect)`, `🎯 Golden Tests`.  
-> Người dùng có thể chọn hoặc tự tay gõ bất kỳ giới hạn giao dịch nào vào ô ComboBox.  
-> Đặc biệt, để giải quyết triệt để tình trạng lệch cột font chữ khi dùng console TextArea trên macOS, em đã **loại bỏ hoàn toàn màn hình console đen trắng** và thay bằng **100% bảng đồ họa JavaFX TableView native** chia cột thẳng tắp, hỗ trợ sắp xếp linh hoạt:  
-> 1. Bảng Mẫu Khai Phá hiển thị chi tiết Itemset, DO, Support, Độ dài, TIDs.  
+> Loại bỏ hoàn toàn thanh trượt Slider thiếu chính xác, thay thế bằng ô nhập số liệu trực tiếp (`TextField`) và huy hiệu trạng thái minh bạch: `🟢 BE (10.141.0.17:7079)` khi kết nối thật, và `🟡 DEMO (In-Process)` khi chạy nội bộ.  
+> Đặc biệt, em đã **loại bỏ hoàn toàn màn hình console đen trắng** và thay bằng **100% bảng đồ họa JavaFX TableView native** chia cột thẳng tắp:  
+> 1. Bảng Mẫu Khai Phá hiển thị chi tiết Itemset chuẩn `{B, F}`, điểm DO, Support %, Độ dài, danh sách TIDs thực tế.  
 > 2. Thẻ Thống Kê Inspect Cards + Bảng Top 10 mục phổ biến nhất.  
-> 3. Ma Trận Golden Tests với tick xanh `PASS 100%`."*
+> 3. Ma Trận Golden Tests với tick xanh `PASS 100%`.  
+> 4. **Cơ chế Phản chiếu dữ liệu R14:** Client tự động tải tệp kết quả từ xa qua lệnh `fetch` và lưu vào thư mục `mine/mine_<fileID>.txt` để đối chiếu độc lập."*
 
 ---
 
-### Slide 8: Kết Quả Kiểm Thử & Ma Trận Golden Tests (TC1 - TC8)
-- **Thời lượng:** ~30 giây.
+### Slide 8: Kết Quả Kiểm Thử Toàn Diện 60 Test Cases (JUnit 5) & Ma Trận Golden Tests
+- **Thời lượng:** ~40 giây.
 - **Lời thoại gợi ý:**
-> *"Về mặt kiểm chứng khoa học, hệ thống đạt **38/38 unit tests tự động vượt qua (100% BUILD SUCCESS)**.  
-> Toàn bộ 8 bộ kiểm thử chính quy Golden Tests từ TC1 đến TC8 đều cho kết quả **khớp tuyệt đối 100% với bài báo**, với sai số toán học tối đa $\Delta < 0.0001$.  
-> Điều này khẳng định tính đúng đắn và độ tin cậy tuyệt đối của phần mềm."*
+> *"Về mặt kiểm chứng khoa học, hệ thống đạt **60/60 unit tests tự động vượt qua (100% BUILD SUCCESS)** trải rộng trên 11 test suites:  
+> - 8 bài kiểm thử lý thuyết Lab 1 & 10 bài kiểm thử thuật toán 3 pha `DHOPMEngine`.  
+> - 10 bài kiểm thử hợp đồng `BridgeEngine` & 6 bài đối soát tích hợp giữa hai engine.  
+> - 9 bài kiểm thử Client TCP Socket, phân tích JSONL, khử trùng lặp và chuẩn hóa ngoặc.  
+> - 2 bài kiểm thử Mock Server nội bộ đa luồng.  
+> - 14 bài kiểm thử cho MinSupSweep, Tiến độ ETA, Lịch sử Memento và Calculation Logger.  
+> Toàn bộ 8 bộ kiểm thử chính quy Golden Tests từ TC1 đến TC8 đều cho kết quả **khớp tuyệt đối 100% với bài báo**, với sai số toán học $\Delta < 0.0001$."*
 
 ---
 
@@ -104,11 +111,15 @@
 
 ---
 
-### Slide 10 & 11: Kết Luận & Q&A
-- **Thời lượng:** ~30 giây.
+### Slide 10 & 11: Kết Luận, Hướng Phát Triển & Sẵn Sàng Q&A
+- **Thời lượng:** ~35 giây.
 - **Lời thoại gợi ý:**
-> *"Tóm lại, đề tài đã hoàn thành xuất sắc các mục tiêu cả về mặt lý thuyết giải thuật lẫn kỹ thuật lập trình Java nâng cao. Trong tương lai, nhóm dự định nâng cấp thuật toán bằng cấu trúc BitSet và tích hợp luồng dữ liệu thời gian thực thông qua Apache Kafka.  
-> Em xin chân thành cảm ơn Quý Thầy/Cô đã chú ý lắng nghe. Em xin kính mời Quý Thầy/Cô đặt câu hỏi phản biện và theo dõi phần Demo trực tiếp phần mềm!"*
+> *"Tóm lại, đề tài đã hoàn thành xuất sắc 100% mục tiêu đề ra:  
+> 1. Làm chủ lý thuyết thuật toán DHOPM, chứng minh toán học cận trên DUBO và cấu trúc Global DHO-List một lần quét.  
+> 2. Vận dụng 9 Design Patterns tạo nên kiến trúc phân tầng sạch sẽ, phân tách độc lập Frontend - Backend.  
+> 3. Hiện thực hóa giao diện JavaFX trực quan hóa cao cấp, tích hợp mạng phân tán TCP Client-Server, cơ chế khử trùng lặp dữ liệu và 60/60 ca kiểm thử tự động đạt 100% Green.  
+> Trong tương lai, nhóm hướng tới tối ưu hóa BitSet DFS và triển khai cụm phân tán Apache Flink/Kafka.  
+> Em xin chân thành cảm ơn Quý Thầy/Cô đã chú ý lắng nghe. Em xin kính mời Quý Thầy/Cô theo dõi phần Demo và đặt câu hỏi phản biện!"*
 
 ---
 
@@ -128,10 +139,11 @@ Khi đứng trước Hội đồng, mở ứng dụng `mvn javafx:run` và thao 
    - Bấm nút **"➕ Bơm từng giao dịch (Step Next)"**: Bơm giao dịch mới $T_9 = \{A, E\}$.
    - Chỉ vào thống kê: *"Hệ thống không cần đọc lại $T_1 \dots T_8$, chỉ quét $T_9$, cập nhật $T_L=9$ và vẽ lại biểu đồ tức thì. Đây là cơ chế One-Scan tiết kiệm bộ nhớ."*
 
-4. **Bước 4 (60s) – Chuyển sang Tab 4 Demo Động Cơ Big Data:**
+4. **Bước 4 (60s) – Chuyển sang Tab 4 Demo Kết Nối Mạng TCP Phân Tán & Động Cơ Big Data:**
+   - Chỉ vào huy hiệu mạng: *"Thưa Thầy Cô, hệ thống đã kết nối trực tiếp với Backend của bạn Sơn qua địa chỉ IP `10.141.0.17:7079` với huy hiệu xanh lá `🟢 BE (10.141.0.17:7079)`. Ngoài ra phần mềm có nút `🔍 Quét mạng (LAN)` tự động tìm máy bạn Sơn trong subnet."*
    - Chuyển sang **Tab 4**: Bấm nút **"🎯 Golden Tests"** $\rightarrow$ Ma trận hiển thị bảng xanh `✅ PASS 100%` cho cả 8 Test cases.
    - Bấm nút **"🔍 Thống Kê (Inspect)"** $\rightarrow$ Thẻ tổng quan hiện lên kèm Bảng Top 10 mục xuất hiện nhiều nhất.
-   - Bấm nút **"🚀 Khai Phá (Mine)"** trên tập dữ liệu FIMI $\rightarrow$ Bảng Mẫu Khai Phá (`tblTsonPatterns`) hiển thị các cột STT, Itemset X, DO(X), Support, TIDs thẳng tắp và đẹp mắt.
+   - Bấm nút **"🚀 Khai Phá (Mine)"** trên tập dữ liệu FIMI $\rightarrow$ Thanh tiến trình streaming mượt mà; Bảng Mẫu Khai Phá hiển thị kết quả đã qua **Thuật toán Khử Trùng Lặp**, biểu diễn chuẩn `{B, F}` cùng danh sách giao dịch TIDs đầy đủ; đồng thời tệp kết quả được phản chiếu an toàn tại thư mục `mine/`."*
 
 ---
 
@@ -169,3 +181,26 @@ Khi đứng trước Hội đồng, mở ứng dụng `mvn javafx:run` và thao 
 > **Trả lời:**  
 > *"Thưa Thầy/Cô, thay vì phải lưu toàn bộ danh sách các chuỗi item của từng giao dịch trong bộ nhớ RAM, cấu trúc Global DHO-List chỉ lưu trữ mỗi item dưới dạng một Node, và trong mỗi Node chỉ lưu các cặp bản ghi gọn nhẹ là `⟨TID, TLen⟩` (mã giao dịch và độ dài giao dịch).  
 > Khi có giao dịch mới đến, thuật toán chỉ quét 1 lần qua giao dịch đó, tra cứu các Node tương ứng của các item có mặt và chèn thêm 1 bản ghi `⟨TID, TLen⟩`. Nhờ chỉ lưu 2 số nguyên nguyên thủy (primitive integers) thay vì cấu trúc đối tượng phức tạp, bộ nhớ RAM được tiết kiệm lên tới hơn 80%, hoàn toàn đáp ứng yêu cầu khắt khe của môi trường luồng dữ liệu thời gian thực."*
+
+---
+
+### ❓ Câu 5: Làm thế nào để kết nối và đồng bộ dữ liệu giữa 2 máy tính độc lập (Frontend và Backend) trong mạng LAN?
+> **Trả lời:**  
+> *"Thưa Thầy/Cô, hai nhóm phát triển độc lập tuân thủ hợp đồng giao thức Protocol 1 (CONTRACT.md):  
+> 1. **Giao tiếp Socket TCP:** Máy Backend của bạn Sơn mở socket server lắng nghe trên cổng `7079`. Máy Frontend của em sử dụng `DhopmContractTcpClient` kết nối qua TCP Socket bền vững (Persistent Connection).  
+> 2. **Định dạng dữ liệu JSON Lines:** Hai bên trao đổi từng dòng JSON (1 request/dòng, 1 response/dòng), phân biệt truy vấn bằng trường `id` và bắt tay hệ thống qua lệnh `hello`.  
+> 3. **Tự động quét mạng (LAN Auto-Discovery):** Trên giao diện, em thiết kế nút '🔍 Quét mạng (LAN)' sử dụng ThreadPool 32 workers quét nhanh các địa chỉ IP trong dải subnet nội bộ để tự động dò tìm máy Backend đang mở cổng 7079.  
+> 4. **Mock Server dự phòng:** Nếu không có máy bạn Sơn hoặc chạy offline, phần mềm tích hợp sẵn `DhopmContractTcpServer` nội bộ chạy ngầm trên `CachedThreadPool` để tự phục vụ mà không làm gián đoạn trải nghiệm người dùng."*
+
+---
+
+### ❓ Câu 6: Tại sao kết quả khai phá ban đầu từ Backend bị trùng lặp và lỗi lồng ngoặc, và nhóm đã khắc phục như thế nào?
+> **Trả lời:**  
+> *"Thưa Thầy/Cô, khi kết nối thử nghiệm trên mạng thực tế với máy bạn Sơn, nhóm phát hiện:  
+> - Backend gửi về kết quả ở cả 2 mảng `patterns` (toàn cục) và `perVersion` (theo từng cửa sổ trượt), làm cho số dòng trên TableView bị nhân đôi (ví dụ từ 5 mẫu lên 10 dòng) và thứ tự item trong chuỗi không đồng nhất (như `B F` và `F B`).  
+> - Ngoài ra, một số chuỗi bị bọc ngoặc lồng nhau dạng `{{B, F}}`.  
+> Để khắc phục triệt để, em đã xây dựng **Động cơ khử trùng lặp (Deduplication Engine)** ở tầng Frontend:  
+> 1. Xây dựng bộ bóc tách JSON theo dõi độ sâu ngoặc (`depth-tracking parser`).  
+> 2. Định nghĩa hàm `canonicalItemsetKey()` phân rã tập mục và sắp xếp theo thứ tự từ điển chuẩn, quy mọi biểu diễn về khóa duy nhất.  
+> 3. Áp dụng hàm `deduplicatePatterns()` lọc qua `LinkedHashMap` để hợp nhất các bản ghi trùng lặp và giữ lại đối tượng có DO cao nhất, bảo toàn nguyên vẹn danh sách giao dịch TIDs và Support.  
+> 4. Dùng hàm `normalizePattern()` làm sạch hoàn toàn các dấu ngoặc nhọn lồng nhau, trả về định dạng `{item1, item2}` chuẩn mực."*

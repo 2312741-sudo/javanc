@@ -75,6 +75,24 @@ public class MinSupSweepService {
             Consumer<SweepProgress> progressConsumer,
             BooleanSupplier isCancelled
     ) throws Exception {
+        return executeSweep(partialList, f, engineMode, tamEngine, tsonService, datasetPath, limit, List.of("v1"), progressConsumer, isCancelled);
+    }
+
+    /**
+     * Chạy quét theo dải minSup với bộ tham số đầu vào kèm danh sách phiên bản CLI (versions).
+     */
+    public List<MinSupSweepPoint> executeSweep(
+            List<Double> partialList,
+            double f,
+            EngineMode engineMode,
+            DHOPMEngine tamEngine,
+            TsonToolsService tsonService,
+            Path datasetPath,
+            long limit,
+            List<String> versions,
+            Consumer<SweepProgress> progressConsumer,
+            BooleanSupplier isCancelled
+    ) throws Exception {
         if (partialList == null || partialList.isEmpty()) {
             return Collections.emptyList();
         }
@@ -82,25 +100,32 @@ public class MinSupSweepService {
         List<MinSupSweepPoint> points = new ArrayList<>();
         int total = partialList.size();
 
-        for (int i = 0; i < total; i++) {
-            if (isCancelled != null && isCancelled.getAsBoolean()) {
-                break;
-            }
+        vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient tcpClient = null;
+        if (engineMode == EngineMode.TSON_TCP_BACKEND) {
+            tcpClient = new vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient();
+        }
 
-            double partial = partialList.get(i);
-            MinSupSweepPoint point;
-
-            if (engineMode == EngineMode.TSON_TCP_BACKEND) {
-                // Đọc trực tiếp từ Backend TCP 7079 theo chuẩn hợp đồng
-                vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient tcpClient = new vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient();
-                String dsName = datasetPath != null ? datasetPath.getFileName().toString() : "retail.dat";
-                var resp = tcpClient.mine(dsName, partial, f, 0.0, (int) limit, List.of("v1"), false);
-                if (!resp.ok()) {
-                    throw new java.io.IOException("Lỗi Backend TCP: " + resp.message());
+        try {
+            for (int i = 0; i < total; i++) {
+                if (isCancelled != null && isCancelled.getAsBoolean()) {
+                    break;
                 }
 
-                double minSupAbs = resp.minSup();
-                int dhopCount = resp.patterns().size();
+                double partial = partialList.get(i);
+                MinSupSweepPoint point;
+
+                if (engineMode == EngineMode.TSON_TCP_BACKEND) {
+                    // Đọc trực tiếp từ Backend TCP 7079 theo chuẩn hợp đồng
+                    String dsName = datasetPath != null ? datasetPath.getFileName().toString() : "retail.dat";
+                    List<String> vers = (versions != null && !versions.isEmpty()) ? versions : List.of("v1");
+                    var resp = tcpClient.mine(dsName, partial, f, 0.0, (int) limit, vers, false);
+                    if (!resp.ok()) {
+                        throw new java.io.IOException("Lỗi Backend TCP: " + resp.message());
+                    }
+
+                    var cleanPats = vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient.deduplicatePatterns(resp.patterns());
+                    double minSupAbs = resp.minSup() > 0.0 ? resp.minSup() : (partial * resp.totalTransactions());
+                int dhopCount = cleanPats.size();
                 long elapsedMs = Math.max(1, resp.elapsedMs());
                 double peakMb = resp.peakMemoryMb();
                 int totalCand = resp.candidates() > 0 ? resp.candidates() : dhopCount;
@@ -112,7 +137,7 @@ public class MinSupSweepService {
                         "Backend-TCP (Sweep)",
                         dsName,
                         f, partial, minSupAbs, resp.totalTransactions(),
-                        dhopCount, prunedCount, totalCand, elapsedMs, peakMb, resp.patterns()
+                        dhopCount, prunedCount, totalCand, elapsedMs, peakMb, cleanPats
                 );
             } else if (engineMode == EngineMode.TSON_V1_STANDARD) {
                 if (datasetPath == null) {
@@ -124,8 +149,9 @@ public class MinSupSweepService {
                         null, null, null
                 );
 
+                var cleanPats = vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient.deduplicatePatterns(mineRes.uiPatterns());
                 double minSupAbs = partial * mineRes.totalTransactions();
-                int dhopCount = mineRes.patternCount();
+                int dhopCount = cleanPats.size();
                 long elapsedMs = Math.max(1, mineRes.totalMs());
                 double peakMb = mineRes.peakHeapMb();
 
@@ -139,7 +165,7 @@ public class MinSupSweepService {
                         "Tson-V1 (Sweep)",
                         datasetPath.getFileName().toString(),
                         f, partial, minSupAbs, (int) mineRes.totalTransactions(),
-                        dhopCount, prunedCount, totalCand, elapsedMs, peakMb, mineRes.uiPatterns()
+                        dhopCount, prunedCount, totalCand, elapsedMs, peakMb, cleanPats
                 );
             } else {
                 // TAM_SIMULATION: Demo mô phỏng nội bộ của Tâm (8 giao dịch)
@@ -184,6 +210,11 @@ public class MinSupSweepService {
                         String.format(Locale.US, "Đã quét mốc ∂ = %.1f%% (%d/%d): %d mẫu DHOPs trong %d ms",
                                 partial * 100.0, i + 1, total, point.dhopCount(), point.runtimeMs())
                 ));
+            }
+        }
+        } finally {
+            if (tcpClient != null) {
+                tcpClient.close();
             }
         }
 
