@@ -143,12 +143,12 @@
 
                     <HBox spacing="6.0">
                         <Button fx:id="btnTsonGolden" text="🏆 TestKit Vàng (TC1-8)" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="32.0" styleClass="btn-purple" style="-fx-background-color: #7c3aed; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-cursor: hand; -fx-background-radius: 6; -fx-padding: 6 8 6 8;"/>
-                        <Button fx:id="btnTsonInspect" text="📊 Thống kê (Inspect)" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="32.0" styleClass="btn-emerald" style="-fx-font-size: 11px; -fx-padding: 6 8 6 8;"/>
+                        <Button fx:id="btnTsonStop" text="🛑 Dừng" disable="true" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="32.0" style="-fx-background-color: #dc2626; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-cursor: hand; -fx-background-radius: 6; -fx-padding: 6 8 6 8;"/>
                     </HBox>
 
                     <HBox spacing="6.0">
+                        <Button fx:id="btnTsonInspect" text="📊 Thống kê (Inspect)" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="32.0" styleClass="btn-emerald" style="-fx-font-size: 11px; -fx-padding: 6 8 6 8;"/>
                         <Button fx:id="btnTsonDetail" text="🔬 Top DO (Detail)" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="32.0" styleClass="btn-indigo" style="-fx-font-size: 11px; -fx-padding: 6 8 6 8;"/>
-                        <Button fx:id="btnTsonStop" text="🛑 Dừng" disable="true" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="32.0" style="-fx-background-color: #dc2626; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 11px; -fx-cursor: hand; -fx-background-radius: 6; -fx-padding: 6 8 6 8;"/>
                     </HBox>
 
                     <!-- Nút Mining dài nhất và to nhất ở dưới cùng (Full width 100%) -->
