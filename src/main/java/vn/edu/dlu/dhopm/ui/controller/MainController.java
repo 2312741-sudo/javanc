@@ -1114,7 +1114,7 @@ public class MainController implements Initializable {
                 }
 
                 return sweepService.executeSweep(
-                        steps, f, mode, tamEngine, tsonService, path, limit, getTsonVersions(),
+                        steps, f, getMinOcc(), mode, tamEngine, tsonService, path, limit, getTsonVersions(),
                         progress -> Platform.runLater(() -> {
                             if (progressSweep != null) {
                                 progressSweep.setProgress((double) progress.currentStep() / progress.totalSteps());

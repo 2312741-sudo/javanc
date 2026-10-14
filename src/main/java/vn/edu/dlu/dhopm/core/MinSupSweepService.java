@@ -75,7 +75,7 @@ public class MinSupSweepService {
             Consumer<SweepProgress> progressConsumer,
             BooleanSupplier isCancelled
     ) throws Exception {
-        return executeSweep(partialList, f, engineMode, tamEngine, tsonService, datasetPath, limit, List.of("v1"), progressConsumer, isCancelled);
+        return executeSweep(partialList, f, 0.0, engineMode, tamEngine, tsonService, datasetPath, limit, List.of("v1"), progressConsumer, isCancelled);
     }
 
     /**
@@ -84,6 +84,25 @@ public class MinSupSweepService {
     public List<MinSupSweepPoint> executeSweep(
             List<Double> partialList,
             double f,
+            EngineMode engineMode,
+            DHOPMEngine tamEngine,
+            TsonToolsService tsonService,
+            Path datasetPath,
+            long limit,
+            List<String> versions,
+            Consumer<SweepProgress> progressConsumer,
+            BooleanSupplier isCancelled
+    ) throws Exception {
+        return executeSweep(partialList, f, 0.0, engineMode, tamEngine, tsonService, datasetPath, limit, versions, progressConsumer, isCancelled);
+    }
+
+    /**
+     * Chạy quét theo dải minSup với minOcc tùy chỉnh.
+     */
+    public List<MinSupSweepPoint> executeSweep(
+            List<Double> partialList,
+            double f,
+            double minOcc,
             EngineMode engineMode,
             DHOPMEngine tamEngine,
             TsonToolsService tsonService,
@@ -118,7 +137,7 @@ public class MinSupSweepService {
                     // Đọc trực tiếp từ Backend TCP 7079 theo chuẩn hợp đồng
                     String dsName = datasetPath != null ? datasetPath.getFileName().toString() : "retail.dat";
                     List<String> vers = (versions != null && !versions.isEmpty()) ? versions : List.of("v1");
-                    var resp = tcpClient.mine(dsName, partial, f, 0.0, (int) limit, vers, false);
+                    var resp = tcpClient.mine(dsName, partial, f, minOcc, (int) limit, vers, false);
                     if (!resp.ok()) {
                         throw new java.io.IOException("Lỗi Backend TCP: " + resp.message());
                     }
