@@ -62,8 +62,21 @@ public class MainController implements Initializable {
     @FXML private Label lblLastPhase;
     @FXML private ProgressBar progressMining;
 
+    // ── TCP Backend Tson Connection Controls ─────────────────────────────────
+    @FXML private VBox boxTcpConfig;
+    @FXML private Label lblTcpQuickStatus;
+    @FXML private TextField txtBackendHost;
+    @FXML private TextField txtBackendPort;
+    @FXML private Button btnTestTcp;
+    @FXML private Button btnScanLan;
+    @FXML private Button btnToggleLocalServer;
+    @FXML private Label lblTcpDetailMsg;
+    @FXML private Label lblTcpCliVersion;
+
     // ── Tson FIMI Tools & Datasets Panel ──────────────────────────────────────
+    @FXML private Label lblTsonVersionBadge;
     @FXML private ComboBox<DatasetItem> cbTsonDataset;
+    @FXML private ComboBox<String> cbTsonVersion;
     @FXML private ComboBox<String> cbTsonLimit;
     @FXML private Button btnBrowseDataset;
     @FXML private Button btnTsonMine;
@@ -77,6 +90,7 @@ public class MainController implements Initializable {
     // ── Active Background Task & Engine Cancellation ──────────────────────────
     private Task<?> activeTsonTask = null;
     private Thread activeTsonThread = null;
+    private boolean syncingLimit = false;
     private final java.util.concurrent.atomic.AtomicReference<dhopm.v1.engine.MiningEngine> activeMiningEngine = new java.util.concurrent.atomic.AtomicReference<>(null);
 
     // ── Controls & Text Inputs (Replacing sliders to avoid involuntary mining) ──
@@ -271,7 +285,9 @@ public class MainController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initEngineSelectorPanel();
+        initTcpControls();
         initTsonToolsPanel();
+        initLimitSync();
         initTamEngine();
         initTableView();
         initTsonTableViews();
@@ -302,6 +318,179 @@ public class MainController implements Initializable {
                 setText(empty || item == null ? null : item.getDisplayName());
             }
         });
+    }
+
+    // ── Panel 0.1: TCP Backend Tson Connection ─────────────────────────────────
+
+    private void initTcpControls() {
+        if (txtBackendHost != null) {
+            txtBackendHost.setText(DhopmContractTcpClient.getActiveHost());
+            txtBackendHost.textProperty().addListener((obs, oldV, newV) -> {
+                if (newV != null && !newV.isBlank()) {
+                    int p = resolveBackendPort();
+                    DhopmContractTcpClient.setBackendAddress(newV.trim(), p);
+                    updateDataSourceBadge();
+                }
+            });
+        }
+
+        if (txtBackendPort != null) {
+            txtBackendPort.setText(String.valueOf(DhopmContractTcpClient.getActivePort()));
+            txtBackendPort.textProperty().addListener((obs, oldV, newV) -> {
+                if (newV != null && !newV.isBlank()) {
+                    try {
+                        int p = Integer.parseInt(newV.trim());
+                        DhopmContractTcpClient.setBackendAddress(txtBackendHost.getText().trim(), p);
+                        updateDataSourceBadge();
+                    } catch (Exception ignored) {}
+                }
+            });
+        }
+
+        if (btnTestTcp != null) {
+            btnTestTcp.setOnAction(e -> doTestTcpConnection());
+        }
+
+        if (btnScanLan != null) {
+            btnScanLan.setOnAction(e -> doScanLan());
+        }
+
+        if (btnToggleLocalServer != null) {
+            btnToggleLocalServer.setOnAction(e -> handleToggleLocalServer());
+        }
+
+        // Chạy kiểm tra kết nối nền nhẹ khi khởi động
+        Platform.runLater(this::doTestTcpConnection);
+    }
+
+    private int resolveBackendPort() {
+        if (txtBackendPort == null) return DhopmContractTcpClient.DEFAULT_PORT;
+        try {
+            return Integer.parseInt(txtBackendPort.getText().trim());
+        } catch (Exception e) {
+            return DhopmContractTcpClient.DEFAULT_PORT;
+        }
+    }
+
+    private void updateDataSourceBadge() {
+        if (lblDataSourceBadge != null && cbEngineMode != null && cbEngineMode.getValue() == EngineMode.TSON_TCP_BACKEND) {
+            lblDataSourceBadge.setText("🟢 BE (" + DhopmContractTcpClient.getActiveHost() + ":" + DhopmContractTcpClient.getActivePort() + ")");
+        }
+    }
+
+    private void doTestTcpConnection() {
+        String host = (txtBackendHost != null && !txtBackendHost.getText().isBlank())
+                ? txtBackendHost.getText().trim() : DhopmContractTcpClient.getActiveHost();
+        int port = resolveBackendPort();
+
+        if (btnTestTcp != null) btnTestTcp.setDisable(true);
+        if (lblTcpQuickStatus != null) {
+            lblTcpQuickStatus.setText("Đang test...");
+            lblTcpQuickStatus.setStyle("-fx-background-color: #fef9c3; -fx-text-fill: #a16207; -fx-font-size: 10px;");
+        }
+        if (lblTcpDetailMsg != null) {
+            lblTcpDetailMsg.setText("Đang bắt tay với " + host + ":" + port + "...");
+        }
+
+        Thread testThread = new Thread(() -> {
+            DhopmContractTcpClient.HandshakeResult res = DhopmContractTcpClient.testConnection(host, port);
+            Platform.runLater(() -> {
+                if (btnTestTcp != null) btnTestTcp.setDisable(false);
+                if (res.success()) {
+                    if (lblTcpQuickStatus != null) {
+                        lblTcpQuickStatus.setText("🟢 Đã kết nối (" + res.latencyMs() + "ms)");
+                        lblTcpQuickStatus.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #15803d; -fx-font-weight: bold; -fx-font-size: 10px;");
+                    }
+                    if (res.versions() != null && !res.versions().isEmpty()) {
+                        if (lblTcpCliVersion != null) {
+                            lblTcpCliVersion.setText(String.join(", ", res.versions()));
+                        }
+                    }
+                    if (lblTcpDetailMsg != null) {
+                        String versStr = (res.versions() != null && !res.versions().isEmpty())
+                                ? " [CLI: " + String.join(", ", res.versions()) + "]" : "";
+                        lblTcpDetailMsg.setText("✓ " + res.manager() + " tại " + host + ":" + port + versStr + " phản hồi trong " + res.latencyMs() + " ms.");
+                        lblTcpDetailMsg.setStyle("-fx-text-fill: #15803d; -fx-font-size: 10px;");
+                    }
+                } else {
+                    if (lblTcpQuickStatus != null) {
+                        lblTcpQuickStatus.setText("🔴 Chưa kết nối");
+                        lblTcpQuickStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-font-weight: bold; -fx-font-size: 10px;");
+                    }
+                    if (lblTcpDetailMsg != null) {
+                        lblTcpDetailMsg.setText("✕ " + res.errorMessage());
+                        lblTcpDetailMsg.setStyle("-fx-text-fill: #dc2626; -fx-font-size: 10px;");
+                    }
+                }
+                updateDataSourceBadge();
+            });
+        }, "Dhopm-TestTcpThread");
+        testThread.setDaemon(true);
+        testThread.start();
+    }
+
+    private void doScanLan() {
+        int port = resolveBackendPort();
+        if (btnScanLan != null) btnScanLan.setDisable(true);
+        if (lblTcpQuickStatus != null) {
+            lblTcpQuickStatus.setText("Đang quét...");
+            lblTcpQuickStatus.setStyle("-fx-background-color: #dbeafe; -fx-text-fill: #1d4ed8; -fx-font-size: 10px;");
+        }
+
+        Thread scanThread = new Thread(() -> {
+            String foundIp = DhopmContractTcpClient.scanLan(port, 400, msg -> Platform.runLater(() -> {
+                if (lblTcpDetailMsg != null) lblTcpDetailMsg.setText(msg);
+            }));
+
+            Platform.runLater(() -> {
+                if (btnScanLan != null) btnScanLan.setDisable(false);
+                if (foundIp != null) {
+                    if (txtBackendHost != null) txtBackendHost.setText(foundIp);
+                    DhopmContractTcpClient.setBackendAddress(foundIp, port);
+                    doTestTcpConnection();
+                    new Alert(Alert.AlertType.INFORMATION, "🎉 Đã tìm thấy máy Backend Tson tại IP: " + foundIp + ":" + port).show();
+                } else {
+                    if (lblTcpQuickStatus != null) {
+                        lblTcpQuickStatus.setText("Không tìm thấy");
+                        lblTcpQuickStatus.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-font-size: 10px;");
+                    }
+                    if (lblTcpDetailMsg != null) {
+                        lblTcpDetailMsg.setText("Không tìm thấy máy Tson trên cổng " + port + ". Hãy kiểm tra xem bạn Sơn đã bật backend và cùng mạng WiFi chưa, hoặc gõ IP thủ công.");
+                        lblTcpDetailMsg.setStyle("-fx-text-fill: #ea580c; -fx-font-size: 10px;");
+                    }
+                }
+            });
+        }, "Dhopm-ScanLanThread");
+        scanThread.setDaemon(true);
+        scanThread.start();
+    }
+
+    private void handleToggleLocalServer() {
+        if (DhopmContractTcpServer.isRunning()) {
+            DhopmContractTcpServer.stop();
+            if (btnToggleLocalServer != null) {
+                btnToggleLocalServer.setText("⚡ Bật Server nội bộ (Nếu Tson chưa bật máy)");
+                btnToggleLocalServer.setStyle("-fx-background-color: #e0e7ff; -fx-text-fill: #3730a3; -fx-font-size: 10.5px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;");
+            }
+            if (lblTcpDetailMsg != null) lblTcpDetailMsg.setText("Đã tắt Server nội bộ.");
+            doTestTcpConnection();
+        } else {
+            int port = resolveBackendPort();
+            boolean ok = DhopmContractTcpServer.start(port);
+            if (ok) {
+                if (btnToggleLocalServer != null) {
+                    btnToggleLocalServer.setText("⏹ Tắt Server nội bộ (Đang chạy cổng " + port + ")");
+                    btnToggleLocalServer.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #991b1b; -fx-font-size: 10.5px; -fx-font-weight: bold; -fx-background-radius: 4; -fx-cursor: hand;");
+                }
+                if (txtBackendHost != null) txtBackendHost.setText("127.0.0.1");
+                DhopmContractTcpClient.setBackendAddress("127.0.0.1", port);
+                doTestTcpConnection();
+            } else {
+                if (lblTcpDetailMsg != null) {
+                    lblTcpDetailMsg.setText("Không thể mở cổng " + port + " (có thể đã có ứng dụng khác đang mở cổng này).");
+                }
+            }
+        }
     }
 
     // ── Panel 0.5: Tson Datasets & Commands ───────────────────────────────────
@@ -336,6 +525,14 @@ public class MainController implements Initializable {
         cbTsonLimit.setValue("Toàn bộ (0)");
         cbTsonLimit.getEditor().setPromptText("Tự gõ số (VD: 2500)");
 
+        // 2b. ComboBox Version CLI: chỉ v1, v2, v3
+        if (cbTsonVersion != null) {
+            cbTsonVersion.setEditable(false);
+            cbTsonVersion.setItems(FXCollections.observableArrayList("v1", "v2", "v3"));
+            cbTsonVersion.setValue("v1");
+            cbTsonVersion.valueProperty().addListener((obs, oldVal, newVal) -> onTsonVersionChanged(newVal));
+        }
+
         // 3. Nút Browse file ngoài
         btnBrowseDataset.setOnAction(e -> handleBrowseDataset());
 
@@ -347,6 +544,36 @@ public class MainController implements Initializable {
         btnTsonInspect.setOnAction(e -> executeTsonInspect());
         btnTsonDetail.setOnAction(e -> executeTsonDetail());
         btnTsonGolden.setOnAction(e -> executeTsonGolden());
+    }
+
+    private void onTsonVersionChanged(String version) {
+        if (version == null || version.isBlank()) return;
+        String clean = version.trim().toLowerCase();
+        if (!clean.matches("v[1-3]")) return;
+        if (lblTsonVersionBadge != null) {
+            lblTsonVersionBadge.setText(clean.toUpperCase() + " CLI");
+        }
+        if (lblTcpCliVersion != null) {
+            lblTcpCliVersion.setText(clean);
+        }
+        if (lblTsonViewTitle != null) {
+            lblTsonViewTitle.setText("📋 Danh Sách Mẫu Chi Tiết (Tson " + clean.toUpperCase() + " Engine)");
+        }
+        buildBridgeEngine();
+    }
+
+    public String getSelectedCliVersion() {
+        if (cbTsonVersion != null && cbTsonVersion.getValue() != null) {
+            String val = cbTsonVersion.getValue().trim().toLowerCase();
+            if (val.matches("v[1-3]")) {
+                return val;
+            }
+        }
+        return "v1";
+    }
+
+    public List<String> getTsonVersions() {
+        return List.of(getSelectedCliVersion());
     }
 
     private void handleBrowseDataset() {
@@ -380,10 +607,27 @@ public class MainController implements Initializable {
         Path p = Paths.get("dataset", filename);
         if (java.nio.file.Files.exists(p)) return p;
 
-        p = Paths.get("/tmp/tson_jvnc/dataset", filename);
-        if (java.nio.file.Files.exists(p)) return p;
+        // Thư mục dataset tùy chọn – cấu hình qua biến môi trường, KHÔNG hardcode đường dẫn.
+        String datasetDir = System.getenv("DHOPM_DATASET_DIR");
+        if (datasetDir == null || datasetDir.isBlank()) {
+            datasetDir = System.getProperty("dhopm.dataset.dir");
+        }
+        if (datasetDir != null && !datasetDir.isBlank()) {
+            p = Paths.get(datasetDir, filename);
+            if (java.nio.file.Files.exists(p)) return p;
+        }
 
         return Paths.get(filename);
+    }
+
+    /**
+     * Tham chiếu dataset gửi lên Backend TCP. Theo contract (08-FE-CONTRACT.md):
+     * FE chỉ gửi TÊN dataset, BE tự tìm trong thư mục dataset của nó. FE không
+     * được gửi đường dẫn — FE và BE độc lập về filesystem.
+     */
+    private String toBackendDatasetRef(Path path) {
+        if (path == null) return "retail.dat";
+        return path.getFileName().toString();
     }
 
     private double getDecayFactor() {
@@ -427,34 +671,85 @@ public class MainController implements Initializable {
         }
     }
 
-    private long resolveLimit() {
-        if (txtLimit != null && txtLimit.getText() != null && !txtLimit.getText().isBlank()) {
-            String cleaned = txtLimit.getText().trim().replaceAll("[^0-9]", "");
-            if (!cleaned.isEmpty()) {
-                try {
-                    return Math.max(0, Long.parseLong(cleaned));
-                } catch (NumberFormatException ignored) {}
-            }
-        }
-        String val = null;
-        if (cbTsonLimit != null && cbTsonLimit.getEditor() != null && cbTsonLimit.getEditor().getText() != null) {
-            val = cbTsonLimit.getEditor().getText().trim();
-        }
-        if (val == null || val.isBlank()) {
-            val = cbTsonLimit != null ? cbTsonLimit.getValue() : null;
-        }
-        if (val == null || val.isBlank() || val.startsWith("Toàn bộ") || val.equalsIgnoreCase("all") || val.equals("0")) {
-            return 0;
-        }
+    /**
+     * Đồng bộ hai ô limit trùng lặp — txtLimit (panel "Tham số thuật toán") và
+     * cbTsonLimit (panel "Tập dữ liệu FIMI") — để gõ ô nào cũng cập nhật ô kia và
+     * giá trị gửi lên Backend, đúng tinh thần "một bộ tham số dùng chung cho mọi lệnh".
+     * Ô rỗng được hiểu là 0 (toàn bộ, không giới hạn).
+     */
+    private void initLimitSync() {
+        if (txtLimit == null || cbTsonLimit == null) return;
+        cbTsonLimit.setEditable(true);
 
-        String cleaned = val.replaceAll("[^0-9]", "");
-        if (cleaned.isEmpty()) return 0;
+        txtLimit.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (syncingLimit) return;
+            syncingLimit = true;
+            try {
+                String normalized = normalizeLimitText(newVal);
+                if (!normalized.equals(cbTsonLimit.getEditor().getText())) {
+                    cbTsonLimit.getEditor().setText(normalized);
+                }
+            } finally {
+                syncingLimit = false;
+            }
+        });
+
+        cbTsonLimit.getEditor().textProperty().addListener((obs, oldVal, newVal) -> {
+            if (syncingLimit) return;
+            syncingLimit = true;
+            try {
+                String normalized = normalizeLimitText(newVal);
+                if (!normalized.equals(txtLimit.getText())) {
+                    txtLimit.setText(normalized);
+                }
+            } finally {
+                syncingLimit = false;
+            }
+        });
+
+        // Chuẩn hóa trạng thái ban đầu: lấy txtLimit (mặc định an toàn) làm chuẩn.
+        syncingLimit = true;
         try {
-            long parsed = Long.parseLong(cleaned);
-            return Math.max(0, parsed);
-        } catch (NumberFormatException e) {
-            return 0;
+            String initial = normalizeLimitText(txtLimit.getText());
+            if (initial.isEmpty()) initial = "0";
+            txtLimit.setText(initial);
+            cbTsonLimit.getEditor().setText(initial);
+        } finally {
+            syncingLimit = false;
         }
+    }
+
+    /**
+     * Chuẩn hóa chuỗi limit về dạng số thuần: chỉ giữ chữ số; rỗng/không hợp lệ -> ""
+     * (được {@link #resolveLimit()} hiểu là 0 = toàn bộ). "Toàn bộ (0)" -> "0".
+     */
+    private String normalizeLimitText(String raw) {
+        if (raw == null) return "";
+        String cleaned = raw.trim().replaceAll("[^0-9]", "");
+        if (cleaned.isEmpty()) return "";
+        try {
+            return String.valueOf(Math.max(0L, Long.parseLong(cleaned)));
+        } catch (NumberFormatException e) {
+            return "";
+        }
+    }
+
+    private long resolveLimit() {
+        String txt = normalizeLimitText(txtLimit != null ? txtLimit.getText() : null);
+        if (!txt.isEmpty()) {
+            try {
+                return Long.parseLong(txt);
+            } catch (NumberFormatException ignored) {}
+        }
+        String cb = normalizeLimitText(
+                cbTsonLimit != null && cbTsonLimit.getEditor() != null
+                        ? cbTsonLimit.getEditor().getText() : null);
+        if (!cb.isEmpty()) {
+            try {
+                return Long.parseLong(cb);
+            } catch (NumberFormatException ignored) {}
+        }
+        return 0;
     }
 
     // ── Tab 4: Tson TableViews Setup ──────────────────────────────────────────
@@ -479,11 +774,8 @@ public class MainController implements Initializable {
                 }
             }
         });
-        colTsonPattern.setCellValueFactory(cellData -> {
-            String raw = cellData.getValue().pattern();
-            String[] parts = raw.split("[,\\s]+");
-            return new SimpleStringProperty("{" + String.join(", ", parts) + "}");
-        });
+        colTsonPattern.setCellValueFactory(cellData ->
+                new SimpleStringProperty(DhopmContractTcpClient.normalizePattern(cellData.getValue().pattern())));
         colTsonDO.setCellValueFactory(cellData ->
                 new SimpleStringProperty(String.format("%.6f", cellData.getValue().doValue())));
         colTsonSupport.setCellValueFactory(cellData ->
@@ -491,6 +783,7 @@ public class MainController implements Initializable {
         colTsonSupport.setComparator((s1, s2) -> Integer.compare(extractSupportInt(s1), extractSupportInt(s2)));
         colTsonLength.setCellValueFactory(cellData -> {
             String raw = cellData.getValue().pattern().replace("{", "").replace("}", "").trim();
+            if (raw.isEmpty()) return new SimpleIntegerProperty(0);
             return new SimpleIntegerProperty(raw.split("[,\\s]+").length);
         });
         colTsonTids.setCellValueFactory(cellData ->
@@ -595,11 +888,12 @@ public class MainController implements Initializable {
                     if (newVal.getTotalTransactions() > 0) {
                         activeTotalTransactions = newVal.getTotalTransactions();
                     }
-                    tableData.setAll(newVal.getTopPatterns());
-                    tsonPatternsData.setAll(newVal.getTopPatterns());
+                    List<PatternResult> clean = vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient.deduplicatePatterns(newVal.getTopPatterns());
+                    tableData.setAll(clean);
+                    tsonPatternsData.setAll(clean);
                     if (tableResults != null) tableResults.refresh();
                     if (tblTsonPatterns != null) tblTsonPatterns.refresh();
-                    updateChartFromPatterns(newVal.getTopPatterns(), newVal.getMinSup());
+                    updateChartFromPatterns(clean, newVal.getMinSup());
                 }
             });
         }
@@ -799,7 +1093,7 @@ public class MainController implements Initializable {
             @Override
             protected List<MinSupSweepPoint> call() throws Exception {
                 return sweepService.executeSweep(
-                        steps, f, mode, tamEngine, tsonService, path, limit,
+                        steps, f, mode, tamEngine, tsonService, path, limit, getTsonVersions(),
                         progress -> Platform.runLater(() -> {
                             if (progressSweep != null) {
                                 progressSweep.setProgress((double) progress.currentStep() / progress.totalSteps());
@@ -967,7 +1261,9 @@ public class MainController implements Initializable {
                 "Pha 1: Construct",
                 "Pha 2: Reconstruct",
                 "Pha 3: Mining DFS",
-                "Tson V1"
+                "Tson V1",
+                "Tson TCP",
+                "Quét minSup (Sweep)"
         ));
         cbLogPhaseFilter.setValue("Tất cả các pha");
 
@@ -1087,15 +1383,15 @@ public class MainController implements Initializable {
                     vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient tcpClient = new vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient();
                     boolean hasConn = tcpClient.handshake();
                     if (!hasConn) {
-                        throw new IOException("Không kết nối được Backend TCP trên 127.0.0.1:7079. Vui lòng bật backend dhopm-cli hoặc đổi Engine.");
+                        throw new IOException("Không kết nối được Backend TCP trên " + tcpClient.getHost() + ":" + tcpClient.getPort() + ". Vui lòng kiểm tra IP máy Tson hoặc bật server.");
                     }
                     Platform.runLater(() -> {
                         lblLastPhase.setText("TCP: Bắt tay Backend " + tcpClient.getServerManager());
                     });
 
-                    String datasetName = path != null ? path.getFileName().toString() : "retail.dat";
+                    String datasetName = toBackendDatasetRef(path);
                     var resp = tcpClient.stream(
-                            datasetName, partial, f, getMinOcc(), (int) limit, List.of("v1"), true,
+                            datasetName, partial, f, getMinOcc(), (int) limit, getTsonVersions(), true,
                             eventJson -> Platform.runLater(() -> {
                                 String evType = vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient.parseString(eventJson, "event");
                                 if ("progress".equalsIgnoreCase(evType)) {
@@ -1111,7 +1407,16 @@ public class MainController implements Initializable {
                                     lblKpiTime.setText(el != null ? el + " ms" : "Đang chạy...");
                                 } else if ("window".equalsIgnoreCase(evType)) {
                                     Integer curTL = vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient.parseInteger(eventJson, "TL");
-                                    if (curTL != null) lblTL.setText("T" + curTL);
+                                    if (curTL != null) {
+                                        lblTL.setText("T" + curTL);
+                                        vn.edu.dlu.dhopm.log.CalculationLogger.getInstance().log(
+                                                "Tson TCP Stream",
+                                                "Cửa sổ TL=" + curTL,
+                                                "Backend TCP đang cập nhật cửa sổ trượt: TL=" + curTL,
+                                                "f=" + String.format(Locale.US, "%.2f", f),
+                                                "📡 STREAMING"
+                                        );
+                                    }
                                 }
                             })
                     );
@@ -1173,19 +1478,23 @@ public class MainController implements Initializable {
             lblKpiThroughput.setText(String.format("%,.0f tx/s", throughput));
             lblKpiTrans.setText(String.format("Tổng giao dịch: %,d", res.totalTransactions()));
 
+            List<PatternResult> cleanPatterns = DhopmContractTcpClient.deduplicatePatterns(res.uiPatterns());
+
             // Cập nhật TableView Tab 4 và TableView Tab 2
             activeTotalTransactions = res.totalTransactions();
-            tsonPatternsData.setAll(res.uiPatterns());
-            tableData.setAll(res.uiPatterns());
+            tsonPatternsData.setAll(cleanPatterns);
+            tableData.setAll(cleanPatterns);
             if (tableResults != null) tableResults.refresh();
             if (tblTsonPatterns != null) tblTsonPatterns.refresh();
 
-            lblDhopCount.setText(res.patternCount() + " mẫu");
-            lblVisitedCount.setText(res.patternCount() + " mẫu");
+            int uniqueCount = cleanPatterns.size();
+            lblKpiPatterns.setText(String.format("%,d mẫu", uniqueCount));
+            lblDhopCount.setText(uniqueCount + " mẫu");
+            lblVisitedCount.setText(uniqueCount + " mẫu");
             lblTransCount.setText(String.valueOf(res.totalTransactions()));
             lblTL.setText("T" + lastTidVal);
 
-            updateChartFromPatterns(res.uiPatterns(), minSupVal);
+            updateChartFromPatterns(cleanPatterns, minSupVal);
 
             // Lưu Memento lịch sử khai phá (phân biệt BE TCP và Tson V1)
             String engineLabel = (cbEngineMode.getValue() == EngineMode.TSON_TCP_BACKEND)
@@ -1194,9 +1503,35 @@ public class MainController implements Initializable {
                     engineLabel,
                     (path != null ? path.getFileName().toString() : "retail.dat") + (limit > 0 ? " (" + limit + " tx)" : ""),
                     f, partial, minSupVal, (int) res.totalTransactions(),
-                    res.patternCount(), 0, res.patternCount(),
-                    res.totalMs(), res.peakHeapMb(), res.uiPatterns()
+                    uniqueCount, 0, uniqueCount,
+                    res.totalMs(), res.peakHeapMb(), cleanPatterns
             );
+
+            // Ghi nhật ký tính toán vào CalculationLogger nếu chạy bằng Tson TCP
+            if (cbEngineMode.getValue() == EngineMode.TSON_TCP_BACKEND) {
+                String dsLabel = path != null ? path.getFileName().toString() : "retail.dat";
+                CalculationLogger.getInstance().log(
+                        "Tson TCP Mine",
+                        dsLabel,
+                        String.format(Locale.US, "Khai phá qua TCP Socket 7079: N=%,d tx, f=%.2f, ∂=%.2f%%, minSup=%.2f, limit=%d",
+                                res.totalTransactions(), f, partial * 100.0, minSupVal, limit),
+                        String.format(Locale.US, "Tổng thời gian phản hồi: %,d ms | RAM: %.1f MB | Tổng mẫu: %,d",
+                                res.totalMs(), res.peakHeapMb(), uniqueCount),
+                        "⚡ HOÀN TẤT TCP"
+                );
+                for (int i = 0; i < Math.min(15, cleanPatterns.size()); i++) {
+                    PatternResult pr = cleanPatterns.get(i);
+                    CalculationLogger.getInstance().log(
+                            "Tson TCP Mẫu DHOP",
+                            pr.pattern(),
+                            String.format(Locale.US, "DO=%.6f, Support=%,d tx, Độ dài=%d, TIDs: %s",
+                                    pr.doValue(), pr.support(), pr.pattern().split("[,\\s]+").length,
+                                    pr.transactionIds().stream().limit(5).map(tid -> "T" + tid).reduce((a, b) -> a + ", " + b).orElse("")),
+                            String.format(Locale.US, "DO=%.4f >= minSup=%.2f (Độ dài |X|=%d)", pr.doValue(), minSupVal, pr.pattern().split("[,\\s]+").length),
+                            "🟢 DHOP (TCP)"
+                    );
+                }
+            }
 
             showTsonView(1);
         });
@@ -1420,16 +1755,18 @@ public class MainController implements Initializable {
             if (lblTab4EtaStatus != null) lblTab4EtaStatus.setText("✅ Hoàn tất");
             MineExecutionResult res = task.getValue();
 
+            List<PatternResult> cleanPatterns = vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient.deduplicatePatterns(res.uiPatterns());
+
             // Cập nhật TableView Tab 4 và Tab 2
-            tsonPatternsData.setAll(res.uiPatterns());
-            tableData.setAll(res.uiPatterns());
+            tsonPatternsData.setAll(cleanPatterns);
+            tableData.setAll(cleanPatterns);
 
             // Cập nhật KPI Cards
             lblKpiTime.setText(String.format("%,d ms", res.totalMs()));
             lblKpiPhases.setText(String.format("Constr: %dms | Reconst: %dms | Mine: %dms",
                     res.constrMs(), res.reconstMs(), res.miningMs()));
             lblKpiHeap.setText(String.format("%.1f MB", res.peakHeapMb()));
-            lblKpiPatterns.setText(String.format("%,d mẫu", res.patternCount()));
+            lblKpiPatterns.setText(String.format("%,d mẫu", cleanPatterns.size()));
             lblKpiMinSup.setText(String.format("minSup = %.2f", res.rawResult().minSup()));
 
             // Lưu Memento
@@ -1437,8 +1774,8 @@ public class MainController implements Initializable {
                     "Tson Top DO",
                     path.getFileName().toString() + (limit > 0 ? " (" + limit + " tx)" : ""),
                     f, partial, res.rawResult().minSup(), (int) res.totalTransactions(),
-                    res.patternCount(), 0, res.patternCount(),
-                    res.totalMs(), res.peakHeapMb(), res.uiPatterns()
+                    cleanPatterns.size(), 0, cleanPatterns.size(),
+                    res.totalMs(), res.peakHeapMb(), cleanPatterns
             );
 
             showTsonView(1);
@@ -1534,8 +1871,9 @@ public class MainController implements Initializable {
         if (lblDataSourceBadge != null) {
             switch (mode) {
                 case TSON_TCP_BACKEND -> {
-                    lblDataSourceBadge.setText("🟢 BE (TCP 7079)");
+                    lblDataSourceBadge.setText("🟢 BE (" + DhopmContractTcpClient.getActiveHost() + ":" + DhopmContractTcpClient.getActivePort() + ")");
                     lblDataSourceBadge.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #15803d; -fx-font-weight: bold;");
+                    doTestTcpConnection();
                 }
                 case TSON_V1_STANDARD -> {
                     lblDataSourceBadge.setText("🔵 Tson V1 (In-Process)");
@@ -1555,9 +1893,9 @@ public class MainController implements Initializable {
         double minOcc = getMinOcc();
         long limit = resolveLimit();
         Path path = resolveDatasetPath();
-        String dsName = path != null ? path.getFileName().toString() : "retail.dat";
+        String dsName = toBackendDatasetRef(path);
 
-        bridgeEngine = EngineFactory.create(currentMode, ratio, f, dsName, minOcc, (int) limit, List.of("v1"));
+        bridgeEngine = EngineFactory.create(currentMode, ratio, f, dsName, minOcc, (int) limit, getTsonVersions());
 
         bridgeEngine.onPhaseUpdate((phase, ms) ->
                 lblLastPhase.setText(phase + " (" + String.format("%.2f", ms) + " ms)")
@@ -1583,7 +1921,8 @@ public class MainController implements Initializable {
     }
 
     private void initTableView() {
-        colPattern.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().pattern()));
+        colPattern.setCellValueFactory(data ->
+                new SimpleStringProperty(vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient.normalizePattern(data.getValue().pattern())));
         colSupport.setCellValueFactory(data ->
                 new SimpleStringProperty(formatSupportWithPercent(data.getValue().support())));
         colSupport.setComparator((s1, s2) -> Integer.compare(extractSupportInt(s1), extractSupportInt(s2)));
@@ -1741,31 +2080,32 @@ public class MainController implements Initializable {
             updateDHONodes(f, tamEngine.getCurrentTL(), minSup);
         }
 
-        List<PatternResult> dhops = results.stream().filter(PatternResult::isDHOP).toList();
+        List<PatternResult> cleanResults = vn.edu.dlu.dhopm.bridge.DhopmContractTcpClient.deduplicatePatterns(results);
+        List<PatternResult> dhops = cleanResults.stream().filter(PatternResult::isDHOP).toList();
         lblTransCount.setText(String.valueOf(totalTrans));
         lblDhopCount.setText(dhops.size() + " mẫu");
-        lblVisitedCount.setText(results.size() + " mẫu");
+        lblVisitedCount.setText(cleanResults.size() + " mẫu");
 
-        long prunedCount = results.stream().filter(PatternResult::isPruned).count();
-        String prunedText = results.isEmpty() ? "0 mẫu"
-                : prunedCount + " mẫu (" + String.format(java.util.Locale.US, "%.1f%%", ((double) prunedCount / results.size()) * 100) + ")";
+        long prunedCount = cleanResults.stream().filter(PatternResult::isPruned).count();
+        String prunedText = cleanResults.isEmpty() ? "0 mẫu"
+                : prunedCount + " mẫu (" + String.format(java.util.Locale.US, "%.1f%%", ((double) prunedCount / cleanResults.size()) * 100) + ")";
         lblPrunedCount.setText(prunedText);
 
         activeTotalTransactions = totalTrans;
-        tableData.setAll(results);
-        tsonPatternsData.setAll(results);
+        tableData.setAll(cleanResults);
+        tsonPatternsData.setAll(cleanResults);
         if (tableResults != null) tableResults.refresh();
         if (tblTsonPatterns != null) tblTsonPatterns.refresh();
-        updateChart(results, f, minSup);
+        updateChart(cleanResults, f, minSup);
 
         // Lưu Memento lịch sử mining
-        long simulatedTimeMs = Math.max(1, (long) (results.size() * 0.15));
+        long simulatedTimeMs = Math.max(1, (long) (cleanResults.size() * 0.15));
         MiningHistoryManager.getInstance().recordRun(
                 currentMode.getDisplayName(),
                 "default.dat (Stream " + totalTrans + " tx)",
                 f, ratio, minSup, totalTrans,
-                dhops.size(), (int) prunedCount, results.size(),
-                simulatedTimeMs, 14.5, results
+                dhops.size(), (int) prunedCount, cleanResults.size(),
+                simulatedTimeMs, 14.5, cleanResults
         );
     }
 

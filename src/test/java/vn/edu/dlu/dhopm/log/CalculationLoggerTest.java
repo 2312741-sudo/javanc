@@ -44,4 +44,15 @@ class CalculationLoggerTest {
         logger.clear();
         assertEquals(0, logger.getLogs().size());
     }
+
+    @Test
+    void testTsonTcpLogging() {
+        logger.log("Tson TCP Mine", "retail.dat", "N=1,000 tx, f=0.90", "TCP: 7079", "⚡ HOÀN TẤT TCP");
+        logger.log("Tson TCP Mẫu DHOP", "39, 48", "DO=1.4500", "minSup=1.20", "🟢 DHOP (TCP)");
+
+        assertEquals(2, logger.getLogs().size());
+        assertTrue(logger.getLogs().get(0).phase().contains("Tson TCP"));
+        assertTrue(logger.getLogs().get(1).decision().contains("TCP"));
+        assertTrue(logger.exportToString().contains("Tson TCP Mine"));
+    }
 }

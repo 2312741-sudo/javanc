@@ -140,6 +140,32 @@ public class TsonTcpContractBridge implements BridgeEngine {
                     if (phaseCallback != null) {
                         phaseCallback.accept("Pha TCP: Hoàn tất khai phá (" + resp.patterns().size() + " mẫu, " + resp.elapsedMs() + " ms)", (double) resp.elapsedMs());
                     }
+
+                    // Ghi nhận vào CalculationLogger cho Tson TCP
+                    List<PatternResult> cleanPatterns = DhopmContractTcpClient.deduplicatePatterns(resp.patterns());
+                    double minSupVal = minSupRatio * (txCount > 0 ? txCount : 8);
+                    vn.edu.dlu.dhopm.log.CalculationLogger.getInstance().log(
+                            "Tson TCP Mine",
+                            dataset,
+                            String.format(java.util.Locale.US, "Khai phá qua TCP Socket (Port 7079): N=%,d tx, f=%.2f, ∂=%.2f%%, minSup=%.2f, limit=%d",
+                                    resp.totalTransactions() > 0 ? resp.totalTransactions() : txCount, decayFactor, minSupRatio * 100.0, minSupVal, limit),
+                            String.format(java.util.Locale.US, "Thời gian TCP: %d ms | RAM: %.1f MB | Tổng mẫu: %,d",
+                                    resp.elapsedMs(), resp.peakMemoryMb(), cleanPatterns.size()),
+                            "⚡ HOÀN TẤT TCP"
+                    );
+                    for (int i = 0; i < Math.min(15, cleanPatterns.size()); i++) {
+                        PatternResult pr = cleanPatterns.get(i);
+                        vn.edu.dlu.dhopm.log.CalculationLogger.getInstance().log(
+                                "Tson TCP Mẫu DHOP",
+                                pr.pattern(),
+                                String.format(java.util.Locale.US, "DO=%.6f, Support=%,d tx, Độ dài=%d, TIDs: %s",
+                                        pr.doValue(), pr.support(), pr.pattern().split("[,\\s]+").length,
+                                        pr.transactionIds().stream().limit(5).map(tid -> "T" + tid).reduce((a, b) -> a + ", " + b).orElse("")),
+                                String.format(java.util.Locale.US, "DO=%.4f >= minSup=%.2f", pr.doValue(), minSupVal),
+                                "🟢 DHOP (TCP)"
+                        );
+                    }
+
                     return resp.patterns();
                 }
             } catch (Exception ex) {
