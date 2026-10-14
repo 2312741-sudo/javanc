@@ -140,18 +140,18 @@
 
                     <!-- Actions directly matching Tson's README commands -->
                     <Label text="Chạy lệnh (không cần terminal):" styleClass="field-label" style="-fx-font-weight: bold;"/>
-                    
+
+                    <Button fx:id="btnTsonGolden" text="🏆 Chạy TestKit Vàng (Golden TC1-8)" maxWidth="Infinity" prefHeight="34.0" styleClass="btn-purple" style="-fx-background-color: #7c3aed; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 6;"/>
+
                     <HBox spacing="6.0">
                         <Button fx:id="btnTsonMine" text="🚀 Khai Phá Dataset (Mine)" maxWidth="Infinity" HBox.hgrow="ALWAYS" prefHeight="34.0" styleClass="btn-primary" style="-fx-background-color: #2563eb; -fx-font-weight: bold;"/>
                         <Button fx:id="btnTsonStop" text="🛑 Dừng" disable="true" prefHeight="34.0" prefWidth="85.0" style="-fx-background-color: #dc2626; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 6;"/>
                     </HBox>
-                    
+
                     <HBox spacing="6.0">
                         <Button fx:id="btnTsonInspect" text="📊 Thống kê (Inspect)" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="btn-emerald"/>
                         <Button fx:id="btnTsonDetail" text="🔬 Top DO (Detail)" maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="btn-indigo"/>
                     </HBox>
-                    
-                    <Button fx:id="btnTsonGolden" text="🏆 Chạy TestKit Vàng (Golden TC1-8)" maxWidth="Infinity" styleClass="btn-purple"/>
                 </VBox>
 
                 <!-- PANEL 1: THAM SO THUAT TOAN (TEXT INPUTS ONLY - NO SLIDERS) -->
@@ -188,8 +188,8 @@
 
                     <!-- minOcc and limit inputs -->
                     <HBox spacing="8.0">
-                        <VBox spacing="3.0" HBox.hgrow="ALWAYS">
-                            <Label text="minOcc (v1=0):" styleClass="field-label"/>
+                        <VBox fx:id="boxMinOcc" spacing="3.0" HBox.hgrow="ALWAYS" visible="false" managed="false">
+                            <Label text="minOcc (v2/v3):" styleClass="field-label"/>
                             <TextField fx:id="txtMinOcc" text="0.0" promptText="0.0" prefHeight="26.0"
                                        style="-fx-font-size: 11px;"/>
                         </VBox>

@@ -64,6 +64,7 @@ public class MainController implements Initializable {
 
     // ── TCP Backend Tson Connection Controls ─────────────────────────────────
     @FXML private VBox boxTcpConfig;
+    @FXML private VBox boxMinOcc;
     @FXML private Label lblTcpQuickStatus;
     @FXML private TextField txtBackendHost;
     @FXML private TextField txtBackendPort;
@@ -568,6 +569,12 @@ public class MainController implements Initializable {
         }
         if (lblTsonViewTitle != null) {
             lblTsonViewTitle.setText("📋 Danh Sách Mẫu Chi Tiết (Tson " + clean.toUpperCase() + " Engine)");
+        }
+        // Chỉ hiện boxMinOcc khi chọn v2 hoặc v3 (v1 không dùng minOcc)
+        boolean showMinOcc = !"v1".equalsIgnoreCase(clean);
+        if (boxMinOcc != null) {
+            boxMinOcc.setVisible(showMinOcc);
+            boxMinOcc.setManaged(showMinOcc);
         }
         buildBridgeEngine();
     }
