@@ -124,4 +124,27 @@ class MinOccWindowTest {
     void testInvalid_minOcc_negative() {
         assertEquals(0, MainController.calcWindowSize(0.9, -0.5));
     }
+
+    @Test
+    @DisplayName("EffectRow record khởi tạo chính xác")
+    void testEffectRowModel() {
+        MainController.EffectRow row = new MainController.EffectRow(
+                "1,000 tx", "1,000 entry", "65 entry (W=65)", "935 entry", "93.5%", "×15.4", "🟢 Tiết kiệm tốt"
+        );
+        assertEquals("1,000 tx", row.n());
+        assertEquals("93.5%", row.ramSave());
+        assertEquals("×15.4", row.speedup());
+    }
+
+    @Test
+    @DisplayName("SpeedRow record khởi tạo chính xác cho Big Mining Benchmark")
+    void testSpeedRowModel() {
+        MainController.SpeedRow row = new MainController.SpeedRow(
+                "100,000 tx", "4,508 ms", "19 ms", "⚡ ×237.3", "↓ 19.1 MB", "⚡ Siêu tốc (Chuẩn Real-time)"
+        );
+        assertEquals("100,000 tx", row.n());
+        assertEquals("4,508 ms", row.noMinOcc());
+        assertEquals("19 ms", row.withMinOcc());
+        assertTrue(row.assessment().contains("Real-time"));
+    }
 }
